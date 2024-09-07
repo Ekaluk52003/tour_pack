@@ -20,7 +20,7 @@ def tour_package_detail(request, pk):
 def tour_package_edit(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
     cities = City.objects.all()
-    guide_services = list(GuideService.objects.values('id', 'name'))
+    guide_services = list(GuideService.objects.values('id', 'name', 'price'))  # Include price
 
     if request.method == 'POST':
         return save_tour_package(request, package)
@@ -35,11 +35,11 @@ def tour_package_edit(request, pk):
                 'city': day.city_id,
                 'hotel': day.hotel_id,
                 'services': [
-                    {'type': service.service.service_type.name.lower(), 'name': service.service_id}
+                    {'type': service.service.service_type.name.lower(), 'name': service.service_id, 'price': service.service.price}  # Add price
                     for service in day.services.all()
                 ],
                 'guideServices': [
-                    {'name': guide_service.guide_service_id}
+                    {'name': guide_service.guide_service_id, 'price': guide_service.guide_service.price}  # Add price
                     for guide_service in day.guide_services.all()
                 ]
             }
@@ -54,7 +54,6 @@ def tour_package_edit(request, pk):
         'package_json': json.dumps(package_data, cls=DjangoJSONEncoder),
     }
 
-   
     return render(request, 'tour_quote/tour_package_edit.html', context)
 
 
@@ -62,12 +61,19 @@ def tour_package_edit(request, pk):
 def tour_package_quote(request):
     cities = City.objects.all()
     service_types = ServiceType.objects.all()
-    guide_services = list(GuideService.objects.values('id', 'name'))
+
+    # Query guide services and convert price (Decimal) to float
+    guide_services = list(
+        GuideService.objects.values('id', 'name', 'price')
+    )
+    # Convert the Decimal to float
+    for guide_service in guide_services:
+        guide_service['price'] = float(guide_service['price'])
 
     context = {
         'cities': cities,
         'service_types': service_types,
-        'guide_services_json': json.dumps(guide_services),
+        'guide_services_json': json.dumps(guide_services, cls=DjangoJSONEncoder),
     }
 
     return render(request, 'tour_quote/tour_package_quote.html', context)
@@ -83,7 +89,8 @@ def get_city_services(request, city_id):
             service_types[service.service_type.name] = []
         service_types[service.service_type.name].append({
             'id': service.id,
-            'name': service.name
+            'name': service.name,
+             'price': service.price
         })
 
     return JsonResponse({
@@ -131,6 +138,13 @@ def save_tour_package(request, package=None):
                 tour_day=tour_day,
                 guide_service_id=guide_service_id
             )
+
+    # Handle the total cost
+    total_cost = data.get('total_cost', 0)
+
+    # If you have a field in the TourPackageQuote model for the total cost, save it:
+    package.total_service_cost = total_cost  # Assuming you added this field in your model
+    package.save()
 
     return JsonResponse({
         'status': 'success',

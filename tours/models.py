@@ -25,12 +25,14 @@ class Service(models.Model):
     name = models.CharField(max_length=200)
     service_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
     city = models.ForeignKey(City, on_delete=models.CASCADE)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return f"{self.name} - {self.service_type} - {self.city}"
 
 class GuideService(models.Model):
     name = models.CharField(max_length=200)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return self.name
@@ -39,6 +41,7 @@ class TourPackageQuote(models.Model):
     name = models.CharField(max_length=200)
     customer_name = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
+    total_service_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # New field for total service cost
 
     def __str__(self):
         return f"{self.name} - {self.customer_name}"

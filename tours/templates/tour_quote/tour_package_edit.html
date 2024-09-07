@@ -75,20 +75,20 @@
         <h3 class="text-lg font-semibold mb-2">Services</h3>
         <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
           <div class="flex items-center mb-2">
-            <select x-model="service.type" @change="service.name = ''" class="w-1/4 border rounded px-3 py-2 mr-2">
-              <option value="">Select Service Type</option>
-              <option value="transfer" :selected="service.type == 'transfer'">Transfer</option>
-              <option value="tour" :selected="service.type == 'tour'">Tour</option>
+              <select x-model="service.type" @change="service.name = ''" class="w-1/4 border rounded px-3 py-2 mr-2">
+                  <option value="">Select Service Type</option>
+                  <option value="transfer" :selected="service.type == 'transfer'">Transfer</option>
+                  <option value="tour" :selected="service.type == 'tour'">Tour</option>
+              </select>
+              <select x-model="service.name" @change="updateService(dayIndex, serviceIndex)" class="w-1/2 border rounded px-3 py-2 mr-2">
+                <option value="">Select Service</option>
+                <template x-for="option in getServiceNames(dayIndex, service.type)" :key="option.id">
+                    <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="service.name == option.id"></option>
+                </template>
             </select>
-            <select x-model="service.name" class="w-1/2 border rounded px-3 py-2 mr-2">
-              <option value="">Select Service</option>
-              <template x-for="option in getServiceNames(dayIndex, service.type)" :key="option.id">
-                <option :value="String(option.id)" x-text="option.name" :selected="service.name == option.id"></option>
-              </template>
-            </select>
-            <button @click="removeService(dayIndex, serviceIndex)" class="bg-red-500 text-white px-3 py-2 rounded">Remove</button>
+              <button @click="removeService(dayIndex, serviceIndex)" class="bg-red-500 text-white px-3 py-2 rounded">Remove</button>
           </div>
-        </template>
+      </template>
         <button @click="addService(dayIndex)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Service</button>
       </div>
 
@@ -96,15 +96,15 @@
         <h3 class="text-lg font-semibold mb-2">Guide Services</h3>
         <template x-for="(guideService, guideIndex) in day.guideServices" :key="guideIndex">
           <div class="flex items-center mb-2">
-            <select x-model="guideService.name" class="w-3/4 border rounded px-3 py-2 mr-2">
-              <option value="">Select Guide Service</option>
-              <template x-for="option in guideServices" :key="option.id">
-                <option :value="String(option.id)" x-text="option.name" :selected="guideService.name == option.id"></option>
-              </template>
-            </select>
-            <button @click="removeGuideService(dayIndex, guideIndex)" class="bg-red-500 text-white px-3 py-2 rounded">Remove</button>
+              <select x-model="guideService.name" class="w-3/4 border rounded px-3 py-2 mr-2">
+                  <option value="">Select Guide Service</option>
+                  <template x-for="option in guideServices" :key="option.id">
+                      <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="guideService.name == option.id"></option>
+                  </template>
+              </select>
+              <button @click="removeGuideService(dayIndex, guideIndex)" class="bg-red-500 text-white px-3 py-2 rounded">Remove</button>
           </div>
-        </template>
+      </template>
         <button @click="addGuideService(dayIndex)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Guide Service</button>
       </div>
 
@@ -113,6 +113,11 @@
   </template>
 
   <button @click="addDay" class="bg-blue-500 text-white px-3 py-2 rounded mr-2">Add Day</button>
+
+  <div class="mt-4">
+    <h3 class="text-lg font-semibold">Total Cost: <span x-text="calculateTotalCost() + ' USD'"></span></h3>
+</div>
+
   <button @click="saveTourPackage" class="bg-green-500 text-white px-3 py-2 rounded">Save Changes</button>
 </div>
 {% endblock %}

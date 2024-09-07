@@ -64,13 +64,13 @@
         <h3 class="text-lg font-semibold mb-2">Services</h3>
         <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
           <div class="flex items-center mb-2">
-            <select x-model="service.type" @change="service.name = ''" class="w-1/4 border rounded px-3 py-2 mr-2">
+            <select x-model="service.type" @change="service.name = ''" class="mr-2 p-2 border rounded">
               <option value="">Select Service Type</option>
               <option value="transfer">Transfer</option>
               <option value="tour">Tour</option>
             </select>
 
-            <select x-model="service.name" @change="updateService(dayIndex, serviceIndex)" class="w-1/2 border rounded px-3 py-2 mr-2">
+            <select x-model="service.name" @change="updateService(dayIndex, serviceIndex)" class="mr-2 p-2 border rounded">
               <option value="">Select Service</option>
               <template x-for="option in getServiceNames(dayIndex, service.type)" :key="option.id">
                 <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="service.name == option.id"></option>
@@ -78,9 +78,9 @@
             </select>
 
             <span class="ml-2" x-text="`Booked: ${service.price_at_booking || service.price} USD`"></span>
-            <span class="ml-2" x-text="`Current: ${service.price} USD`"></span>
+            <!-- <span class="ml-2" x-text="`Current: ${service.price} USD`"></span> -->
 
-            <button @click="removeService(dayIndex, serviceIndex)" class="bg-red-500 text-white px-3 py-2 rounded ml-2">Remove</button>
+            <button @click="removeService(dayIndex, serviceIndex)" class="ml-2 text-red-600">Remove</button>
           </div>
         </template>
         <button @click="addService(dayIndex)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Service</button>
@@ -98,9 +98,9 @@
             </select>
 
             <span class="ml-2" x-text="`Booked: ${guideService.price_at_booking.toFixed(2)} USD`"></span>
-            <span class="ml-2" x-text="`Current: ${guideService.price.toFixed(2)} USD`"></span>
+            <!-- <span class="ml-2" x-text="`Current: ${guideService.price.toFixed(2)} USD`"></span> -->
 
-            <button @click="removeGuideService(dayIndex, guideIndex)" class="bg-red-500 text-white px-3 py-2 rounded ml-2">Remove</button>
+            <button @click="removeGuideService(dayIndex, guideIndex)"  class="ml-2 text-red-600">Remove</button>
           </div>
         </template>
         <button @click="addGuideService(dayIndex)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Guide Service</button>

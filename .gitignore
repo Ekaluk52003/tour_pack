@@ -15,7 +15,7 @@ db.sqlite3
 instance/
 .media/
 staticfiles/
-static/
+# static/
 .env
 .env.*
 config/settings/local.py
@@ -57,7 +57,7 @@ dist/
 Pipfile.lock
 
 # Ignore static files build outputs (if using Webpack, Tailwind, etc.)
-/static/
+
 /webpack-bundles/
 
 # Celery beat schedule file

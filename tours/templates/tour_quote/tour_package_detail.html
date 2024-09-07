@@ -15,19 +15,54 @@
         <h3 class="text-lg font-semibold mt-2 mb-1">Services:</h3>
         <ul class="list-disc pl-5">
             {% for service in day.services.all %}
-            <li>{{ service.service.name }} ({{ service.service.service_type.name }})</li>
+            <li>{{ service.service.name }} ({{ service.service.service_type.name }}) -
+                {{ service.price_at_booking|floatformat:2 }} USD
+            </li>
             {% endfor %}
         </ul>
 
         <h3 class="text-lg font-semibold mt-2 mb-1">Guide Services:</h3>
         <ul class="list-disc pl-5">
             {% for guide_service in day.guide_services.all %}
-            <li>{{ guide_service.guide_service.name }}</li>
+            <li>{{ guide_service.guide_service.name }} -
+                {{ guide_service.price_at_booking|floatformat:2 }} USD
+            </li>
             {% endfor %}
         </ul>
     </div>
     {% endfor %}
 
-    <a href="{% url 'tour_package_edit' package.id %}" class="bg-blue-500 text-white px-4 py-2 rounded">Edit Package</a>
+    <!-- Display Hotel Costs -->
+    {% if hotel_costs_with_total %}
+    <div class="mb-6 p-4 border border-gray-300 rounded">
+        <h2 class="text-xl font-semibold mb-2">Hotel Costs</h2>
+        <ul class="list-disc pl-5">
+            {% for hotel_cost in hotel_costs_with_total %}
+            <li>
+                {{ hotel_cost.name }} ({{ hotel_cost.type }}) -
+                {{ hotel_cost.room }} room(s),
+                {{ hotel_cost.nights }} night(s) -
+                {{ hotel_cost.price }} USD per night
+                (Total: {{ hotel_cost.total|floatformat:"2" }} USD)
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Grand Total -->
+    <div class="mt-4">
+        <h2 class="text-xl font-semibold">Grand Total Cost: {{ package.grand_total_cost }} USD</h2>
+    </div>
+
+    <div class="block my-4">
+        <a href="{% url 'tour_package_edit' package.id %}" class="bg-blue-500 text-white px-4 py-2 rounded">Edit Package</a>
+    </div>
+
+    <div class="block my-4">
+        <a href="{% url 'tour_package_pdf' package.id %}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded">Print PDF</a>
+
+</div>
+
 </div>
 {% endblock %}

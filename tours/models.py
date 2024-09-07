@@ -41,7 +41,8 @@ class TourPackageQuote(models.Model):
     name = models.CharField(max_length=200)
     customer_name = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
-    total_service_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # New field for total service cost
+    hotel_costs = models.JSONField(default=list)
+    grand_total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return f"{self.name} - {self.customer_name}"
@@ -58,6 +59,8 @@ class TourDay(models.Model):
 class TourDayService(models.Model):
     tour_day = models.ForeignKey(TourDay, on_delete=models.CASCADE, related_name='services')
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
+     # Store the price at the time of creation
+    price_at_booking = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return f"{self.tour_day} - {self.service}"
@@ -65,6 +68,7 @@ class TourDayService(models.Model):
 class TourDayGuideService(models.Model):
     tour_day = models.ForeignKey(TourDay, on_delete=models.CASCADE, related_name='guide_services')
     guide_service = models.ForeignKey(GuideService, on_delete=models.CASCADE)
+    price_at_booking = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return f"{self.tour_day} - {self.guide_service}"

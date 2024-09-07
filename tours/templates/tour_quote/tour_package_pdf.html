@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tour Package PDF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        h1, h2, h3 {
+            color: #2C3E50;
+        }
+        .content {
+            margin: 20px;
+        }
+        h2 {
+            font-size: 18px;
+            color: #2980B9;
+        }
+        .page-number {
+            font-size: 10px;
+            color: #666;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .table th, .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .table th {
+            background-color: #F2F3F4;
+            font-weight: bold;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #2C3E50;
+        }
+        .list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        .list li {
+            margin-bottom: 5px;
+        }
+        .company-header {
+            display: flex;
+            align-items: center;
+            border: 2px solid #2980B9;  /* Adding border */
+            padding: 10px;
+            border-radius: 10px;  /* Rounded corners */
+            margin-bottom: 20px;
+        }
+        .company-header img {
+            width: 80px;
+            margin-right: 20px;
+        }
+        .company-header h1 {
+            font-size: 24px;
+            color: #2980B9;
+            margin: 0;
+        }
+        .customer-info p, .package-info p {
+            font-size: 14px;
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="content">
+    <!-- Fake Company Logo and Name -->
+    <div class="company-header">
+        <img src="https://via.placeholder.com/80x80.png?text=Logo" alt="Company Logo">
+        <h1>Fake Company Name</h1>
+    </div>
+
+    <!-- Package Name Styled Like Customer Name -->
+    <div class="package-info">
+        <p><strong>Package:</strong> {{ package.name }}</p>
+    </div>
+
+    <!-- Customer Information -->
+    <div class="customer-info">
+        <p><strong>Customer:</strong> {{ package.customer_name }}</p>
+        <p><strong>Created:</strong> {{ package.created_at|date:"Y-m-d H:i" }}</p>
+    </div>
+
+    {% for day in package.tour_days.all %}
+    <div class="section">
+        <h2>Day {{ forloop.counter }} - {{ day.date|date:"Y-m-d" }}</h2>
+        <p><strong>City:</strong> {{ day.city.name }}</p>
+        <p><strong>Hotel:</strong> {{ day.hotel.name }}</p>
+
+        <h3>Services:</h3>
+        <ul class="list">
+            {% for service in day.services.all %}
+            <li>{{ service.service.name }} ({{ service.service.service_type.name }}) - {{ service.service.price }} USD</li>
+            {% endfor %}
+        </ul>
+
+        <h3>Guide Services:</h3>
+        <ul class="list">
+            {% for guide_service in day.guide_services.all %}
+            <li>{{ guide_service.guide_service.name }} - {{ guide_service.guide_service.price }} USD</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+
+    <!-- Hotel Costs Table -->
+    {% if hotel_costs_with_total %}
+    <div class="section">
+        <h2 class="section-title">Hotel Costs</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Hotel Name</th>
+                    <th>Type</th>
+                    <th>Rooms</th>
+                    <th>Nights</th>
+                    <th>Price per Night (USD)</th>
+                    <th>Total (USD)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hotel_cost in hotel_costs_with_total %}
+                <tr>
+                    <td>{{ hotel_cost.name }}</td>
+                    <td>{{ hotel_cost.type }}</td>
+                    <td>{{ hotel_cost.room }}</td>
+                    <td>{{ hotel_cost.nights }}</td>
+                    <td>{{ hotel_cost.price }}</td>
+                    <td>{{ hotel_cost.total|floatformat:"2" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Grand Total -->
+    <div class="section">
+        <h2 class="section-title">Grand Total Cost: {{ package.grand_total_cost }} USD</h2>
+    </div>
+</div>
+
+</body>
+</html>

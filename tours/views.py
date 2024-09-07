@@ -7,6 +7,68 @@ import json
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
 from django.core.serializers.json import DjangoJSONEncoder
+from weasyprint import HTML, CSS
+from django.template.loader import render_to_string
+
+
+def calculate_grand_total(package):
+    service_total = sum(
+        service.price_at_booking for day in package.tour_days.all() for service in day.services.all()
+    )
+
+    # Assuming guide services are part of the total as well
+    guide_service_total = sum(
+        guide_service.price_at_booking for day in package.tour_days.all() for guide_service in day.guide_services.all()
+    )
+
+    # Assuming hotel costs are stored in the package as JSON (as in your earlier design)
+    hotel_total = sum(
+        float(cost['price']) * int(cost['room']) * int(cost['nights']) for cost in package.hotel_costs
+    )
+
+    # Combine all totals for grand total
+    grand_total = service_total + guide_service_total + hotel_total
+    return grand_total
+
+
+def tour_package_pdf(request, pk):
+    package = get_object_or_404(TourPackageQuote, pk=pk)
+
+    # Prepare hotel costs with total calculation
+    hotel_costs_with_total = []
+    for cost in package.hotel_costs:
+        total_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
+        cost['total'] = total_cost
+        hotel_costs_with_total.append(cost)
+
+    # Render the template to HTML
+    html_string = render_to_string('tour_quote/tour_package_pdf.html', {
+        'package': package,
+        'hotel_costs_with_total': hotel_costs_with_total,
+    })
+
+    # Create a response object and generate PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="tour_package_{package.id}.pdf"'
+
+    # WeasyPrint to generate the PDF
+    HTML(string=html_string).write_pdf(response, stylesheets=[CSS(string='''
+    @page {
+        size: A4;
+        margin: 2cm;
+        @bottom-right {
+            content: "Page " counter(page) " of " counter(pages);
+            font-size: 10px;
+            color: #666;
+        }
+    }
+    body {
+        font-family: sans-serif;
+    }
+''')])
+
+
+    return response
 
 
 def tour_package_list(request):
@@ -15,7 +77,21 @@ def tour_package_list(request):
 
 def tour_package_detail(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
-    return render(request, 'tour_quote/tour_package_detail.html', {'package': package})
+
+    # Calculate total costs for hotels
+    hotel_costs_with_total = []
+    for cost in package.hotel_costs:
+        total_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
+        cost['total'] = total_cost  # Add total cost to the cost dictionary
+        hotel_costs_with_total.append(cost)
+
+    context = {
+        'package': package,
+        'hotel_costs_with_total': hotel_costs_with_total,  # Pass hotel costs with total calculation
+    }
+
+    return render(request, 'tour_quote/tour_package_detail.html', context)
+
 
 def tour_package_edit(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
@@ -44,7 +120,8 @@ def tour_package_edit(request, pk):
                 ]
             }
             for day in package.tour_days.all()
-        ]
+        ],
+        'hotelCosts': package.hotel_costs
     }
 
     context = {
@@ -102,51 +179,91 @@ def get_city_services(request, city_id):
     })
 
 
-
-def save_tour_package(request, package=None):
+def save_tour_package(request, package_id=None):
     data = json.loads(request.body)
 
-    if package:
-        # Update existing package
+    # If package_id is provided, update the existing package
+    if package_id:
+        package = get_object_or_404(TourPackageQuote, id=package_id)
         package.name = data['name']
         package.customer_name = data['customer_name']
         package.save()
-        package.tour_days.all().delete()  # Remove existing days
+        package.tour_days.all().delete()  # Remove existing tour days to recreate them
     else:
-        # Create new package
+        # Create a new package if package_id is None
         package = TourPackageQuote.objects.create(
             name=data['name'],
             customer_name=data['customer_name']
         )
 
     for day_data in data['days']:
+        hotel_id = day_data.get('hotel')
+        if not hotel_id:
+            return JsonResponse({'error': 'Hotel is required for each tour day.'}, status=400)
+
         tour_day = TourDay.objects.create(
             tour_package=package,
             date=day_data['date'],
             city_id=day_data['city'],
-            hotel_id=day_data['hotel']
+            hotel_id=hotel_id
         )
 
+        # Handle services with price_at_booking
         for service_data in day_data['services']:
+            service = Service.objects.get(id=service_data['name'])
             TourDayService.objects.create(
                 tour_day=tour_day,
-                service_id=service_data['name']
+                service=service,
+                # Retain price_at_booking if provided, otherwise, store the current service price
+                price_at_booking=service_data.get('price_at_booking', service.price)
             )
 
-        for guide_service_id in day_data['guide_services']:
+        # Handle guide services with price_at_booking
+        for guide_service_data in day_data['guide_services']:
+            guide_service = GuideService.objects.get(id=guide_service_data['name'])
             TourDayGuideService.objects.create(
                 tour_day=tour_day,
-                guide_service_id=guide_service_id
+                guide_service=guide_service,
+                # Retain price_at_booking if provided, otherwise, store the current guide service price
+                price_at_booking=guide_service_data.get('price_at_booking', guide_service.price)
             )
 
-    # Handle the total cost
-    total_cost = data.get('total_cost', 0)
+    # Handle hotel costs
+    package.hotel_costs = data.get('hotelCosts', [])
 
-    # If you have a field in the TourPackageQuote model for the total cost, save it:
-    package.total_service_cost = total_cost  # Assuming you added this field in your model
+    # Calculate the grand total
+    grand_total_cost = calculate_grand_total(package)
+
+    # Save the grand total cost
+    package.grand_total_cost = grand_total_cost
     package.save()
 
     return JsonResponse({
         'status': 'success',
         'redirect_url': reverse('tour_package_detail', args=[package.id])
     })
+
+
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from .models import TourPackageQuote
+
+def tour_packages(request):
+    query = request.GET.get('q', '')  # Get the search query
+
+    # Filter packages based on search query
+    if query:
+        packages = TourPackageQuote.objects.filter(name__icontains=query) | TourPackageQuote.objects.filter(customer_name__icontains=query)
+    else:
+        packages = TourPackageQuote.objects.all()
+
+    # Pagination: Show 10 packages per page
+    paginator = Paginator(packages, 10)
+    page_number = request.GET.get('page')
+    packages_page = paginator.get_page(page_number)
+
+    context = {
+        'packages': packages_page,
+        'query': query,
+    }
+    return render(request, 'tour_quote/tour_packages.html', context)

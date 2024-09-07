@@ -1,0 +1,244 @@
+
+{% extends "base.html" %}
+
+{% block extra_head %}
+    <script>
+        // Define guide services data globally
+        window.guideServicesData = JSON.parse('{{ guide_services_json|escapejs }}');
+    </script>
+    {% endblock %}
+
+    {% block content %}
+    <div x-data="tourPackage()"   x-init="guideServices = window.guideServicesData"  class="max-w-4xl mx-auto bg-white p-8 rounded shadow-lg">
+        <h1 class="text-3xl font-bold mb-6">Tour Package Quote</h1>
+
+        <div class="mb-4">
+            <label class="block mb-2">Package Name</label>
+            <input x-model="name" type="text" class="w-full p-2 border rounded">
+        </div>
+
+        <div class="mb-4">
+            <label class="block mb-2">Customer Name</label>
+            <input x-model="customerName" type="text" class="w-full p-2 border rounded">
+        </div>
+
+        <template x-for="(day, dayIndex) in days" :key="dayIndex">
+            <div class="border p-4 mb-4 rounded">
+                <h2 class="text-xl font-semibold mb-2" x-text="`Day ${dayIndex + 1}`"></h2>
+
+                <div class="mb-2">
+                    <label class="block mb-1">Date</label>
+                    <input x-model="day.date" type="date" class="w-full p-2 border rounded">
+                </div>
+
+                <div class="mb-2">
+                    <label class="block mb-1">City</label>
+                    <select x-model="day.city" @change="updateCityServices(dayIndex)" class="w-full p-2 border rounded">
+                        <option value="">Select City</option>
+                        {% for city in cities %}
+                            <option value="{{ city.id }}">{{ city.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="block mb-1">Hotel</label>
+                    <select x-model="day.hotel" class="w-full p-2 border rounded">
+                        <option value="">Select Hotel</option>
+                        <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
+                            <option :value="hotel.id" x-text="hotel.name"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Services</h3>
+                    <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
+                        <div class="flex items-center mb-2">
+                            <select x-model="service.type" class="flex-grow p-2 border rounded mr-2">
+                                <option value="">Select Service Type</option>
+                                <option value="transfer">Transfer</option>
+                                <option value="tour">Tour</option>
+                            </select>
+                            <select x-model="service.name" class="flex-grow p-2 border rounded mr-2">
+                                <option value="">Select Service</option>
+                                <template x-for="serviceName in getServiceNames(dayIndex, service.type)" :key="serviceName.id">
+                                    <option :value="serviceName.id" x-text="serviceName.name"></option>
+                                </template>
+                            </select>
+                            <button @click="removeService(dayIndex, serviceIndex)" class="bg-red-500 text-white px-2 py-1 rounded">Remove</button>
+                        </div>
+                    </template>
+                    <button @click="addService(dayIndex)" class="bg-blue-500 text-white px-4 py-2 rounded">Add Service</button>
+                </div>
+
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Guide Services</h3>
+                    <template x-for="(guide, guideIndex) in day.guideServices" :key="guideIndex">
+                        <div class="flex items-center mb-2">
+                            <select x-model="guide.name" class="flex-grow p-2 border rounded mr-2">
+                                <option value="">Select Guide Service</option>
+                                <template x-for="guideService in guideServices" :key="guideService.id">
+                                    <option :value="guideService.id" x-text="guideService.name"></option>
+                                </template>
+                            </select>
+                            <button @click="removeGuideService(dayIndex, guideIndex)" class="bg-red-500 text-white px-2 py-1 rounded">Remove</button>
+                        </div>
+                    </template>
+                    <button @click="addGuideService(dayIndex)" class="bg-blue-500 text-white px-4 py-2 rounded">Add Guide Service</button>
+                </div>
+
+                <button @click="removeDay(dayIndex)" class="bg-red-500 text-white px-4 py-2 rounded">Remove Day</button>
+            </div>
+        </template>
+
+        <button @click="addDay" class="bg-blue-500 text-white px-4 py-2 rounded mb-4">Add Day</button>
+
+        <button @click="saveTourPackage" class="bg-green-500 text-white px-4 py-2 rounded">Save Tour Package</button>
+    </div>
+
+    {% endblock %}
+
+
+
+    {% block extra_scripts %}
+
+    <script>
+    // tour_quote/static/tour_quote/js/tour_package.js
+
+    function tourPackage() {
+      return {
+          name: '',
+          customerName: '',
+          days: [{
+              date: '',
+              city: '',
+              hotel: '',
+              services: [],
+              guideServices: [],
+              cityServices: {
+                  hotels: [],
+                  service_types: []
+              }
+          }],
+          guideServices: [],
+          initEditForm(existingData) {
+              if (existingData) {
+                  this.name = existingData.name;
+                  this.customerName = existingData.customer_name;
+                  this.days = existingData.days.map(day => ({
+                      ...day,
+                      cityServices: {
+                          hotels: [],
+                          service_types: []
+                      }
+                  }));
+                  // Load city services for each day
+                  this.days.forEach((day, index) => this.updateCityServices(index));
+              }
+          },
+          addDay() {
+              this.days.push({
+                  date: '',
+                  city: '',
+                  hotel: '',
+                  services: [],
+                  guideServices: [],
+                  cityServices: {
+                      hotels: [],
+                      service_types: []
+                  }
+              });
+          },
+          removeDay(index) {
+              this.days.splice(index, 1);
+          },
+          addService(dayIndex) {
+              this.days[dayIndex].services.push({ type: '', name: '' });
+          },
+          removeService(dayIndex, serviceIndex) {
+              this.days[dayIndex].services.splice(serviceIndex, 1);
+          },
+          addGuideService(dayIndex) {
+              this.days[dayIndex].guideServices.push({ name: '' });
+          },
+          removeGuideService(dayIndex, guideIndex) {
+              this.days[dayIndex].guideServices.splice(guideIndex, 1);
+          },
+          updateCityServices(index) {
+              const cityId = this.days[index].city;
+              if (cityId) {
+                  fetch(`/get-city-services/${cityId}/`)
+                      .then(response => response.json())
+                      .then(data => {
+                          this.days[index].cityServices = data;
+                      });
+              } else {
+                  this.days[index].cityServices = {
+                      hotels: [],
+                      service_types: []
+                  };
+                  this.days[index].hotel = '';
+                  this.days[index].services = [];
+              }
+          },
+          getServiceNames(dayIndex, serviceType) {
+              const cityServices = this.days[dayIndex].cityServices.service_types;
+              const serviceTypeObj = cityServices.find(st => st.type.toLowerCase() === serviceType.toLowerCase());
+              return serviceTypeObj ? serviceTypeObj.services : [];
+          },
+          saveTourPackage() {
+              const data = {
+                  name: this.name,
+                  customer_name: this.customerName,
+                  days: this.days.map(day => ({
+                      date: day.date,
+                      city: day.city,
+                      hotel: day.hotel,
+                      services: day.services,
+                      guide_services: day.guideServices.map(gs => gs.name)
+                  }))
+              };
+
+              const url = window.location.pathname.includes('edit')
+                  ? window.location.pathname
+                  : '/save-tour-package/';
+
+              fetch(url, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRFToken': getCookie('csrftoken')
+                  },
+                  body: JSON.stringify(data)
+              })
+              .then(response => {
+                  if (response.ok) {
+                      alert('Tour package saved successfully!');
+                      window.location.href = '/'; // Redirect to list view
+                  } else {
+                      alert('Error saving tour package');
+                  }
+              });
+          }
+      };
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+    }
+
+</script>
+
+    {% endblock %}

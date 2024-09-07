@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+
+<!--
+{% block extra_head %}
+<script type="application/json" id="package-data">
+  {{ package_json|safe }}
+</script>
+
+<script type="application/json" id="guide-services-data">
+  {{ guide_services_json|safe }}
+</script>
+
+{% endblock %} -->
+
+
+{% block content %}
+<script type="application/json" id="package-data">
+  {{ package_json|safe }}
+</script>
+
+<script type="application/json" id="guide-services-data">
+  {{ guide_services_json|safe }}
+</script>
+
+<div class="max-w-4xl mx-auto bg-white p-8 rounded shadow-lg"
+     x-data="tourPackage()"
+     x-init="
+        let packageData = JSON.parse(document.getElementById('package-data').textContent);
+        let guideServicesData = JSON.parse(document.getElementById('guide-services-data').textContent);
+        initEditForm(packageData);
+        guideServices = guideServicesData;">
+  <h1 class="text-3xl font-bold mb-6">Edit Tour Package</h1>
+
+  <div class="mb-4">
+    <label for="package-name">Package Name</label>
+    <input type="text" id="package-name" x-model="name" class="w-full border rounded px-3 py-2">
+  </div>
+
+  <div class="mb-4">
+    <label for="customer-name">Customer Name</label>
+    <input type="text" id="customer-name" x-model="customerName" class="w-full border rounded px-3 py-2">
+  </div>
+
+  <template x-for="(day, dayIndex) in days" :key="dayIndex">
+    <div class="border p-4 mb-4 rounded">
+      <h2 class="text-xl font-semibold mb-2" x-text="`Day ${dayIndex + 1} - ${day.date}`"></h2>
+
+      <div class="mb-2">
+        <label>Date</label>
+        <input type="date" x-model="day.date" class="w-full border rounded px-3 py-2">
+      </div>
+
+      <div class="mb-2">
+        <label>City</label>
+        <select x-model="day.city" @change="updateCityServices(dayIndex)" class="w-full border rounded px-3 py-2">
+          <option value="">Select City</option>
+          {% for city in cities %}
+            <option :value="{{ city.id }}" x-text="'{{ city.name }}'" :selected="day.city == {{ city.id }}"></option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-2">
+        <label>Hotel</label>
+        <select x-model="day.hotel" class="w-full border rounded px-3 py-2">
+          <option value="">Select Hotel</option>
+          <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
+            <option :value="String(hotel.id)" x-text="hotel.name" :selected="day.hotel == hotel.id"></option>
+          </template>
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <h3 class="text-lg font-semibold mb-2">Services</h3>
+        <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
+          <div class="flex items-center mb-2">
+            <select x-model="service.type" @change="service.name = ''" class="w-1/4 border rounded px-3 py-2 mr-2">
+              <option value="">Select Service Type</option>
+              <option value="transfer" :selected="service.type == 'transfer'">Transfer</option>
+              <option value="tour" :selected="service.type == 'tour'">Tour</option>
+            </select>
+            <select x-model="service.name" class="w-1/2 border rounded px-3 py-2 mr-2">
+              <option value="">Select Service</option>
+              <template x-for="option in getServiceNames(dayIndex, service.type)" :key="option.id">
+                <option :value="String(option.id)" x-text="option.name" :selected="service.name == option.id"></option>
+              </template>
+            </select>
+            <button @click="removeService(dayIndex, serviceIndex)" class="bg-red-500 text-white px-3 py-2 rounded">Remove</button>
+          </div>
+        </template>
+        <button @click="addService(dayIndex)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Service</button>
+      </div>
+
+      <div class="mb-4">
+        <h3 class="text-lg font-semibold mb-2">Guide Services</h3>
+        <template x-for="(guideService, guideIndex) in day.guideServices" :key="guideIndex">
+          <div class="flex items-center mb-2">
+            <select x-model="guideService.name" class="w-3/4 border rounded px-3 py-2 mr-2">
+              <option value="">Select Guide Service</option>
+              <template x-for="option in guideServices" :key="option.id">
+                <option :value="String(option.id)" x-text="option.name" :selected="guideService.name == option.id"></option>
+              </template>
+            </select>
+            <button @click="removeGuideService(dayIndex, guideIndex)" class="bg-red-500 text-white px-3 py-2 rounded">Remove</button>
+          </div>
+        </template>
+        <button @click="addGuideService(dayIndex)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Guide Service</button>
+      </div>
+
+      <button @click="removeDay(dayIndex)" class="bg-red-500 text-white px-3 py-2 rounded">Remove Day</button>
+    </div>
+  </template>
+
+  <button @click="addDay" class="bg-blue-500 text-white px-3 py-2 rounded mr-2">Add Day</button>
+  <button @click="saveTourPackage" class="bg-green-500 text-white px-3 py-2 rounded">Save Changes</button>
+</div>
+{% endblock %}

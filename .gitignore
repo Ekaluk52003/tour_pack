@@ -1,0 +1,84 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Django specific
+*.log
+*.pot
+*.pyc
+*.pyo
+db.sqlite3
+instance/
+.media/
+staticfiles/
+static/
+.env
+.env.*
+config/settings/local.py
+
+# Django migrations
+**/migrations/*
+!**/migrations/__init__.py
+
+# If you are using PostgreSQL
+*.pgsql
+
+# Ignore coverage reports
+htmlcov/
+.tox/
+.coverage
+coverage.xml
+*.cover
+
+# Ignore virtual environment directories
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore node_modules for JavaScript dependencies
+node_modules/
+
+# Ignore build scripts
+build/
+dist/
+*.egg-info/
+.installed.cfg
+
+# pipenv
+Pipfile.lock
+
+# Ignore static files build outputs (if using Webpack, Tailwind, etc.)
+/static/
+/webpack-bundles/
+
+# Celery beat schedule file
+celerybeat-schedule
+
+# Docker-specific ignores
+docker-compose.override.yml
+*.log
+*.pid
+
+# Ignore pyenv environment files
+.python-version
+
+# VS Code specific
+.vscode/
+
+# JetBrains IDEs
+.idea/
+
+# Ignore secrets, private keys
+*.pem
+
+# Ignore any other sensitive information
+secrets.json

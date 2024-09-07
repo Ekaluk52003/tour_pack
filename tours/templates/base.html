@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tour Package System{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+
+    {% block extra_head %}{% endblock %}
+    <script src="{% static 'tour_quote/js/tour_package.js' %}" defer></script>
+
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+
+
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col" >
+    <header class="bg-blue-600 text-white shadow-md">
+        <nav class="container mx-auto px-6 py-3">
+            <div class="flex items-center justify-between">
+                <div>
+                    <a href="{% url 'tour_package_list' %}" class="text-xl font-bold">Tour Package System</a>
+                </div>
+                <div>
+                    <a href="{% url 'tour_package_list' %}" class="px-3 py-2 rounded hover:bg-blue-700">Packages</a>
+                    <a href="{% url 'tour_package_quote' %}" class="px-3 py-2 rounded hover:bg-blue-700">Create New</a>
+                    <!-- Add more navigation items as needed -->
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow container mx-auto px-6 py-8">
+        {% block content %}
+        <!-- Content will be inserted here by child templates -->
+        {% endblock %}
+    </main>
+
+    <footer class="bg-gray-800 text-white py-4">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; {% now "Y" %} Tour Package System. All rights reserved.</p>
+        </div>
+    </footer>
+
+
+
+    {% block extra_scripts %}{% endblock %}
+
+</body>
+
+
+</html>`

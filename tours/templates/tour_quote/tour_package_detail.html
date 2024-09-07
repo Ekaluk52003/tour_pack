@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4">
+    <h1 class="text-2xl font-bold mb-4">{{ package.name }}</h1>
+    <p class="mb-2"><strong>Customer:</strong> {{ package.customer_name }}</p>
+    <p class="mb-4"><strong>Created:</strong> {{ package.created_at|date:"Y-m-d H:i" }}</p>
+
+    {% for day in package.tour_days.all %}
+    <div class="mb-6 p-4 border border-gray-300 rounded">
+        <h2 class="text-xl font-semibold mb-2">Day {{ forloop.counter }} - {{ day.date|date:"Y-m-d" }}</h2>
+        <p><strong>City:</strong> {{ day.city.name }}</p>
+        <p><strong>Hotel:</strong> {{ day.hotel.name }}</p>
+
+        <h3 class="text-lg font-semibold mt-2 mb-1">Services:</h3>
+        <ul class="list-disc pl-5">
+            {% for service in day.services.all %}
+            <li>{{ service.service.name }} ({{ service.service.service_type.name }})</li>
+            {% endfor %}
+        </ul>
+
+        <h3 class="text-lg font-semibold mt-2 mb-1">Guide Services:</h3>
+        <ul class="list-disc pl-5">
+            {% for guide_service in day.guide_services.all %}
+            <li>{{ guide_service.guide_service.name }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+
+    <a href="{% url 'tour_package_edit' package.id %}" class="bg-blue-500 text-white px-4 py-2 rounded">Edit Package</a>
+</div>
+{% endblock %}

@@ -27,7 +27,7 @@ def calculate_grand_total(package):
     )
     # Combine all totals for grand total
     grand_total = Decimal(service_total) + guide_service_total + hotel_total
-    
+
     return grand_total
 
 
@@ -96,7 +96,7 @@ def tour_package_detail(request, pk):
 def tour_package_edit(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
     cities = City.objects.all()
-    guide_services = list(GuideService.objects.values('id', 'name', 'price'))  # Include price
+    guide_services = list(GuideService.objects.values('id', 'name', 'price'))
 
     if request.method == 'POST':
         return save_tour_package(request, package)
@@ -108,14 +108,26 @@ def tour_package_edit(request, pk):
         'days': [
             {
                 'date': day.date.isoformat(),
-                'city': day.city_id,
-                'hotel': day.hotel_id,
+                'city': str(day.city_id),
+                'hotel': str(day.hotel_id),
+                'city_name': day.city.name,
+                'hotel_name': day.hotel.name,
                 'services': [
-                    {'type': service.service.service_type.name.lower(), 'name': service.service_id, 'price': service.service.price}  # Add price
+                    {
+                        'type': service.service.service_type.name.lower(),
+                        'name': str(service.service_id),
+                        'service_name': service.service.name,
+                        'price': float(service.service.price),
+                        'price_at_booking': float(service.price_at_booking)
+                    }
                     for service in day.services.all()
                 ],
                 'guideServices': [
-                    {'name': guide_service.guide_service_id, 'price': guide_service.guide_service.price}  # Add price
+                    {
+                       'name': str(guide_service.guide_service_id),
+                        'price': float(guide_service.guide_service.price),  # Current price
+                        'price_at_booking': float(guide_service.price_at_booking)
+                    }
                     for guide_service in day.guide_services.all()
                 ]
             }
@@ -124,16 +136,16 @@ def tour_package_edit(request, pk):
         'hotelCosts': package.hotel_costs
     }
 
+
     context = {
         'package': package,
         'cities': cities,
         'guide_services_json': json.dumps(guide_services, cls=DjangoJSONEncoder),
         'package_json': json.dumps(package_data, cls=DjangoJSONEncoder),
+
     }
 
     return render(request, 'tour_quote/tour_package_edit.html', context)
-
-
 
 def tour_package_quote(request):
     cities = City.objects.all()

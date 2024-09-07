@@ -51,8 +51,10 @@ window.tourPackage = function() {
                         price: service.price || 0  // Ensure price is populated or set to 0
                     })),
                     guideServices: day.guideServices.map(gs => ({
-                        name: gs.name,  // Ensure guide service name (ID) is a string
-                        price_at_booking: gs.price_at_booking || gs.price  // Use price_at_booking if available
+                        ...gs,
+                        name: String(gs.name),
+                        price: parseFloat(gs.price),
+                        price_at_booking: parseFloat(gs.price_at_booking)
                     })),
                     cityServices: {
                         hotels: [],
@@ -85,6 +87,37 @@ window.tourPackage = function() {
                 total += (hotelCost.room || 1) * (hotelCost.nights || 1) * (hotelCost.price || 0);
             });
             return total.toFixed(2);
+        },
+        updateGuideService(dayIndex, guideIndex) {
+            const guideService = this.days[dayIndex].guideServices[guideIndex];
+            const selectedGuideService = this.guideServices.find(gs => String(gs.id) === String(guideService.name));
+
+            if (selectedGuideService) {
+                guideService.price = parseFloat(selectedGuideService.price);
+                if (!guideService.price_at_booking) {
+                    guideService.price_at_booking = guideService.price;
+                }
+                console.log('Updated guide service:', guideService);  // Debugging line
+            } else {
+                guideService.price = 0;
+                guideService.price_at_booking = 0;
+                console.log('Reset guide service prices to 0');  // Debugging line
+            }
+        },
+        updateService(dayIndex, serviceIndex) {
+            const service = this.days[dayIndex].services[serviceIndex];
+            const serviceOptions = this.getServiceNames(dayIndex, service.type);
+            const selectedService = serviceOptions.find(option => String(option.id) === service.name);
+
+            if (selectedService) {
+                service.price = parseFloat(selectedService.price) || 0;
+                if (!service.price_at_booking) {
+                    service.price_at_booking = service.price;
+                }
+            } else {
+                service.price = 0;
+                service.price_at_booking = 0;
+            }
         },
 
         // Function to calculate the grand total for services, guide services, and hotel costs
@@ -149,8 +182,12 @@ window.tourPackage = function() {
 
         // Add a guide service to a day
         addGuideService(dayIndex) {
-            this.days[dayIndex].guideServices.push({ name: '' });
-        },
+            this.days[dayIndex].guideServices.push({
+              name: '',
+              price: 0,
+              price_at_booking: 0
+            });
+          },
 
         // Remove a service from a day
         removeService(dayIndex, serviceIndex) {

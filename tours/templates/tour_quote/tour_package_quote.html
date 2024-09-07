@@ -1,130 +1,114 @@
-
 {% extends "base.html" %}
 
 {% block extra_head %}
-    <script>
-        // Define guide services data globally
-        window.guideServicesData = JSON.parse('{{ guide_services_json|escapejs }}');
-    </script>
-    {% endblock %}
+<script>
+    // Define guide services data globally
+    window.guideServicesData = JSON.parse('{{ guide_services_json|escapejs }}');
+</script>
+{% endblock %}
 
-    {% block content %}
-    <div x-data="tourPackage()"   x-init="guideServices = window.guideServicesData"  class="max-w-4xl mx-auto bg-white p-8 rounded shadow-lg">
-        <h1 class="text-3xl font-bold mb-6">Tour Package Quote</h1>
+{% block content %}
+<div x-data="tourPackage()" x-init="guideServices = window.guideServicesData" class="max-w-4xl mx-auto bg-white p-8 rounded shadow-lg">
+    <h1 class="text-3xl font-bold mb-6">Create Tour Package Quote</h1>
 
-        <div class="mb-4">
-            <label class="block mb-2">Package Name</label>
-            <input x-model="name" type="text" class="w-full p-2 border rounded">
-        </div>
-
-        <div class="mb-4">
-            <label class="block mb-2">Customer Name</label>
-            <input x-model="customerName" type="text" class="w-full p-2 border rounded">
-        </div>
-
-        <template x-for="(day, dayIndex) in days" :key="dayIndex">
-            <div class="border p-4 mb-4 rounded">
-                <h2 class="text-xl font-semibold mb-2" x-text="`Day ${dayIndex + 1}`"></h2>
-
-                <div class="mb-2">
-                    <label class="block mb-1">Date</label>
-                    <input x-model="day.date" type="date" class="w-full p-2 border rounded">
-                </div>
-
-                <div class="mb-2">
-                    <label class="block mb-1">City</label>
-                    <select x-model="day.city" @change="updateCityServices(dayIndex)" class="w-full p-2 border rounded">
-                        <option value="">Select City</option>
-                        {% for city in cities %}
-                            <option value="{{ city.id }}">{{ city.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="mb-2">
-                    <label class="block mb-1">Hotel</label>
-                    <select x-model="day.hotel" class="w-full p-2 border rounded">
-                        <option value="">Select Hotel</option>
-                        <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
-                            <option :value="hotel.id" x-text="hotel.name"></option>
-                        </template>
-                    </select>
-                </div>
-
-                <!-- Services Section -->
-            <div class="mb-4">
-                <h3 class="text-lg font-semibold mb-2">Services</h3>
-                <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
-                    <div class="flex items-center mb-2">
-                        <select x-model="service.type" @change="service.name = ''" class="w-1/4 border rounded px-3 py-2 mr-2">
-                            <option value="">Select Service Type</option>
-                            <option value="transfer" :selected="service.type == 'transfer'">Transfer</option>
-                            <option value="tour" :selected="service.type == 'tour'">Tour</option>
-                        </select>
-
-                        <select x-model="service.name" @change="updateService(dayIndex, serviceIndex)" class="w-1/2 border rounded px-3 py-2 mr-2">
-                            <option value="">Select Service</option>
-                            <template x-for="option in getServiceNames(dayIndex, service.type)" :key="option.id">
-                                <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="service.name == option.id"></option>
-                            </template>
-                        </select>
-
-                        <!-- Show price_at_booking -->
-                        <span x-text="`${service.price_at_booking || service.price} USD`"></span>
-
-                        <button @click="removeService(dayIndex, serviceIndex)" class="bg-red-500 text-white px-3 py-2 rounded">Remove</button>
-                    </div>
-                </template>
-                <button @click="addService(dayIndex)" class="bg-blue-500 text-white px-4 py-2 rounded">Add Service</button>
-            </div>
-
-                <div class="mb-4">
-                    <h3 class="text-lg font-semibold mb-2">Guide Services</h3>
-                    <template x-for="(guide, guideIndex) in day.guideServices" :key="guideIndex">
-                        <div class="flex items-center mb-2">
-                            <select x-model="guide.name" @change="calculateTotalCost()" class="flex-grow p-2 border rounded mr-2">
-                                <option value="">Select Guide Service</option>
-                                <template x-for="guideService in guideServices" :key="guideService.id">
-                                    <option :value="guideService.id" x-text="`${guideService.name} (${guideService.price} USD)`"></option>
-                                </template>
-                            </select>
-                            <button @click="removeGuideService(dayIndex, guideIndex)" class="bg-red-500 text-white px-2 py-1 rounded">Remove</button>
-                        </div>
-                    </template>
-                    <button @click="addGuideService(dayIndex)" class="bg-blue-500 text-white px-4 py-2 rounded">Add Guide Service</button>
-                </div>
-
-                <button @click="removeDay(dayIndex)" class="bg-red-500 text-white px-4 py-2 rounded">Remove Day</button>
-            </div>
-        </template>
-
-        <button @click="addDay" class="bg-blue-500 text-white px-4 py-2 rounded mb-4">Add Day</button>
-
-
-
-        <div class="mb-4">
-            <h3 class="text-lg font-semibold mb-2">Hotel Costs</h3>
-            <template x-for="(hotelCost, index) in hotelCosts" :key="index">
-                <div class="flex items-center mb-2">
-                    <input x-model="hotelCost.name" type="text" placeholder="Hotel Name" class="flex-grow p-2 border rounded mr-2" />
-                    <input x-model="hotelCost.type" type="text" placeholder="Hotel Type" class="flex-grow p-2 border rounded mr-2" />
-                    <input x-model="hotelCost.room" type="number" placeholder="Rooms" class="w-20 p-2 border rounded mr-2" />
-                    <input x-model="hotelCost.nights" type="number" placeholder="Nights" class="w-20 p-2 border rounded mr-2" />
-                    <input x-model="hotelCost.price" type="number" placeholder="Price" class="w-24 p-2 border rounded mr-2" />
-                    <span x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'" class="w-24 text-right"></span>
-                    <button @click="removeHotelCost(index)" class="bg-red-500 text-white px-2 py-1 rounded ml-2">Remove</button>
-                </div>
-            </template>
-            <button @click="addHotelCost" class="bg-blue-500 text-white px-4 py-2 rounded">Add Hotel Cost</button>
-        </div>
-
-        <div class="mt-6">
-            <h3 class="text-lg font-bold">Grand Total Cost: <span x-text="calculateGrandTotal() + ' USD'"></span></h3>
-        </div>
-
-        <button @click="saveTourPackage" class="bg-green-500 text-white px-4 py-2 rounded">Save Tour Package</button>
+    <div class="mb-4">
+        <label for="package-name" class="block text-sm font-medium text-gray-700">Package Name</label>
+        <input type="text" id="package-name" x-model="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
     </div>
 
-    {% endblock %}
+    <div class="mb-4">
+        <label for="customer-name" class="block text-sm font-medium text-gray-700">Customer Name</label>
+        <input type="text" id="customer-name" x-model="customerName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+    </div>
 
+    <template x-for="(day, dayIndex) in days" :key="dayIndex">
+        <div class="border p-4 mb-4 rounded">
+            <h2 class="text-xl font-semibold mb-2" x-text="`Day ${dayIndex + 1}`"></h2>
 
+            <div class="mb-2">
+                <label :for="'date-' + dayIndex" class="block text-sm font-medium text-gray-700">Date</label>
+                <input type="date" :id="'date-' + dayIndex" x-model="day.date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            </div>
+
+            <div class="mb-2">
+                <label :for="'city-' + dayIndex" class="block text-sm font-medium text-gray-700">City</label>
+                <select :id="'city-' + dayIndex" x-model="day.city" @change="updateCityServices(dayIndex)" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <option value="">Select City</option>
+                    {% for city in cities %}
+                        <option value="{{ city.id }}">{{ city.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-2">
+                <label :for="'hotel-' + dayIndex" class="block text-sm font-medium text-gray-700">Hotel</label>
+                <select :id="'hotel-' + dayIndex" x-model="day.hotel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <option value="">Select Hotel</option>
+                    <template x-for="hotel in day.cityServices.hotels">
+                        <option :value="hotel.id" x-text="hotel.name"></option>
+                    </template>
+                </select>
+            </div>
+
+            <h3 class="text-lg font-semibold mb-2">Services</h3>
+            <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
+                <div class="flex items-center mb-2">
+                    <select x-model="service.type" @change="service.name = ''; updateService(dayIndex, serviceIndex)" class="mr-2 p-2 border rounded">
+                        <option value="">Select Service Type</option>
+                        <option value="transfer">Transfer</option>
+                        <option value="tour">Tour</option>
+                    </select>
+                    <select x-model="service.name" @change="updateService(dayIndex, serviceIndex)" class="mr-2 p-2 border rounded">
+                        <option value="">Select Service</option>
+                        <template x-for="option in getServiceNames(dayIndex, service.type)">
+                            <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`"></option>
+                        </template>
+                    </select>
+                    <span x-text="`${service.price_at_booking || service.price} USD`" class="ml-2"></span>
+                    <button @click="removeService(dayIndex, serviceIndex)" class="ml-2 text-red-600">Remove</button>
+                </div>
+            </template>
+            <button @click="addService(dayIndex)" class="mt-2 bg-blue-500 text-white px-2 py-1 rounded">Add Service</button>
+
+            <h3 class="text-lg font-semibold mb-2 mt-4">Guide Services</h3>
+            <template x-for="(guideService, guideIndex) in day.guideServices" :key="guideIndex">
+                <div class="flex items-center mb-2">
+                    <select x-model="guideService.name" @change="updateGuideService(dayIndex, guideIndex)" class="mr-2 p-2 border rounded">
+                        <option value="">Select Guide Service</option>
+                        <template x-for="gs in guideServices">
+                            <option :value="gs.id" x-text="`${gs.name} (${gs.price} USD)`"></option>
+                        </template>
+                    </select>
+                    <span x-text="`${guideService.price} USD`" class="ml-2"></span>
+                    <button @click="removeGuideService(dayIndex, guideIndex)" class="ml-2 text-red-600">Remove</button>
+                </div>
+            </template>
+            <button @click="addGuideService(dayIndex)" class="mt-2 bg-blue-500 text-white px-2 py-1 rounded">Add Guide Service</button>
+
+            <button @click="removeDay(dayIndex)" class="mt-4 bg-red-500 text-white px-2 py-1 rounded">Remove Day</button>
+        </div>
+    </template>
+
+    <button @click="addDay" class="mb-4 bg-green-500 text-white px-2 py-1 rounded">Add Day</button>
+
+    <h3 class="text-lg font-semibold mb-2">Hotel Costs</h3>
+    <template x-for="(hotelCost, index) in hotelCosts" :key="index">
+        <div class="flex items-center mb-2">
+            <input type="text" x-model="hotelCost.name" placeholder="Hotel Name" class="mr-2 p-2 border rounded">
+            <input type="text" x-model="hotelCost.type" placeholder="Room Type" class="mr-2 p-2 border rounded">
+            <input type="number" x-model="hotelCost.room" placeholder="Rooms" class="mr-2 p-2 border rounded w-20">
+            <input type="number" x-model="hotelCost.nights" placeholder="Nights" class="mr-2 p-2 border rounded w-20">
+            <input type="number" x-model="hotelCost.price" placeholder="Price" class="mr-2 p-2 border rounded w-24">
+            <span class="w-24 text-right" x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'"></span>
+            <button @click="removeHotelCost(index)" class="ml-2 text-red-600">Remove</button>
+        </div>
+    </template>
+    <button @click="addHotelCost" class="mt-2 bg-blue-500 text-white px-2 py-1 rounded">Add Hotel Cost</button>
+
+    <div class="mt-4">
+        <h3 class="text-lg font-semibold">Grand Total Cost: <span x-text="calculateGrandTotal() + ' USD'"></span></h3>
+    </div>
+
+    <button @click="saveTourPackage" class="mt-4 bg-indigo-500 text-white px-4 py-2 rounded">Create Quote</button>
+</div>
+{% endblock %}

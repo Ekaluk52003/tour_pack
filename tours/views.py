@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.core.serializers.json import DjangoJSONEncoder
 from weasyprint import HTML, CSS
 from django.template.loader import render_to_string
-
+from decimal import Decimal
 
 def calculate_grand_total(package):
     service_total = sum(
@@ -23,11 +23,11 @@ def calculate_grand_total(package):
 
     # Assuming hotel costs are stored in the package as JSON (as in your earlier design)
     hotel_total = sum(
-        float(cost['price']) * int(cost['room']) * int(cost['nights']) for cost in package.hotel_costs
+        Decimal(cost['price']) * int(cost['room']) * int(cost['nights']) for cost in package.hotel_costs
     )
-
     # Combine all totals for grand total
-    grand_total = service_total + guide_service_total + hotel_total
+    grand_total = Decimal(service_total) + guide_service_total + hotel_total
+    
     return grand_total
 
 

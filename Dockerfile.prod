@@ -35,4 +35,4 @@ RUN chmod +x /app/entrypoint.prod.sh
 
 COPY . .
 
-ENTRYPOINT ["/code/entrypoint.prod.sh"]
+ENTRYPOINT ["/app/entrypoint.prod.sh"]

@@ -3,9 +3,9 @@
 tour.smartflow.pw {
     reverse_proxy web:8080
     file_server /static/* {
-        root /code/static
+        root /app/static
     }
     file_server /media/* {
-        root /code/media
+        root /app/media
     }
 }

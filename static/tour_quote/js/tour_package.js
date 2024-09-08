@@ -19,6 +19,7 @@ window.tourPackage = function() {
     return {
         name: '',
         customerName: '',
+        remark: '', 
         days: [{
             date: '',
             city: '',
@@ -154,7 +155,7 @@ window.tourPackage = function() {
             const serviceGrandTotal = serviceTotal + guideServiceTotal;
             const hotelGrandTotal = hotelTotal;
             const grandTotal = serviceTotal + guideServiceTotal + hotelTotal;
-            
+
             return {
                 serviceGrandTotal: serviceGrandTotal.toFixed(2),
                 hotelGrandTotal: hotelGrandTotal.toFixed(2),
@@ -322,6 +323,7 @@ window.tourPackage = function() {
             const data = {
                 name: this.name,
                 customer_name: this.customerName,
+                remark: this.remark,
                 days: this.days.map(day => ({
                     date: day.date,
                     city: day.city,

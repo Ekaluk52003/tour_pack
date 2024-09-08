@@ -4,6 +4,7 @@
 <div class="container mx-auto px-4">
     <h1 class="text-2xl font-bold mb-4">{{ package.name }}</h1>
     <p class="mb-2"><strong>Customer:</strong> {{ package.customer_name }}</p>
+    <p class="mb-2"><strong>Remark:</strong> {{ package.remark }}</p>
     <p class="mb-4"><strong>Created:</strong> {{ package.created_at|date:"Y-m-d H:i" }}</p>
 
     {% for day in package.tour_days.all %}
@@ -21,6 +22,8 @@
             {% endfor %}
         </ul>
 
+        <!-- Only show Guide Services if there are any -->
+        {% if day.guide_services.all %}
         <h3 class="text-lg font-semibold mt-2 mb-1">Guide Services:</h3>
         <ul class="list-disc pl-5">
             {% for guide_service in day.guide_services.all %}
@@ -29,8 +32,14 @@
             </li>
             {% endfor %}
         </ul>
+        {% endif %}
+
     </div>
     {% endfor %}
+
+    <div class="my-12">
+        <h2 class="text-xl font-semibold">Total Service Cost: {{ package.service_grand_total }} USD</h2>
+    </div>
 
     <!-- Display Hotel Costs -->
     {% if hotel_costs_with_total %}
@@ -47,11 +56,14 @@
             </li>
             {% endfor %}
         </ul>
+        <div class="mt-4">
+            <h2 class="text-xl font-semibold">Total Hotel Cost: {{ package.hotel_grand_total }} USD</h2>
+        </div>
     </div>
     {% endif %}
 
     <!-- Grand Total -->
-    <div class="mt-4">
+    <div class="my-12">
         <h2 class="text-xl font-semibold">Grand Total Cost: {{ package.grand_total_cost }} USD</h2>
     </div>
 
@@ -61,8 +73,7 @@
 
     <div class="block my-4">
         <a href="{% url 'tour_package_pdf' package.id %}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded">Print PDF</a>
-
-</div>
+    </div>
 
 </div>
 {% endblock %}

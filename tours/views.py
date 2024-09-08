@@ -44,13 +44,15 @@ def save_tour_package(request, package_id=None):
         package = get_object_or_404(TourPackageQuote, id=package_id)
         package.name = data['name']
         package.customer_name = data['customer_name']
+        package.remark = data.get('remark', '')  # Update remark
         package.save()
         package.tour_days.all().delete()  # Remove existing tour days to recreate them
     else:
         # Create a new package if package_id is None
         package = TourPackageQuote.objects.create(
             name=data['name'],
-            customer_name=data['customer_name']
+            customer_name=data['customer_name'],
+            remark=data.get('remark', '')  # Set remark for new package
         )
 
     for day_data in data['days']:

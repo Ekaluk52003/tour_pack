@@ -151,8 +151,15 @@ window.tourPackage = function() {
                 hotelTotal += room * nights * price;
             });
 
+            const serviceGrandTotal = serviceTotal + guideServiceTotal;
+            const hotelGrandTotal = hotelTotal;
             const grandTotal = serviceTotal + guideServiceTotal + hotelTotal;
-            return grandTotal.toFixed(2);
+            
+            return {
+                serviceGrandTotal: serviceGrandTotal.toFixed(2),
+                hotelGrandTotal: hotelGrandTotal.toFixed(2),
+                grandTotal: grandTotal.toFixed(2)
+            };
         },
 
 

@@ -11,7 +11,7 @@ from weasyprint import HTML, CSS
 from django.template.loader import render_to_string
 from decimal import Decimal
 
-def calculate_grand_total(package):
+def calculate_totals(package):
     service_total = sum(
         service.price_at_booking for day in package.tour_days.all() for service in day.services.all()
     )
@@ -26,9 +26,82 @@ def calculate_grand_total(package):
         Decimal(cost['price']) * int(cost['room']) * int(cost['nights']) for cost in package.hotel_costs
     )
     # Combine all totals for grand total
+
+    # Calculate grand totals
+    service_grand_total = Decimal(service_total) + guide_service_total
+    hotel_grand_total = Decimal(hotel_total)
+
     grand_total = Decimal(service_total) + guide_service_total + hotel_total
 
-    return grand_total
+
+    return service_grand_total, hotel_grand_total, grand_total
+
+def save_tour_package(request, package_id=None):
+    data = json.loads(request.body)
+
+    # If package_id is provided, update the existing package
+    if package_id:
+        package = get_object_or_404(TourPackageQuote, id=package_id)
+        package.name = data['name']
+        package.customer_name = data['customer_name']
+        package.save()
+        package.tour_days.all().delete()  # Remove existing tour days to recreate them
+    else:
+        # Create a new package if package_id is None
+        package = TourPackageQuote.objects.create(
+            name=data['name'],
+            customer_name=data['customer_name']
+        )
+
+    for day_data in data['days']:
+        hotel_id = day_data.get('hotel')
+        if not hotel_id:
+            return JsonResponse({'error': 'Hotel is required for each tour day.'}, status=400)
+
+        tour_day = TourDay.objects.create(
+            tour_package=package,
+            date=day_data['date'],
+            city_id=day_data['city'],
+            hotel_id=hotel_id
+        )
+
+        # Handle services with price_at_booking
+        for service_data in day_data['services']:
+            service = Service.objects.get(id=service_data['name'])
+            TourDayService.objects.create(
+                tour_day=tour_day,
+                service=service,
+                # Retain price_at_booking if provided, otherwise, store the current service price
+                price_at_booking=service_data.get('price_at_booking', service.price)
+            )
+
+        # Handle guide services with price_at_booking
+        for guide_service_data in day_data['guide_services']:
+            guide_service = GuideService.objects.get(id=guide_service_data['name'])
+            TourDayGuideService.objects.create(
+                tour_day=tour_day,
+                guide_service=guide_service,
+                # Retain price_at_booking if provided, otherwise, store the current guide service price
+                price_at_booking=guide_service_data.get('price_at_booking', guide_service.price)
+            )
+
+    # Handle hotel costs
+    package.hotel_costs = data.get('hotelCosts', [])
+
+
+     # Calculate totals
+    service_grand_total, hotel_grand_total, grand_total_cost = calculate_totals(package)
+
+    # Save the grand total cost
+    package.service_grand_total = service_grand_total
+    package.hotel_grand_total = hotel_grand_total
+    package.grand_total_cost = grand_total_cost
+    package.save()
+
+    return JsonResponse({
+        'status': 'success',
+        'redirect_url': reverse('tour_package_detail', args=[package.id])
+    })
 
 
 def tour_package_pdf(request, pk):
@@ -191,70 +264,6 @@ def get_city_services(request, city_id):
     })
 
 
-def save_tour_package(request, package_id=None):
-    data = json.loads(request.body)
-
-    # If package_id is provided, update the existing package
-    if package_id:
-        package = get_object_or_404(TourPackageQuote, id=package_id)
-        package.name = data['name']
-        package.customer_name = data['customer_name']
-        package.save()
-        package.tour_days.all().delete()  # Remove existing tour days to recreate them
-    else:
-        # Create a new package if package_id is None
-        package = TourPackageQuote.objects.create(
-            name=data['name'],
-            customer_name=data['customer_name']
-        )
-
-    for day_data in data['days']:
-        hotel_id = day_data.get('hotel')
-        if not hotel_id:
-            return JsonResponse({'error': 'Hotel is required for each tour day.'}, status=400)
-
-        tour_day = TourDay.objects.create(
-            tour_package=package,
-            date=day_data['date'],
-            city_id=day_data['city'],
-            hotel_id=hotel_id
-        )
-
-        # Handle services with price_at_booking
-        for service_data in day_data['services']:
-            service = Service.objects.get(id=service_data['name'])
-            TourDayService.objects.create(
-                tour_day=tour_day,
-                service=service,
-                # Retain price_at_booking if provided, otherwise, store the current service price
-                price_at_booking=service_data.get('price_at_booking', service.price)
-            )
-
-        # Handle guide services with price_at_booking
-        for guide_service_data in day_data['guide_services']:
-            guide_service = GuideService.objects.get(id=guide_service_data['name'])
-            TourDayGuideService.objects.create(
-                tour_day=tour_day,
-                guide_service=guide_service,
-                # Retain price_at_booking if provided, otherwise, store the current guide service price
-                price_at_booking=guide_service_data.get('price_at_booking', guide_service.price)
-            )
-
-    # Handle hotel costs
-    package.hotel_costs = data.get('hotelCosts', [])
-
-    # Calculate the grand total
-    grand_total_cost = calculate_grand_total(package)
-
-    # Save the grand total cost
-    package.grand_total_cost = grand_total_cost
-    package.save()
-
-    return JsonResponse({
-        'status': 'success',
-        'redirect_url': reverse('tour_package_detail', args=[package.id])
-    })
-
 
 from django.core.paginator import Paginator
 from django.shortcuts import render
@@ -272,7 +281,7 @@ def tour_packages(request):
     # Pagination: Show 10 packages per page
 
     packages = packages.order_by('-created_at')
-    
+
     paginator = Paginator(packages, 10)
     page_number = request.GET.get('page')
     packages_page = paginator.get_page(page_number)

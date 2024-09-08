@@ -167,7 +167,11 @@
           </svg>
           Add Day
         </button>
-      </div>
+    </div>
+
+      <div class="mt-4">
+        <h3 class="text-lg font-semibold">Service Grand Total: <span x-text="calculateGrandTotal().serviceGrandTotal + ' USD'"></span></h3>
+    </div>
 
     <h3 class="text-lg font-semibold mb-2">Hotel Costs</h3>
     <template x-for="(hotelCost, index) in hotelCosts" :key="index">
@@ -181,10 +185,11 @@
             <button @click="removeHotelCost(index)" class="ml-2 text-red-600">Remove</button>
         </div>
     </template>
+    <h3 class="text-lg font-semibold">Hotel Grand Total: <span x-text="calculateGrandTotal().hotelGrandTotal + ' USD'"></span></h3>
     <button @click="addHotelCost" class="mt-2 bg-blue-500 text-white px-2 py-1 rounded">Add Hotel Cost</button>
 
     <div class="mt-4">
-        <h3 class="text-lg font-semibold">Grand Total Cost: <span x-text="calculateGrandTotal() + ' USD'"></span></h3>
+        <h3 class="text-lg font-semibold">Grand Total Cost: <span x-text="calculateGrandTotal().grandTotal + ' USD'"></span></h3>
     </div>
 
     <button @click="saveTourPackage" class="mt-4 bg-indigo-500 text-white px-4 py-2 rounded">Create Quote</button>

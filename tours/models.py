@@ -44,6 +44,10 @@ class TourPackageQuote(models.Model):
     hotel_costs = models.JSONField(default=list)
     grand_total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
+    # New fields for totals
+    service_grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    hotel_grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
     def __str__(self):
         return f"{self.name} - {self.customer_name}"
 

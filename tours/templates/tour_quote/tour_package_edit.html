@@ -179,6 +179,10 @@ x-init="
     </button>
   </div>
 
+  <div class="my-4">
+    <h3 class="text-lg font-semibold">Service Grand Total: <span x-text="calculateGrandTotal().serviceGrandTotal + ' USD'"></span></h3>
+</div>
+
   <!-- Hotel costs and grand total -->
   <div class="mb-4">
     <h3 class="text-lg font-semibold mb-2">Hotel Costs</h3>
@@ -193,13 +197,16 @@ x-init="
         <button @click="removeHotelCost(index)" class="bg-red-500 text-white px-2 py-1 rounded ml-2">Remove</button>
       </div>
     </template>
+    <div class="my-4">
+    <h3 class="text-lg font-semibold">Hotel Grand Total: <span x-text="calculateGrandTotal().hotelGrandTotal + ' USD'"></span></h3>
+  </div>
     <button @click="addHotelCost" class="bg-blue-500 text-white px-4 py-2 rounded">Add Hotel Cost</button>
   </div>
 
 
-  <div class="mt-4">
-    <h3 class="text-lg font-semibold">Grand Total Cost: <span x-text="calculateGrandTotal() + ' USD'"></span></h3>
-  </div>
+  <div class="mb-4 mt-8">
+    <h3 class="text-lg font-semibold">Grand Total Cost: <span x-text="calculateGrandTotal().grandTotal + ' USD'"></span></h3>
+</div>
 
   <button @click="saveTourPackage" class="bg-green-500 text-white px-3 py-2 rounded mt-4">Save Changes</button>
 

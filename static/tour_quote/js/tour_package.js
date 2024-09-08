@@ -34,7 +34,7 @@ window.tourPackage = function() {
         guideServices: [],
         hotelCosts: [],  // Array to manage hotel costs
         packageId: null,  // This will hold the package ID for updates
-
+        draggingIndex: null,
         // Initialize the form with existing data for editing
         initEditForm(existingData) {
             console.log("initEditForm called with data:", existingData);
@@ -94,14 +94,14 @@ window.tourPackage = function() {
 
             if (selectedGuideService) {
                 guideService.price = parseFloat(selectedGuideService.price);
-                if (!guideService.price_at_booking) {
-                    guideService.price_at_booking = guideService.price;
-                }
+                // if (!guideService.price_at_booking) {
+                //     guideService.price_at_booking = guideService.price;
+                // }
                 console.log('Updated guide service:', guideService);  // Debugging line
             } else {
                 guideService.price = 0;
-                guideService.price_at_booking = 0;
-                console.log('Reset guide service prices to 0');  // Debugging line
+                // guideService.price_at_booking = 0;
+                // console.log('Reset guide service prices to 0');  // Debugging line
             }
         },
         updateService(dayIndex, serviceIndex) {
@@ -111,12 +111,12 @@ window.tourPackage = function() {
 
             if (selectedService) {
                 service.price = parseFloat(selectedService.price) || 0;
-                if (!service.price_at_booking) {
-                    service.price_at_booking = service.price;
-                }
+                // if (!service.price_at_booking) {
+                //     service.price_at_booking = service.price;
+                // }
             } else {
                 service.price = 0;
-                service.price_at_booking = 0;
+                // service.price_at_booking = 0;
             }
         },
 
@@ -155,9 +155,9 @@ window.tourPackage = function() {
             return grandTotal.toFixed(2);
         },
 
-        // Add a new day
-        addDay() {
-            this.days.push({
+
+        insertDayAbove(index) {
+            const newDay = {
                 date: '',
                 city: '',
                 hotel: '',
@@ -167,7 +167,23 @@ window.tourPackage = function() {
                     hotels: [],
                     service_types: []
                 }
-            });
+            };
+            this.days.splice(index, 0, newDay);
+        },
+
+        insertDayBelow(index) {
+            const newDay = {
+                date: '',
+                city: '',
+                hotel: '',
+                services: [],
+                guideServices: [],
+                cityServices: {
+                    hotels: [],
+                    service_types: []
+                }
+            };
+            this.days.splice(index + 1, 0, newDay);
         },
 
         // Remove a day by index
@@ -247,6 +263,53 @@ window.tourPackage = function() {
             return [];
         },
 
+
+
+
+
+        dragStart(event, index) {
+            this.draggingIndex = index;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', index);
+
+            // Create a custom drag image
+            let dragGhost = event.target.cloneNode(true);
+            dragGhost.classList.add('drag-ghost');
+            dragGhost.style.position = 'absolute';
+            dragGhost.style.top = '-1000px';
+            document.body.appendChild(dragGhost);
+            event.dataTransfer.setDragImage(dragGhost, 20, 20);
+
+            // Remove the ghost element after the drag operation
+            setTimeout(() => {
+                document.body.removeChild(dragGhost);
+            }, 0);
+        },
+        dragEnd(event) {
+            this.draggingIndex = null;
+            document.querySelectorAll('.day-container').forEach(el => {
+                el.classList.remove('drop-zone-active');
+            });
+        },
+
+        drop(event, index) {
+            event.preventDefault();
+            const fromIndex = parseInt(event.dataTransfer.getData('text/plain'));
+            const toIndex = index;
+
+            if (fromIndex !== toIndex) {
+                const movedDay = this.days.splice(fromIndex, 1)[0];
+                this.days.splice(toIndex, 0, movedDay);
+                this.updateDayNumbers();
+            }
+
+            this.draggingIndex = null;
+            document.querySelectorAll('.day-container').forEach(el => {
+                el.classList.remove('drop-zone-active');
+            });
+        },
+
+
         // Save the tour package data to the backend
         saveTourPackage() {
             const data = {
@@ -259,11 +322,11 @@ window.tourPackage = function() {
                     services: day.services.map(service => ({
                         type: service.type,
                         name: service.name,
-                        price_at_booking: service.price_at_booking || service.price
+                        price_at_booking: service.price
                     })),
                     guide_services: day.guideServices.map(gs => ({
                         name: gs.name,  // ID of the guide service
-                        price_at_booking: gs.price_at_booking || gs.price
+                        price_at_booking: gs.price
                     }))
                 })),
                 hotelCosts: this.hotelCosts,
@@ -292,4 +355,4 @@ window.tourPackage = function() {
             });
         }
     };
-}
+  }

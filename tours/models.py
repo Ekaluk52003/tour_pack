@@ -1,6 +1,11 @@
 # tour_quote/models.py
 
 from django.db import models
+from django.utils import timezone
+from django.db import transaction
+from django.dispatch import receiver
+from django.db.models.signals import post_save
+from django.db.utils import IntegrityError
 
 class City(models.Model):
     name = models.CharField(max_length=100)
@@ -37,6 +42,26 @@ class GuideService(models.Model):
     def __str__(self):
         return self.name
 
+
+class ReferenceID(models.Model):
+    year = models.IntegerField()
+    last_number = models.IntegerField(default=0)
+
+    @classmethod
+    def get_next_reference(cls):
+        from datetime import datetime
+        current_year = int(datetime.now().year % 100)  # Get last two digits of current year
+
+        # Get or create reference for the current year
+        reference, created = cls.objects.get_or_create(year=current_year)
+
+        # Increment the last number and format it
+        reference.last_number += 1
+        reference.save()
+
+        # Return the new reference in the format YYNNN
+        return f"{str(current_year).zfill(2)}{str(reference.last_number).zfill(3)}"
+
 class TourPackageQuote(models.Model):
     name = models.CharField(max_length=200)
     customer_name = models.CharField(max_length=100)
@@ -49,8 +74,16 @@ class TourPackageQuote(models.Model):
     hotel_grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     remark = models.TextField(blank=True, null=True)
 
+    package_reference = models.CharField(max_length=5, unique=True, blank=True, null=True)
+
     def __str__(self):
         return f"{self.name} - {self.customer_name}"
+
+    def save(self, *args, **kwargs):
+        if not self.package_reference:
+            # Fetch the reference from the Reference table (explained below)
+            self.package_reference = ReferenceID.get_next_reference()
+        super().save(*args, **kwargs)
 
 class TourDay(models.Model):
     tour_package = models.ForeignKey(TourPackageQuote, on_delete=models.CASCADE, related_name='tour_days')
@@ -97,3 +130,5 @@ class PredefinedPackageDay(models.Model):
 
     def __str__(self):
         return f"{self.predefined_package.name} - Day {self.id}"
+
+

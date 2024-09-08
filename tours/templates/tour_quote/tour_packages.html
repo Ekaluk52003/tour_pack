@@ -17,6 +17,7 @@
         <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
             <thead>
                 <tr class="bg-blue-500 text-white">
+                    <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Reference</th>
                     <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Name</th>
                     <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Customer</th>
                     <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Created At</th>
@@ -26,6 +27,7 @@
             <tbody class="bg-white divide-y divide-gray-200">
                 {% for package in packages %}
                 <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ package.package_reference }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ package.name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ package.customer_name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ package.created_at|date:"Y-m-d H:i" }}</td>

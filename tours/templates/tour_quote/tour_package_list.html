@@ -6,6 +6,7 @@
     <table class="w-full border-collapse border border-gray-300">
         <thead>
             <tr class="bg-gray-100">
+                <th class="border border-gray-300 px-4 py-2">Reference</th>
                 <th class="border border-gray-300 px-4 py-2">Name</th>
                 <th class="border border-gray-300 px-4 py-2">Customer</th>
                 <th class="border border-gray-300 px-4 py-2">Created At</th>
@@ -15,6 +16,7 @@
         <tbody>
             {% for package in packages %}
             <tr>
+                <td class="border border-gray-300 px-4 py-2">{{ package.package_reference }}</td>
                 <td class="border border-gray-300 px-4 py-2">{{ package.name }}</td>
                 <td class="border border-gray-300 px-4 py-2">{{ package.customer_name }}</td>
                 <td class="border border-gray-300 px-4 py-2">{{ package.created_at|date:"Y-m-d H:i" }}</td>

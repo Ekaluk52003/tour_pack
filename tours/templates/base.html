@@ -6,6 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Tour Package System{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Style for input fields */
+        input[type="text"],
+        input[type="password"],
+        input[type="email"] {
+            @apply w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500;
+        }
+
+        /* Style for labels */
+        label {
+            @apply block mb-2 text-sm font-bold text-gray-700;
+        }
+
+        /* Style for error messages */
+        .errorlist {
+            @apply text-red-500 text-xs italic mt-1;
+        }
+    </style>
+
     <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
 
     {% block extra_head %}{% endblock %}
@@ -41,6 +60,13 @@
     <footer class="bg-gray-800 text-white py-4">
         <div class="container mx-auto px-6 text-center">
             <p>&copy; {% now "Y" %} Tour Package System. All rights reserved.</p>
+            {% if user.is_authenticated %}
+                <span>Welcome, {{ user.username }}</span>
+                <a href="{% url 'account_logout' %}">Logout</a>
+            {% else %}
+                <a href="{% url 'account_login' %}">Login</a>
+                <a href="{% url 'account_signup' %}">Sign Up</a>
+            {% endif %}
         </div>
     </footer>
 

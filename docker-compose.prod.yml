@@ -1,0 +1,61 @@
+version: '3.9'
+
+services:
+  web:
+    build:
+        context: .
+        dockerfile: Dockerfile.prod
+    command: gunicorn django_project.wsgi:application --bind 0.0.0.0:8000
+    expose:
+      - 8000
+    volumes:
+      # - static_volume:/code/static
+      - static_volume:/code/staticfiles
+      - media_volume:/code/media
+    env_file:
+      - .env.prod
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env.prod.db
+
+  redis:
+    image: redis:7.0.10-alpine
+
+  celery:
+    build: .
+    command: celery -A django_project worker --loglevel=info
+    env_file:
+      - .env.prod
+    depends_on:
+      - db
+      - redis
+      - web
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+
+  postgres_data:
+  Caddyfile:
+  caddy_data:
+  caddy_config:
+  static_volume:
+  media_volume:
+

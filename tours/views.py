@@ -2,7 +2,7 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
-from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedPackage
+from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedPackage, ReferenceID
 import json
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
@@ -10,6 +10,11 @@ from django.core.serializers.json import DjangoJSONEncoder
 from weasyprint import HTML, CSS
 from django.template.loader import render_to_string
 from decimal import Decimal
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.core.paginator import Paginator
+from django.db import transaction
 
 def calculate_totals(package):
     service_total = sum(
@@ -36,6 +41,7 @@ def calculate_totals(package):
 
     return service_grand_total, hotel_grand_total, grand_total
 
+@login_required
 def save_tour_package(request, package_id=None):
     data = json.loads(request.body)
     errors = {}
@@ -63,59 +69,72 @@ def save_tour_package(request, package_id=None):
     if errors:
         return JsonResponse({'status': 'error', 'errors': errors}, status=400)
 
-    # If no errors, proceed with saving the package
+    # Proceed with saving the package
     try:
-        if package_id:
-            package = get_object_or_404(TourPackageQuote, id=package_id)
-            package.name = data['name']
-            package.customer_name = data['customer_name']
-            package.remark = data.get('remark', '')
+        with transaction.atomic():
+            if package_id:
+                # Update existing package
+                package = get_object_or_404(TourPackageQuote, id=package_id)
+                package.name = data['name']
+                package.customer_name = data['customer_name']
+                package.remark = data.get('remark', '')
+                package.tour_days.all().delete()  # Remove existing tour days to recreate them
+            else:
+                # Create new package
+                package = TourPackageQuote.objects.create(
+                    name=data['name'],
+                    customer_name=data['customer_name'],
+                    remark=data.get('remark', '')
+                )
+                # Generate package_reference if not provided
+                if not package.package_reference:
+                    package.package_reference = ReferenceID.get_next_reference()
+                package.save()
+
+            # Create Tour Days
+            for day_data in data['days']:
+                tour_day = TourDay.objects.create(
+                    tour_package=package,
+                    date=day_data['date'],
+                    city_id=day_data['city'],
+                    hotel_id=day_data['hotel']
+                )
+
+                # Handle services
+                for service_data in day_data['services']:
+                    try:
+                        service = Service.objects.get(id=service_data['name'])
+                        TourDayService.objects.create(
+                            tour_day=tour_day,
+                            service=service,
+                            price_at_booking=service_data.get('price_at_booking', service.price)
+                        )
+                    except Service.DoesNotExist:
+                        return JsonResponse({'status': 'error', 'message': 'Service not found'}, status=400)
+
+                # Handle guide services
+                for guide_service_data in day_data['guide_services']:
+                    try:
+                        guide_service = GuideService.objects.get(id=guide_service_data['name'])
+                        TourDayGuideService.objects.create(
+                            tour_day=tour_day,
+                            guide_service=guide_service,
+                            price_at_booking=guide_service_data.get('price_at_booking', guide_service.price)
+                        )
+                    except GuideService.DoesNotExist:
+                        return JsonResponse({'status': 'error', 'message': 'Guide Service not found'}, status=400)
+
+            # Handle hotel costs
+            package.hotel_costs = data.get('hotelCosts', [])
+
+            # Calculate totals
+            service_grand_total, hotel_grand_total, grand_total_cost = calculate_totals(package)
+
+            # Save grand totals
+            package.service_grand_total = service_grand_total
+            package.hotel_grand_total = hotel_grand_total
+            package.grand_total_cost = grand_total_cost
             package.save()
-            package.tour_days.all().delete()  # Remove existing tour days to recreate them
-        else:
-            package = TourPackageQuote.objects.create(
-                name=data['name'],
-                customer_name=data['customer_name'],
-                remark=data.get('remark', '')
-            )
-
-        for day_data in data['days']:
-            tour_day = TourDay.objects.create(
-                tour_package=package,
-                date=day_data['date'],
-                city_id=day_data['city'],
-                hotel_id=day_data['hotel']
-            )
-
-            # Handle services with price_at_booking
-            for service_data in day_data['services']:
-                service = Service.objects.get(id=service_data['name'])
-                TourDayService.objects.create(
-                    tour_day=tour_day,
-                    service=service,
-                    price_at_booking=service_data.get('price_at_booking', service.price)
-                )
-
-            # Handle guide services with price_at_booking
-            for guide_service_data in day_data['guide_services']:
-                guide_service = GuideService.objects.get(id=guide_service_data['name'])
-                TourDayGuideService.objects.create(
-                    tour_day=tour_day,
-                    guide_service=guide_service,
-                    price_at_booking=guide_service_data.get('price_at_booking', guide_service.price)
-                )
-
-        # Handle hotel costs
-        package.hotel_costs = data.get('hotelCosts', [])
-
-        # Calculate totals
-        service_grand_total, hotel_grand_total, grand_total_cost = calculate_totals(package)
-
-        # Save the grand total cost
-        package.service_grand_total = service_grand_total
-        package.hotel_grand_total = hotel_grand_total
-        package.grand_total_cost = grand_total_cost
-        package.save()
 
         return JsonResponse({
             'status': 'success',
@@ -124,6 +143,8 @@ def save_tour_package(request, package_id=None):
 
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
 def tour_package_pdf(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
 
@@ -163,11 +184,12 @@ def tour_package_pdf(request, pk):
 
     return response
 
-
+@login_required
 def tour_package_list(request):
     packages = TourPackageQuote.objects.all().order_by('-created_at')
     return render(request, 'tour_quote/tour_package_list.html', {'packages': packages})
 
+@login_required
 def tour_package_detail(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
 
@@ -185,7 +207,7 @@ def tour_package_detail(request, pk):
 
     return render(request, 'tour_quote/tour_package_detail.html', context)
 
-
+@login_required
 def tour_package_edit(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
     cities = City.objects.all()
@@ -243,6 +265,7 @@ def tour_package_edit(request, pk):
 
     return render(request, 'tour_quote/tour_package_edit.html', context)
 
+@login_required
 def tour_package_quote(request):
     cities = City.objects.all()
     service_types = ServiceType.objects.all()
@@ -264,6 +287,7 @@ def tour_package_quote(request):
 
     return render(request, 'tour_quote/tour_package_quote.html', context)
 
+@login_required
 @require_http_methods(["GET"])
 def get_city_services(request, city_id):
     hotels = Hotel.objects.filter(city_id=city_id).values('id', 'name')
@@ -289,16 +313,15 @@ def get_city_services(request, city_id):
 
 
 
-from django.core.paginator import Paginator
-from django.shortcuts import render
-from .models import TourPackageQuote
 
+
+@login_required
 def tour_packages(request):
     query = request.GET.get('q', '')  # Get the search query
 
     # Filter packages based on search query
     if query:
-        packages = TourPackageQuote.objects.filter(name__icontains=query) | TourPackageQuote.objects.filter(customer_name__icontains=query)
+        packages = TourPackageQuote.objects.filter(name__icontains=query) | TourPackageQuote.objects.filter(customer_name__icontains=query) | TourPackageQuote.objects.filter(package_reference__icontains=query)
     else:
         packages = TourPackageQuote.objects.all()
 
@@ -316,7 +339,7 @@ def tour_packages(request):
     }
     return render(request, 'tour_quote/tour_packages.html', context)
 
-
+@method_decorator(login_required, name='dispatch')
 def get_predefined_package(request, package_id):
     package = PredefinedPackage.objects.get(id=package_id)
     days = [

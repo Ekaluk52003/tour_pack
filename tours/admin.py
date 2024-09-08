@@ -1,10 +1,22 @@
 # tour_quote/admin.py
 
 from django.contrib import admin
-from .models import City, Hotel, ServiceType, Service, GuideService, TourPackageQuote, TourDay, TourDayService, TourDayGuideService, PredefinedPackage, PredefinedPackageDay
-
+from .models import City, Hotel, ServiceType, Service, GuideService, TourPackageQuote, TourDay, TourDayService, TourDayGuideService, PredefinedPackage, PredefinedPackageDay, ReferenceID
+import datetime
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
+from datetime import datetime
+
+@admin.register(ReferenceID)
+class ReferenceIDAdmin(admin.ModelAdmin):
+    list_display = ('year', 'last_number')
+    readonly_fields = ('year',)
+
+    def save_model(self, request, obj, form, change):
+        # Automatically set the current year when saving
+        if not obj.year:
+            obj.year = datetime.now().year % 100  # Use the last two digits of the current year
+        super().save_model(request, obj, form, change)
 
 @admin.register(City)
 class CityAdmin(admin.ModelAdmin):

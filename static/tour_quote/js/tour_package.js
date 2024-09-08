@@ -16,6 +16,7 @@ window.tourPackage = function() {
     }
 
     return {
+        errors: {},
         name: '',
         customerName: '',
         remark: '',
@@ -69,6 +70,36 @@ window.tourPackage = function() {
                 // Load city services for each day
                 this.days.forEach((day, index) => this.updateCityServices(index));
             }
+        },
+
+        validateForm() {
+            this.errors = {};
+
+            if (!this.name.trim()) {
+                this.errors.name = "Package name is required.";
+            }
+
+            if (!this.customerName.trim()) {
+                this.errors.customerName = "Customer name is required.";
+            }
+
+            if (this.days.length === 0) {
+                this.errors.days = "At least one day is required.";
+            }
+
+            this.days.forEach((day, index) => {
+                if (!day.date) {
+                    this.errors[`day${index + 1}_date`] = `Date is required for Day ${index + 1}.`;
+                }
+                if (!day.city) {
+                    this.errors[`day${index + 1}_city`] = `City is required for Day ${index + 1}.`;
+                }
+                if (!day.hotel) {
+                    this.errors[`day${index + 1}_hotel`] = `Hotel is required for Day ${index + 1}.`;
+                }
+            });
+
+            return Object.keys(this.errors).length === 0;
         },
 
         // Function to add a hotel cost entry
@@ -340,6 +371,12 @@ window.tourPackage = function() {
 
         // Save the tour package data to the backend
         saveTourPackage() {
+            if (!this.validateForm()) {
+                // Display errors to the user
+                alert("Please correct the errors before submitting.");
+                return;
+            }
+
             const data = {
                 name: this.name,
                 customer_name: this.customerName,
@@ -374,17 +411,22 @@ window.tourPackage = function() {
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => {
-                if (response.ok) {
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
                     alert('Tour package saved successfully!');
-                    window.location.href = '/';  // Redirect to list view
+                    window.location.href = data.redirect_url;
+                } else if (data.errors) {
+                    // Display backend validation errors
+                    this.errors = data.errors;
+                    alert("Please correct the errors before submitting.");
                 } else {
                     alert('Error saving tour package');
                 }
             });
         },
         applyPredefinedPackage(packageId) {
-     
+
             if (!packageId) return;
 
             fetch(`/get-predefined-package/${packageId}/`)

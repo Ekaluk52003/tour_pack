@@ -48,16 +48,31 @@ x-init="
   <div class="mb-4">
     <label for="package-name" class="block mb-2">Package Name</label>
     <input type="text" id="package-name" x-model="name" class="w-full border rounded px-3 py-2">
+    <p class="text-red-500 text-sm mt-1" x-show="errors.name" x-text="errors.name"></p>
+
   </div>
 
   <div class="mb-4">
     <label for="customer-name" class="block mb-2">Customer Name</label>
     <input type="text" id="customer-name" x-model="customerName" class="w-full border rounded px-3 py-2">
+    <p class="text-red-500 text-sm mt-1" x-show="errors.customerName" x-text="errors.customerName"></p>
   </div>
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700">Remark</label>
     <textarea id="remark" x-model="remark" class="w-full border rounded px-3 py-2"></textarea>
 </div>
+<div class="mb-4" x-show="errors.days">
+  <p class="text-red-500 text-sm" x-text="errors.days"></p>
+</div>
+
+<template x-for="(day, dayIndex) in days" :key="dayIndex">
+  <div class="mb-4">
+      <!-- ... (existing day fields) ... -->
+      <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_date`]" x-text="errors[`day${dayIndex + 1}_date`]"></p>
+      <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_city`]" x-text="errors[`day${dayIndex + 1}_city`]"></p>
+      <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_hotel`]" x-text="errors[`day${dayIndex + 1}_hotel`]"></p>
+  </div>
+</template>
 
 <div class="mb-4">
   <label class="block text-sm font-medium text-gray-700">Click for Adding Packages</label>

@@ -38,74 +38,92 @@ def calculate_totals(package):
 
 def save_tour_package(request, package_id=None):
     data = json.loads(request.body)
+    errors = {}
 
-    # If package_id is provided, update the existing package
-    if package_id:
-        package = get_object_or_404(TourPackageQuote, id=package_id)
-        package.name = data['name']
-        package.customer_name = data['customer_name']
-        package.remark = data.get('remark', '')  # Update remark
-        package.save()
-        package.tour_days.all().delete()  # Remove existing tour days to recreate them
+    # Validate package name
+    if not data.get('name'):
+        errors['name'] = "Package name is required."
+
+    # Validate customer name
+    if not data.get('customer_name'):
+        errors['customer_name'] = "Customer name is required."
+
+    # Validate days
+    if not data.get('days'):
+        errors['days'] = "At least one day is required."
     else:
-        # Create a new package if package_id is None
-        package = TourPackageQuote.objects.create(
-            name=data['name'],
-            customer_name=data['customer_name'],
-            remark=data.get('remark', '')  # Set remark for new package
-        )
+        for i, day in enumerate(data['days']):
+            if not day.get('date'):
+                errors[f'day{i+1}_date'] = f"Date is required for Day {i+1}."
+            if not day.get('city'):
+                errors[f'day{i+1}_city'] = f"City is required for Day {i+1}."
+            if not day.get('hotel'):
+                errors[f'day{i+1}_hotel'] = f"Hotel is required for Day {i+1}."
 
-    for day_data in data['days']:
-        hotel_id = day_data.get('hotel')
-        if not hotel_id:
-            return JsonResponse({'error': 'Hotel is required for each tour day.'}, status=400)
+    if errors:
+        return JsonResponse({'status': 'error', 'errors': errors}, status=400)
 
-        tour_day = TourDay.objects.create(
-            tour_package=package,
-            date=day_data['date'],
-            city_id=day_data['city'],
-            hotel_id=hotel_id
-        )
-
-        # Handle services with price_at_booking
-        for service_data in day_data['services']:
-            service = Service.objects.get(id=service_data['name'])
-            TourDayService.objects.create(
-                tour_day=tour_day,
-                service=service,
-                # Retain price_at_booking if provided, otherwise, store the current service price
-                price_at_booking=service_data.get('price_at_booking', service.price)
+    # If no errors, proceed with saving the package
+    try:
+        if package_id:
+            package = get_object_or_404(TourPackageQuote, id=package_id)
+            package.name = data['name']
+            package.customer_name = data['customer_name']
+            package.remark = data.get('remark', '')
+            package.save()
+            package.tour_days.all().delete()  # Remove existing tour days to recreate them
+        else:
+            package = TourPackageQuote.objects.create(
+                name=data['name'],
+                customer_name=data['customer_name'],
+                remark=data.get('remark', '')
             )
 
-        # Handle guide services with price_at_booking
-        for guide_service_data in day_data['guide_services']:
-            guide_service = GuideService.objects.get(id=guide_service_data['name'])
-            TourDayGuideService.objects.create(
-                tour_day=tour_day,
-                guide_service=guide_service,
-                # Retain price_at_booking if provided, otherwise, store the current guide service price
-                price_at_booking=guide_service_data.get('price_at_booking', guide_service.price)
+        for day_data in data['days']:
+            tour_day = TourDay.objects.create(
+                tour_package=package,
+                date=day_data['date'],
+                city_id=day_data['city'],
+                hotel_id=day_data['hotel']
             )
 
-    # Handle hotel costs
-    package.hotel_costs = data.get('hotelCosts', [])
+            # Handle services with price_at_booking
+            for service_data in day_data['services']:
+                service = Service.objects.get(id=service_data['name'])
+                TourDayService.objects.create(
+                    tour_day=tour_day,
+                    service=service,
+                    price_at_booking=service_data.get('price_at_booking', service.price)
+                )
 
+            # Handle guide services with price_at_booking
+            for guide_service_data in day_data['guide_services']:
+                guide_service = GuideService.objects.get(id=guide_service_data['name'])
+                TourDayGuideService.objects.create(
+                    tour_day=tour_day,
+                    guide_service=guide_service,
+                    price_at_booking=guide_service_data.get('price_at_booking', guide_service.price)
+                )
 
-     # Calculate totals
-    service_grand_total, hotel_grand_total, grand_total_cost = calculate_totals(package)
+        # Handle hotel costs
+        package.hotel_costs = data.get('hotelCosts', [])
 
-    # Save the grand total cost
-    package.service_grand_total = service_grand_total
-    package.hotel_grand_total = hotel_grand_total
-    package.grand_total_cost = grand_total_cost
-    package.save()
+        # Calculate totals
+        service_grand_total, hotel_grand_total, grand_total_cost = calculate_totals(package)
 
-    return JsonResponse({
-        'status': 'success',
-        'redirect_url': reverse('tour_package_detail', args=[package.id])
-    })
+        # Save the grand total cost
+        package.service_grand_total = service_grand_total
+        package.hotel_grand_total = hotel_grand_total
+        package.grand_total_cost = grand_total_cost
+        package.save()
 
+        return JsonResponse({
+            'status': 'success',
+            'redirect_url': reverse('tour_package_detail', args=[package.id])
+        })
 
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 def tour_package_pdf(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
 

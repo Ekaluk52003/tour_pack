@@ -10,6 +10,7 @@ urlpatterns = [
     path('save-tour-package/', views.save_tour_package, name='save_tour_package'),
     path('tour-package/<int:pk>/pdf/', views.tour_package_pdf, name='tour_package_pdf'),
     path('', views.tour_packages, name='tour_packages'),
+    path('get-predefined-package/<int:package_id>/', views.get_predefined_package, name='pre_package'),
 
     # Update existing package with package_id
     path('save-tour-package/<int:package_id>/', views.save_tour_package, name='update_tour_package'),

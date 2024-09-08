@@ -2,7 +2,7 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
-from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService
+from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedPackage
 import json
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
@@ -172,6 +172,7 @@ def tour_package_edit(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
     cities = City.objects.all()
     guide_services = list(GuideService.objects.values('id', 'name', 'price'))
+    predefined_packages = PredefinedPackage.objects.all()
 
     if request.method == 'POST':
         return save_tour_package(request, package)
@@ -180,6 +181,7 @@ def tour_package_edit(request, pk):
         'id': package.id,
         'name': package.name,
         'customer_name': package.customer_name,
+        'remark': package.remark,
         'days': [
             {
                 'date': day.date.isoformat(),
@@ -217,6 +219,7 @@ def tour_package_edit(request, pk):
         'cities': cities,
         'guide_services_json': json.dumps(guide_services, cls=DjangoJSONEncoder),
         'package_json': json.dumps(package_data, cls=DjangoJSONEncoder),
+        'predefined_packages': predefined_packages,
 
     }
 
@@ -225,7 +228,7 @@ def tour_package_edit(request, pk):
 def tour_package_quote(request):
     cities = City.objects.all()
     service_types = ServiceType.objects.all()
-
+    predefined_packages = PredefinedPackage.objects.all()
     # Query guide services and convert price (Decimal) to float
     guide_services = list(
         GuideService.objects.values('id', 'name', 'price')
@@ -238,6 +241,7 @@ def tour_package_quote(request):
         'cities': cities,
         'service_types': service_types,
         'guide_services_json': json.dumps(guide_services, cls=DjangoJSONEncoder),
+        'predefined_packages': predefined_packages,
     }
 
     return render(request, 'tour_quote/tour_package_quote.html', context)
@@ -293,3 +297,17 @@ def tour_packages(request):
         'query': query,
     }
     return render(request, 'tour_quote/tour_packages.html', context)
+
+
+def get_predefined_package(request, package_id):
+    package = PredefinedPackage.objects.get(id=package_id)
+    days = [
+        {
+            'city': day.city.id,
+            'hotel': day.hotel.id,
+            'services': [{'name': service.id, 'price': service.price} for service in day.services.all()],
+            'guideServices': [{'name': guide_service.id, 'price': guide_service.price} for guide_service in day.guide_services.all()]
+        }
+        for day in package.days.all()
+    ]
+    return JsonResponse({'days': days})

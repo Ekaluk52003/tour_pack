@@ -1,5 +1,4 @@
 window.tourPackage = function() {
-    console.log("tourPackage function called");
 
     function getCookie(name) {
         let cookieValue = null;
@@ -19,7 +18,7 @@ window.tourPackage = function() {
     return {
         name: '',
         customerName: '',
-        remark: '', 
+        remark: '',
         days: [{
             date: '',
             city: '',
@@ -43,6 +42,7 @@ window.tourPackage = function() {
                 this.packageId = existingData.id;  // Assign the package ID
                 this.name = existingData.name;
                 this.customerName = existingData.customer_name;
+                this.remark = existingData.remark || '';
                 this.days = existingData.days.map(day => ({
                     ...day,
                     hotel: String(day.hotel),  // Ensure hotel ID is a string
@@ -244,6 +244,26 @@ window.tourPackage = function() {
                     .then(response => response.json())
                     .then(data => {
                         this.days[index].cityServices = data;
+
+                        // After loading city services, ensure the hotel and service are properly selected
+                        const selectedHotel = this.days[index].hotel;
+                        const selectedServices = this.days[index].services.map(service => service.name);
+
+                        // Check if the selected hotel is in the fetched list, if not, clear it
+                        const hotelFound = data.hotels.some(hotel => hotel.id == selectedHotel);
+                        if (!hotelFound) {
+                            this.days[index].hotel = '';
+                        }
+
+                        // For each service, check if it is in the fetched list, if not, clear it
+                        this.days[index].services.forEach(service => {
+                            const serviceFound = data.service_types.some(st =>
+                                st.services.some(s => s.id == service.name)
+                            );
+                            if (!serviceFound) {
+                                service.name = '';
+                            }
+                        });
                     });
             } else {
                 this.days[index].cityServices = { hotels: [], service_types: [] };
@@ -362,6 +382,42 @@ window.tourPackage = function() {
                     alert('Error saving tour package');
                 }
             });
+        },
+        applyPredefinedPackage(packageId) {
+     
+            if (!packageId) return;
+
+            fetch(`/get-predefined-package/${packageId}/`)
+                .then(response => response.json())
+                .then(data => {
+
+                    const today = new Date().toISOString().slice(0, 10);
+                    // Append the predefined days to the current days array
+                    const newDays = data.days.map(day => ({
+                        date: today, // Allow the user to set the date
+                        city: day.city,
+                        hotel: String(day.hotel),  // Convert hotel ID to string
+                        services: day.services.map(service => ({
+                            type: 'tour',  // Assuming predefined services are of type 'tour' or 'transfer'
+                            name: String(service.name),  // Convert service ID to string
+                            price: service.price
+                        })),
+                        guideServices: day.guideServices.map(guideService => ({
+                            name: String(guideService.name),  // Convert guide service ID to string
+                            price: guideService.price
+                        })),
+                        cityServices: { hotels: [], service_types: [] }  // This will be populated after selecting the city
+                    }));
+
+                    // Append new predefined days to the existing days array
+                    this.days.push(...newDays);
+
+                    // Trigger city services update for the new days
+                    const startIndex = this.days.length - newDays.length;
+                    for (let i = startIndex; i < this.days.length; i++) {
+                        this.updateCityServices(i);
+                    }
+                });
         }
     };
   }

@@ -39,17 +39,31 @@
 
     <div class="mb-4">
         <label for="package-name" class="block text-sm font-medium text-gray-700">Package Name</label>
-        <input type="text" id="package-name" x-model="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+        <input type="text" id="package-name" x-model="name"  class="w-full border rounded px-3 py-2">
     </div>
 
     <div class="mb-4">
         <label for="customer-name" class="block text-sm font-medium text-gray-700">Customer Name</label>
-        <input type="text" id="customer-name" x-model="customerName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+        <input type="text" id="customer-name" x-model="customerName" class="w-full border rounded px-3 py-2">
     </div>
     <div class="mb-4">
       <label for="remark" class="block text-sm font-medium text-gray-700">Remark</label>
-      <textarea id="remark" x-model="remark" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"></textarea>
+      <textarea id="remark" x-model="remark" class="w-full border rounded px-3 py-2"></textarea>
   </div>
+
+  <div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700">Click for Adding Packages</label>
+    <div class="flex flex-wrap">
+        {% for package in predefined_packages %}
+            <button
+                @click="applyPredefinedPackage({{ package.id }})"
+                class="bg-green-500 text-white px-4 py-2 m-2 rounded"
+            >
+                {{ package.name }}
+            </button>
+        {% endfor %}
+    </div>
+</div>
 
     <div class="space-y-2">
         <template x-for="(day, dayIndex) in days" :key="dayIndex">

@@ -30,9 +30,13 @@ COPY ./requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-COPY ./entrypoint.prod.sh .
+# Copy your entrypoint file to the container
+COPY ./entrypoint.prod.sh /app/entrypoint.prod.sh
+
+# Set the correct permissions to make the file executable
 RUN chmod +x /app/entrypoint.prod.sh
 
+# Copy the rest of the application code
 COPY . .
 
 ENTRYPOINT ["/app/entrypoint.prod.sh"]

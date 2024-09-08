@@ -270,6 +270,9 @@ def tour_packages(request):
         packages = TourPackageQuote.objects.all()
 
     # Pagination: Show 10 packages per page
+
+    packages = packages.order_by('-created_at')
+    
     paginator = Paginator(packages, 10)
     page_number = request.GET.get('page')
     packages_page = paginator.get_page(page_number)

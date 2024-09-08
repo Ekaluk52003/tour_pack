@@ -29,8 +29,8 @@ services:
   caddy3:
     image: caddy:2
     ports:
-      - "8080:80"  # Changed from 80:80 to avoid conflicts
-      - "9443:443"
+      - "8081:80"  # Changed HTTP port to 8081 as requested
+      - "9443:443" # HTTPS port remains 9443
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data

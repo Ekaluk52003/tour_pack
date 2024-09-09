@@ -1,15 +1,12 @@
 # Dockerfile.prod
-# Pull base image
 FROM python:3.12.2-slim-bookworm
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV DEBIAN_FRONTEND noninteractive
 
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-thai-tlwg \
     build-essential \
@@ -24,19 +21,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements.txt .
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Install Python packages
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+COPY . /app/
 
-# Copy your entrypoint file to the container
-COPY ./entrypoint.prod.sh /app/entrypoint.prod.sh
+# Ensure the entrypoint script has the correct permissions and ownership
+RUN chmod +x /app/entrypoint.prod.sh && \
+    chown root:root /app/entrypoint.prod.sh
 
-# Set the correct permissions to make the file executable
-RUN chmod +x /app/entrypoint.prod.sh
-
-# Copy the rest of the application code
-COPY . .
+# Switch to root user to ensure we have the necessary permissions
+USER root
 
 ENTRYPOINT ["/app/entrypoint.prod.sh"]

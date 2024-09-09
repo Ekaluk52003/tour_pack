@@ -5,7 +5,7 @@ services:
     build:
         context: .
         dockerfile: Dockerfile.prod
-    command: gunicorn django_project.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn tour.wsgi:application --bind 0.0.0.0:8000
     expose:
       - 8000
     volumes:

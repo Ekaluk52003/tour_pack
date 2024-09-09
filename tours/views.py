@@ -339,7 +339,9 @@ def tour_packages(request):
     }
     return render(request, 'tour_quote/tour_packages.html', context)
 
-@method_decorator(login_required, name='dispatch')
+
+
+@login_required
 def get_predefined_package(request, package_id):
     package = PredefinedPackage.objects.get(id=package_id)
     days = [

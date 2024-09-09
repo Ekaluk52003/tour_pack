@@ -426,12 +426,17 @@ window.tourPackage = function() {
             });
         },
         applyPredefinedPackage(packageId) {
-
             if (!packageId) return;
 
-            fetch(`/get-predefined-package/${packageId}/`)
-                .then(response => response.json())
-                .then(data => {
+            fetch(`/get-predefined-package/${packageId}/`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
 
                     const today = new Date().toISOString().slice(0, 10);
                     // Append the predefined days to the current days array

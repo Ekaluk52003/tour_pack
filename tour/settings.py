@@ -12,13 +12,15 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from django.utils import timezone
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
-SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = bool(os.environ.get("DEBUG", default=0))
+DEBUG = os.environ.get("DEBUG", "0") == "1"
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
@@ -178,3 +180,6 @@ CSRF_TRUSTED_ORIGINS = ['https://www.tour.smartflow.pw', 'https://tour.smartflow
 
 TIME_ZONE = 'Asia/Bangkok'
 USE_TZ = True
+
+dbname = os.environ.get("SQL_DATABASE")
+print('debug',DEBUG)

@@ -13,28 +13,17 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     env_file:
-      - .env.prod
+      - .env
     depends_on:
       - db
-
-
   db:
     image: postgres:16
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    env_file:
-      - .env.prod.db
-
-
-
-  celery:
-    build: .
-    command: celery -A django_project worker --loglevel=info
-    env_file:
-      - .env.prod
-    depends_on:
-      - db
-      - web
+    environment:
+      - POSTGRES_DB=${SQL_DATABASE}
+      - POSTGRES_USER=${SQL_USER}
+      - POSTGRES_PASSWORD=${SQL_PASSWORD}
 
   caddy:
     image: caddy:2

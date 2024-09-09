@@ -26,11 +26,8 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . /app/
 
-# Ensure the entrypoint script has the correct permissions and ownership
-RUN chmod +x /app/entrypoint.prod.sh && \
-    chown root:root /app/entrypoint.prod.sh
+# Ensure the entrypoint script has the correct permissions
+RUN chmod +x /app/entrypoint.prod.sh
 
-# Switch to root user to ensure we have the necessary permissions
-USER root
-
-ENTRYPOINT ["/app/entrypoint.prod.sh"]
+# Use shell form for ENTRYPOINT
+ENTRYPOINT sh /app/entrypoint.prod.sh

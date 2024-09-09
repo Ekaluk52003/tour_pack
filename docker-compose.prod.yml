@@ -5,7 +5,6 @@ services:
     build:
         context: .
         dockerfile: Dockerfile.prod
-    command: ["/app/entrypoint.prod.sh"]
     volumes:
       - .:/app
       - static_volume:/app/staticfiles

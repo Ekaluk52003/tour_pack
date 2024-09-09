@@ -157,6 +157,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
@@ -181,6 +183,3 @@ CSRF_TRUSTED_ORIGINS = ['https://www.tour.smartflow.pw', 'https://tour.smartflow
 
 TIME_ZONE = 'Asia/Bangkok'
 USE_TZ = True
-
-dbname = os.environ.get("SQL_DATABASE")
-print('debug',DEBUG)

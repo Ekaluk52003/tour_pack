@@ -61,6 +61,17 @@ x-init="
     <label for="remark" class="block text-sm font-medium text-gray-700">Remark</label>
     <textarea id="remark" x-model="remark" class="w-full border rounded px-3 py-2"></textarea>
 </div>
+
+<div class="mb-4">
+  <label for="tourPackType" class="block text-sm font-medium text-gray-700">Tour Package Type</label>
+  <select id="tourPackType" x-model="tourPackType" @change="updateServicesForPackageType()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+      <option value="">Select Tour Package Type</option>
+      {% for pack_type in tour_pack_types %}
+          <option value="{{ pack_type.id }}">{{ pack_type.name }}</option>
+      {% endfor %}
+  </select>
+  <p class="text-red-500 text-xs italic" x-show="errors.tourPackType" x-text="errors.tourPackType"></p>
+</div>
 <div class="mb-4" x-show="errors.days">
   <p class="text-red-500 text-sm" x-text="errors.days"></p>
 </div>

@@ -20,6 +20,7 @@ window.tourPackage = function() {
         name: '',
         customerName: '',
         remark: '',
+        tourPackType: '',
         days: [{
             date: '',
             city: '',
@@ -44,6 +45,7 @@ window.tourPackage = function() {
                 this.name = existingData.name;
                 this.customerName = existingData.customer_name;
                 this.remark = existingData.remark || '';
+                this.tourPackType = existingData.tour_pack_type;
                 this.days = existingData.days.map(day => ({
                     ...day,
                     hotel: String(day.hotel),  // Ensure hotel ID is a string
@@ -82,6 +84,7 @@ window.tourPackage = function() {
             if (!this.customerName.trim()) {
                 this.errors.customerName = "Customer name is required.";
             }
+            if (!this.tourPackType) this.errors.tourPackType = "Tour package type is required.";
 
             if (this.days.length === 0) {
                 this.errors.days = "At least one day is required.";
@@ -102,6 +105,7 @@ window.tourPackage = function() {
             return Object.keys(this.errors).length === 0;
         },
 
+
         // Function to add a hotel cost entry
         addHotelCost() {
             this.hotelCosts.push({ name: '', type: '', room: 1, nights: 1, price: 0 });
@@ -120,6 +124,7 @@ window.tourPackage = function() {
             });
             return total.toFixed(2);
         },
+
         updateGuideService(dayIndex, guideIndex) {
             const guideService = this.days[dayIndex].guideServices[guideIndex];
             const selectedGuideService = this.guideServices.find(gs => String(gs.id) === String(guideService.name));
@@ -267,24 +272,39 @@ window.tourPackage = function() {
             }
         },
 
+        updateServicesForPackageType() {
+            // This function is called when the tour package type changes
+            if (this.tourPackType) {
+                // Update services for all days
+                this.days.forEach((day, index) => {
+                    if (day.city) {
+                        this.updateCityServices(index);
+                    }
+                });
+            } else {
+                // If no tour package type is selected, reset all services
+                this.days.forEach(day => {
+                    day.services = [];
+                    day.cityServices = { hotels: [], service_types: [] };
+                });
+            }
+        },
+
         // Update available services and hotels based on selected city
         updateCityServices(index) {
             const cityId = this.days[index].city;
-            if (cityId) {
-                fetch(`/get-city-services/${cityId}/`)
+            if (cityId && this.tourPackType) {
+                fetch(`/get-city-services/${cityId}/?tour_pack_type=${this.tourPackType}`)
                     .then(response => response.json())
                     .then(data => {
                         this.days[index].cityServices = data;
-
-                        // After loading city services, ensure the hotel and service are properly selected
                         const selectedHotel = this.days[index].hotel;
                         const selectedServices = this.days[index].services.map(service => service.name);
-
-                        // Check if the selected hotel is in the fetched list, if not, clear it
                         const hotelFound = data.hotels.some(hotel => hotel.id == selectedHotel);
                         if (!hotelFound) {
                             this.days[index].hotel = '';
                         }
+
 
                         // For each service, check if it is in the fetched list, if not, clear it
                         this.days[index].services.forEach(service => {
@@ -293,7 +313,10 @@ window.tourPackage = function() {
                             );
                             if (!serviceFound) {
                                 service.name = '';
-                            }
+                                service.price = 0;
+                        } else {
+                            this.updateService(index, this.days[index].services.indexOf(service));
+                        }
                         });
                     });
             } else {
@@ -381,6 +404,7 @@ window.tourPackage = function() {
                 name: this.name,
                 customer_name: this.customerName,
                 remark: this.remark,
+                tour_pack_type: this.tourPackType,
                 days: this.days.map(day => ({
                     date: day.date,
                     city: day.city,
@@ -465,6 +489,7 @@ window.tourPackage = function() {
                         this.updateCityServices(i);
                     }
                 });
-        }
+        },
+        
     };
   }

@@ -30,10 +30,25 @@ class Service(models.Model):
     name = models.CharField(max_length=200)
     service_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
     city = models.ForeignKey(City, on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return f"{self.name} - {self.service_type} - {self.city}"
+
+class TourPackType(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+class ServicePrice(models.Model):
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='prices')
+    tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.CASCADE)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        unique_together = ('service', 'tour_pack_type')
+
 
 class GuideService(models.Model):
     name = models.CharField(max_length=200)
@@ -73,8 +88,8 @@ class TourPackageQuote(models.Model):
     service_grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     hotel_grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     remark = models.TextField(blank=True, null=True)
-
     package_reference = models.CharField(max_length=5, unique=True, blank=True, null=True)
+    tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return f"{self.name} - {self.customer_name}"
@@ -112,11 +127,10 @@ class TourDayGuideService(models.Model):
         return f"{self.tour_day} - {self.guide_service}"
 
 
-
-
 class PredefinedPackage(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
+    tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return self.name
@@ -127,6 +141,7 @@ class PredefinedPackageDay(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
     services = models.ManyToManyField(Service)
     guide_services = models.ManyToManyField(GuideService, blank=True)
+
 
     def __str__(self):
         return f"{self.predefined_package.name} - Day {self.id}"

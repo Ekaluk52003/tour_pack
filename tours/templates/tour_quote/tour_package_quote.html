@@ -53,6 +53,16 @@
       <textarea id="remark" x-model="remark" class="w-full border rounded px-3 py-2"></textarea>
   </div>
 
+  <div class="mb-4">
+    <label for="tourPackType" class="block text-sm font-medium text-gray-700">Tour Package Type</label>
+    <select id="tourPackType" x-model="tourPackType" @change="updateServicesForPackageType()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+        <option value="">Select Tour Package Type</option>
+        {% for pack_type in tour_pack_types %}
+            <option value="{{ pack_type.id }}">{{ pack_type.name }}</option>
+        {% endfor %}
+    </select>
+</div>
+
   <div class="mb-4" x-show="errors.days">
     <p class="text-red-500 text-sm" x-text="errors.days"></p>
 </div>
@@ -204,21 +214,24 @@
 
     <div class="my-4">
         <h3 class="text-lg font-semibold">Service Grand Total: <span x-text="calculateGrandTotal().serviceGrandTotal + ' USD'"></span></h3>
-    </div>
+    </div><div class="mb-4">
+      <h2 class="text-xl font-semibold mb-2">Hotel Costs</h2>
+      <template x-for="(hotelCost, index) in hotelCosts" :key="index">
+          <div class="flex items-center mb-2">
+              <input type="text" x-model="hotelCost.name" placeholder="Hotel Name" class="mr-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" disabled>
+              <input type="text" x-model="hotelCost.type" placeholder="Room Type" class="mr-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+              <input type="number" x-model="hotelCost.room" placeholder="Rooms" class="mr-2 w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+              <input type="number" x-model="hotelCost.nights" placeholder="Nights" class="mr-2 w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+              <input type="number" x-model="hotelCost.price" placeholder="Price" class="mr-2 w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+              <span x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'" class="mr-2"></span>
+              <button @click="removeHotelCost(index)" class="text-red-600 hover:text-red-800">Remove</button>
+          </div>
+      </template>
+      <button @click="addHotelCost()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Add Hotel Cost</button>
+  </div>
 
 
-    <h3 class="text-lg font-semibold mb-2">Hotel Costs</h3>
-    <template x-for="(hotelCost, index) in hotelCosts" :key="index">
-        <div class="flex items-center mb-2">
-            <input type="text" x-model="hotelCost.name" placeholder="Hotel Name" class="mr-2 p-2 border rounded">
-            <input type="text" x-model="hotelCost.type" placeholder="Room Type" class="mr-2 p-2 border rounded">
-            <input type="number" x-model="hotelCost.room" placeholder="Rooms" class="mr-2 p-2 border rounded w-20">
-            <input type="number" x-model="hotelCost.nights" placeholder="Nights" class="mr-2 p-2 border rounded w-20">
-            <input type="number" x-model="hotelCost.price" placeholder="Price" class="mr-2 p-2 border rounded w-24">
-            <span class="w-24 text-right" x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'"></span>
-            <button @click="removeHotelCost(index)" class="ml-2 text-red-600">Remove</button>
-        </div>
-    </template>
+
     <div class="my-4">
         <h3 class="text-lg font-semibold">Hotel Grand Total: <span x-text="calculateGrandTotal().hotelGrandTotal + ' USD'"></span></h3>
       </div>

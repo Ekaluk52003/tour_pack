@@ -221,47 +221,93 @@
     <div class="mb-4">
       <h2 class="text-xl font-semibold mb-2">Hotel Costs</h2>
       <div class="overflow-x-auto">
-          <table class="w-full table-auto">
-              <thead>
-                  <tr class="bg-gray-200">
-                      <th class="px-4 py-2 text-left">Hotel Name</th>
-                      <th class="px-4 py-2 text-left">Nights</th>
-                      <th class="px-4 py-2 text-left">Rooms</th>
-                      <th class="px-4 py-2 text-left">Price per Night</th>
-                      <th class="px-4 py-2 text-left">Total</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  <template x-for="(hotelCost, index) in hotelCosts" :key="index">
-                      <tr>
-                          <td class="border px-4 py-2">
-                              <span x-text="hotelCost.name"></span>
-                          </td>
-                          <td class="border px-4 py-2">
-                              <span x-text="hotelCost.nights"></span>
-                          </td>
-                          <td class="border px-4 py-2">
-                              <input type="number" x-model.number="hotelCost.room" min="1" class="w-full p-1 border rounded">
-                          </td>
-                          <td class="border px-4 py-2">
-                              <input type="number" x-model.number="hotelCost.price" min="0" step="0.01" class="w-full p-1 border rounded">
-                          </td>
-                          <td class="border px-4 py-2">
-                              <span x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'"></span>
-                          </td>
-                      </tr>
-                  </template>
-              </tbody>
-          </table>
+        <table class="w-full table-auto">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="px-2 text-left">Name</th>
+              <th class="px-2 text-left">Type</th>
+              <th class="px-2 text-left">Nights</th>
+              <th class="px-2 text-left">Rooms</th>
+              <th class="px-2 text-left">Price per Night</th>
+              <th class="px-2 text-left">Total</th>
+              <th class="px-2 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(hotelCost, index) in hotelCosts" :key="index">
+              <tr>
+                <td class="border px-2">
+                  <input type="text" x-model="hotelCost.name" class="w-full p-1 border rounded">
+                </td>
+                <td class="border px-2">
+                  <input type="text" x-model="hotelCost.type" class="w-full p-1 border rounded">
+                </td>
+                <td class="border px-2">
+                  <input type="number" x-model.number="hotelCost.nights" min="1" class="w-full p-1 border rounded">
+                </td>
+                <td class="border px-2">
+                  <input type="number" x-model.number="hotelCost.room" min="1" class="w-full p-1 border rounded">
+                </td>
+                <td class="border px-2">
+                  <input type="number" x-model.number="hotelCost.price" min="0" step="0.01" class="w-full p-1 border rounded">
+                </td>
+                <td class="border px-2" x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'"></td>
+                <td class="border px-4 py-2">
+                  <button @click="removeHotelCost(index)" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
       </div>
+      <button @click="addHotelCost" class="mt-2 bg-blue-500 text-white px-3 py-2 rounded">Add Hotel Cost</button>
       <div class="mt-2 text-right">
-          <strong>Total Hotel Cost: </strong>
-          <span x-text="calculateHotelCostTotal() + ' USD'"></span>
+        <strong>Total Hotel Cost: </strong>
+        <span x-text="calculateHotelCostTotal() + ' USD'"></span>
       </div>
-  </div>
-    <div class="mb-4 mt-8">
-        <h3 class="text-lg font-semibold">Grand Total Cost: <span x-text="calculateGrandTotal().grandTotal + ' USD'"></span></h3>
     </div>
+    <!-- Discounts Section -->
+    <div class="mb-4">
+      <h2 class="text-xl font-semibold mb-2">Discounts</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full table-auto">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="px-2 text-left">Item</th>
+              <th class="px-2 text-left">Discount Amount</th>
+              <th class="px-2 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(discount, index) in discounts" :key="index">
+              <tr>
+                <td class="border px-2">
+                  <input type="text" x-model="discount.item" class="w-full p-1 border rounded">
+                </td>
+                <td class="border px-2">
+                  <input type="number" x-model.number="discount.amount" min="0" step="0.01" class="w-full p-1 border rounded">
+                </td>
+                <td class="border px-4 py-2">
+                  <button @click="removeDiscount(index)" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <button @click="addDiscount" class="mt-2 bg-blue-500 text-white px-3 py-2 rounded">Add Discount</button>
+      <div class="mt-2 text-right">
+        <strong>Total Discounts: </strong>
+        <span x-text="calculateTotalDiscounts() + ' USD'"></span>
+      </div>
+    </div>
+
+<!-- Grand Total Section -->
+<div class="mb-4 mt-8">
+  <h3 class="text-lg font-semibold">Grand Total Cost:
+    <span x-text="(parseFloat(calculateGrandTotal().grandTotal) - calculateTotalDiscounts()).toFixed(2) + ' USD'"></span>
+  </h3>
+</div>
     <button @click="saveTourPackage" class="mt-4 bg-indigo-500 text-white px-4 py-2 rounded">Create Quote</button>
 </div>
 {% endblock %}

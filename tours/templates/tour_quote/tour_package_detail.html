@@ -44,6 +44,9 @@
         <h2 class="text-xl font-semibold">Total Service Cost: {{ package.service_grand_total }} USD</h2>
     </div>
 
+
+
+
     <!-- Display Hotel Costs -->
     {% if hotel_costs_with_total %}
     <div class="mb-6 p-4 border border-gray-300 rounded">
@@ -64,6 +67,34 @@
         </div>
     </div>
     {% endif %}
+
+    <h2>Discounts</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for discount in discounts %}
+            <tr>
+                <td>{{ discount.item }}</td>
+                <td>${{ discount.amount }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2">No discounts applied</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th>Total Discount</th>
+                <th>${{ total_discount }}</th>
+            </tr>
+        </tfoot>
+    </table>
 
     <!-- Grand Total -->
     <div class="my-12">

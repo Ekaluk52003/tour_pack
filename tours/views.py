@@ -35,11 +35,11 @@ def calculate_totals(package):
     # Calculate grand totals
     service_grand_total = Decimal(service_total) + guide_service_total
     hotel_grand_total = Decimal(hotel_total)
-
+    total_discount = sum(Decimal(discount['amount']) for discount in package.discounts)
     grand_total = Decimal(service_total) + guide_service_total + hotel_total
 
 
-    return service_grand_total, hotel_grand_total, grand_total
+    return service_grand_total, hotel_grand_total, grand_total, total_discount
 
 @login_required
 def save_tour_package(request, package_id=None):
@@ -136,13 +136,15 @@ def save_tour_package(request, package_id=None):
             # Handle hotel costs
             package.hotel_costs = data.get('hotelCosts', [])
 
+            package.discounts = data.get('discounts', [])
             # Calculate totals
-            service_grand_total, hotel_grand_total, grand_total_cost = calculate_totals(package)
+            service_grand_total, hotel_grand_total, grand_total_cost, total_discount = calculate_totals(package)
 
             # Save grand totals
             package.service_grand_total = service_grand_total
             package.hotel_grand_total = hotel_grand_total
-            package.grand_total_cost = grand_total_cost
+            total_discount = sum(Decimal(discount['amount']) for discount in package.discounts)
+            package.grand_total_cost = grand_total_cost - total_discount
             package.save()
 
         return JsonResponse({
@@ -210,10 +212,17 @@ def tour_package_detail(request, pk):
         cost['total'] = total_cost  # Add total cost to the cost dictionary
         hotel_costs_with_total.append(cost)
 
+      # Prepare discount information
+
+    discounts = package.discounts
+    total_discount = sum(float(discount['amount']) for discount in discounts)
+
     context = {
         'package': package,
         'hotel_costs_with_total': hotel_costs_with_total,  # Pass hotel costs with total calculation
         'tour_pack_type': package.tour_pack_type,  # Add this line
+        'discounts': discounts,
+        'total_discount': total_discount,
     }
 
     return render(request, 'tour_quote/tour_package_detail.html', context)
@@ -262,15 +271,15 @@ def tour_package_edit(request, pk):
             }
             for day in package.tour_days.all()
         ],
-         'hotelCosts': [
+        'discounts': [
         {
-            'name': cost['name'],
-            'nights': int(cost['nights']),
-            'room': int(cost['room']),
-            'price': float(cost['price'])  # Ensure this line exists and is correct
+            'item': discount['item'],
+            'amount': float(discount['amount'])
         }
-        for cost in package.hotel_costs
-    ]
+        for discount in package.discounts
+    ],
+         'hotelCosts': package.hotel_costs
+
     }
 
     context = {

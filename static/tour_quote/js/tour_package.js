@@ -35,23 +35,19 @@ window.tourPackage = function() {
         }],
         guideServices: [],
         hotelCosts: [],  // Array to manage hotel costs
+        discounts: [],
         packageId: null,  // This will hold the package ID for updates
         draggingIndex: null,
         // Initialize the form with existing data for editing
         initEditForm(existingData) {
-            console.log("initEditForm called with data:", existingData);
 
-            this.hotelCosts = existingData.hotelCosts.map(cost => {
-                console.log("Processing hotel cost:", cost);
-                return {
-                    name: cost.name,
-                    nights: parseInt(cost.nights) || 1,
-                    room: parseInt(cost.room) || 1,
-                    price: parseFloat(cost.price) || 0
-                };
-            });
-            console.log("Processed hotelCosts:", this.hotelCosts);
             if (existingData) {
+
+
+                this.discounts = existingData.discounts.map(discount => ({
+                    item: discount.item,
+                    amount: parseFloat(discount.amount) || 0
+                }));
 
                 this.packageId = existingData.id;  // Assign the package ID
                 this.name = existingData.name;
@@ -79,9 +75,29 @@ window.tourPackage = function() {
                 }));
 
                 // Load city services for each day
+
+
+                // Load hotel costs (assuming existingData.hotelCosts is the list of hotel costs)
+                this.hotelCosts = existingData.hotelCosts || [];
                 this.days.forEach((day, index) => this.updateCityServices(index));
             }
         },
+
+        addHotelCost() {
+            this.hotelCosts.push({ name: '', type: '', room: 1, nights: 1, price: 0 });
+        },
+        removeHotelCost(index) {
+            this.hotelCosts.splice(index, 1);
+        },
+
+        addDiscount() {
+            this.discounts.push({ item: '', amount: 0 });
+        },
+
+        removeDiscount(index) {
+            this.discounts.splice(index, 1);
+        },
+
 
         validateForm() {
             this.errors = {};
@@ -120,6 +136,12 @@ window.tourPackage = function() {
         calculateHotelCostTotal() {
             return this.hotelCosts.reduce((total, cost) => {
                 return total + (cost.room * cost.nights * cost.price);
+            }, 0).toFixed(2);
+        },
+
+        calculateTotalDiscounts() {
+            return this.discounts.reduce((total, discount) => {
+                return total + (parseFloat(discount.amount) || 0);
             }, 0).toFixed(2);
         },
 
@@ -188,7 +210,8 @@ window.tourPackage = function() {
 
             const serviceGrandTotal = serviceTotal + guideServiceTotal;
             const hotelGrandTotal = hotelTotal;
-            const grandTotal = serviceTotal + guideServiceTotal + hotelTotal;
+            const discountTotal = parseFloat(this.calculateTotalDiscounts());
+            const grandTotal = serviceGrandTotal + hotelGrandTotal
 
             return {
                 serviceGrandTotal: serviceGrandTotal.toFixed(2),
@@ -289,33 +312,7 @@ window.tourPackage = function() {
             }
         },
 
-        updateHotelCosts() {
-            const hotelCounts = {};
-            this.days.forEach(day => {
-                if (day.hotel && day.cityServices.hotels) {
-                    const hotel = day.cityServices.hotels.find(h => h.id == day.hotel);
-                    if (hotel) {
-                        if (hotelCounts[hotel.name]) {
-                            hotelCounts[hotel.name].nights += 1;
-                        } else {
-                            const existingCost = this.hotelCosts.find(hc => hc.name === hotel.name);
-                            hotelCounts[hotel.name] = {
-                                nights: 1,
-                                room: existingCost ? existingCost.room : 1,
-                                price: existingCost ? existingCost.price : 0
-                            };
-                        }
-                    }
-                }
-            });
-
-            this.hotelCosts = Object.entries(hotelCounts).map(([name, data]) => ({
-                name: name,
-                nights: data.nights,
-                room: data.room,
-                price: data.price
-            }));
-        },
+     
         // Update available services and hotels based on selected city
         updateCityServices(index) {
             const cityId = this.days[index].city;
@@ -356,26 +353,7 @@ window.tourPackage = function() {
             }
         },
 
-        updateHotelForDay(dayIndex) {
-            const day = this.days[dayIndex];
-            if (day.hotel && day.cityServices.hotels) {
-                const selectedHotel = day.cityServices.hotels.find(h => h.id == day.hotel);
-                if (selectedHotel) {
-                    let hotelCost = this.hotelCosts.find(hc => hc.name === selectedHotel.name);
-                    if (hotelCost) {
-                        hotelCost.nights += 1;
-                    } else {
-                        this.hotelCosts.push({
-                            name: selectedHotel.name,
-                            nights: 1,
-                            room: 1,
-                            price: 0
-                        });
-                    }
-                }
-            }
-            this.updateHotelCosts();
-        },
+
 
         // Get service names based on the selected service type
         getServiceNames(dayIndex, serviceType) {
@@ -469,6 +447,11 @@ window.tourPackage = function() {
                         name: gs.name,  // ID of the guide service
                         price_at_booking: gs.price
                     }))
+                })),
+
+                discounts: this.discounts.map(discount => ({
+                    item: discount.item,
+                    amount: parseFloat(discount.amount) || 0
                 })),
                 hotelCosts: this.hotelCosts,
                 total_cost: this.calculateGrandTotal()

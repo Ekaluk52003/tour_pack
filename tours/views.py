@@ -262,7 +262,15 @@ def tour_package_edit(request, pk):
             }
             for day in package.tour_days.all()
         ],
-        'hotelCosts': package.hotel_costs
+         'hotelCosts': [
+        {
+            'name': cost['name'],
+            'nights': int(cost['nights']),
+            'room': int(cost['room']),
+            'price': float(cost['price'])  # Ensure this line exists and is correct
+        }
+        for cost in package.hotel_costs
+    ]
     }
 
     context = {

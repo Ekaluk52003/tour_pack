@@ -129,13 +129,13 @@
 
               <div class="mb-2">
                 <label class="block mb-2">Hotel</label>
-                <select x-model="day.hotel" class="w-full border rounded px-3 py-2">
-                  <option value="">Select Hotel</option>
-                  <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
-                    <option :value="String(hotel.id)" x-text="hotel.name" :selected="day.hotel == hotel.id"></option>
-                  </template>
+                <select x-model="day.hotel" @change="updateHotelForDay(dayIndex)" class="w-full border rounded px-3 py-2">
+                    <option value="">Select Hotel</option>
+                    <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
+                        <option :value="String(hotel.id)" x-text="hotel.name"></option>
+                    </template>
                 </select>
-              </div>
+            </div>
 
               <div class="mb-4">
                 <h3 class="text-lg font-semibold mb-2">Services</h3>
@@ -214,29 +214,51 @@
 
     <div class="my-4">
         <h3 class="text-lg font-semibold">Service Grand Total: <span x-text="calculateGrandTotal().serviceGrandTotal + ' USD'"></span></h3>
-    </div><div class="mb-4">
+    </div>
+
+
+
+    <div class="mb-4">
       <h2 class="text-xl font-semibold mb-2">Hotel Costs</h2>
-      <template x-for="(hotelCost, index) in hotelCosts" :key="index">
-          <div class="flex items-center mb-2">
-              <input type="text" x-model="hotelCost.name" placeholder="Hotel Name" class="mr-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" disabled>
-              <input type="text" x-model="hotelCost.type" placeholder="Room Type" class="mr-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-              <input type="number" x-model="hotelCost.room" placeholder="Rooms" class="mr-2 w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-              <input type="number" x-model="hotelCost.nights" placeholder="Nights" class="mr-2 w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-              <input type="number" x-model="hotelCost.price" placeholder="Price" class="mr-2 w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-              <span x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'" class="mr-2"></span>
-              <button @click="removeHotelCost(index)" class="text-red-600 hover:text-red-800">Remove</button>
-          </div>
-      </template>
-      <button @click="addHotelCost()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Add Hotel Cost</button>
-  </div>
-
-
-
-    <div class="my-4">
-        <h3 class="text-lg font-semibold">Hotel Grand Total: <span x-text="calculateGrandTotal().hotelGrandTotal + ' USD'"></span></h3>
+      <div class="overflow-x-auto">
+          <table class="w-full table-auto">
+              <thead>
+                  <tr class="bg-gray-200">
+                      <th class="px-4 py-2 text-left">Hotel Name</th>
+                      <th class="px-4 py-2 text-left">Nights</th>
+                      <th class="px-4 py-2 text-left">Rooms</th>
+                      <th class="px-4 py-2 text-left">Price per Night</th>
+                      <th class="px-4 py-2 text-left">Total</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <template x-for="(hotelCost, index) in hotelCosts" :key="index">
+                      <tr>
+                          <td class="border px-4 py-2">
+                              <span x-text="hotelCost.name"></span>
+                          </td>
+                          <td class="border px-4 py-2">
+                              <span x-text="hotelCost.nights"></span>
+                          </td>
+                          <td class="border px-4 py-2">
+                              <input type="number" x-model.number="hotelCost.room" min="1" class="w-full p-1 border rounded">
+                          </td>
+                          <td class="border px-4 py-2">
+                              <input type="number" x-model.number="hotelCost.price" min="0" step="0.01" class="w-full p-1 border rounded">
+                          </td>
+                          <td class="border px-4 py-2">
+                              <span x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'"></span>
+                          </td>
+                      </tr>
+                  </template>
+              </tbody>
+          </table>
       </div>
-    <button @click="addHotelCost" class="mt-2 bg-blue-500 text-white px-2 py-1 rounded">Add Hotel Cost</button>
-
+      <div class="mt-2 text-right">
+          <strong>Total Hotel Cost: </strong>
+          <span x-text="calculateHotelCostTotal() + ' USD'"></span>
+      </div>
+  </div>
     <div class="mb-4 mt-8">
         <h3 class="text-lg font-semibold">Grand Total Cost: <span x-text="calculateGrandTotal().grandTotal + ' USD'"></span></h3>
     </div>

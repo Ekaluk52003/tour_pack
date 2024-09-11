@@ -137,7 +137,7 @@ x-init="
 
           <div class="mb-2">
             <label class="block mb-2">Hotel</label>
-            <select x-model="day.hotel" class="w-full border rounded px-3 py-2">
+            <select x-model="day.hotel" @change="updateHotelForDay(dayIndex)" class="w-full border rounded px-3 py-2">
               <option value="">Select Hotel</option>
               <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
                 <option :value="String(hotel.id)" x-text="hotel.name" :selected="day.hotel == hotel.id"></option>
@@ -226,31 +226,39 @@ x-init="
     <h3 class="text-lg font-semibold">Service Grand Total: <span x-text="calculateGrandTotal().serviceGrandTotal + ' USD'"></span></h3>
 </div>
 
-  <!-- Hotel costs and grand total -->
-  <div class="mb-4">
-    <h3 class="text-lg font-semibold mb-2">Hotel Costs</h3>
-    <template x-for="(hotelCost, index) in hotelCosts" :key="index">
-      <div class="flex items-center mb-2">
-        <input x-model="hotelCost.name" type="text" placeholder="Hotel Name" class="flex-grow p-2 border rounded mr-2" />
-        <input x-model="hotelCost.type" type="text" placeholder="Hotel Type" class="flex-grow p-2 border rounded mr-2" />
-        <input x-model="hotelCost.room" type="number" placeholder="Rooms" class="w-20 p-2 border rounded mr-2" />
-        <input x-model="hotelCost.nights" type="number" placeholder="Nights" class="w-20 p-2 border rounded mr-2" />
-        <input x-model="hotelCost.price" type="number" placeholder="Price" class="w-24 p-2 border rounded mr-2" />
-        <span class="w-24 text-right" x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'"></span>
-        <button @click="removeHotelCost(index)" class="bg-red-500 text-white px-2 py-1 rounded ml-2">Remove</button>
-      </div>
-    </template>
-    <div class="my-4">
-    <h3 class="text-lg font-semibold">Hotel Grand Total: <span x-text="calculateGrandTotal().hotelGrandTotal + ' USD'"></span></h3>
-  </div>
-    <button @click="addHotelCost" class="bg-blue-500 text-white px-4 py-2 rounded">Add Hotel Cost</button>
-  </div>
-
-
-  <div class="mb-4 mt-8">
-    <h3 class="text-lg font-semibold">Grand Total Cost: <span x-text="calculateGrandTotal().grandTotal + ' USD'"></span></h3>
+<div class="mb-4">
+  <h3 class="text-lg font-semibold">Debug: Hotel Costs Data</h3>
+  <pre x-text="JSON.stringify(hotelCosts, null, 2)"></pre>
 </div>
 
+<table class="w-full table-auto">
+  <thead>
+      <tr class="bg-gray-200">
+          <th class="px-4 py-2 text-left">Hotel Name</th>
+          <th class="px-4 py-2 text-left">Nights</th>
+          <th class="px-4 py-2 text-left">Rooms</th>
+          <th class="px-4 py-2 text-left">Price per Night</th>
+          <th class="px-4 py-2 text-left">Total</th>
+          <th class="px-4 py-2 text-left">Debug</th>
+      </tr>
+  </thead>
+  <tbody>
+      <template x-for="(hotelCost, index) in hotelCosts" :key="index">
+          <tr>
+              <td class="border px-4 py-2" x-text="hotelCost.name"></td>
+              <td class="border px-4 py-2" x-text="hotelCost.nights"></td>
+              <td class="border px-4 py-2">
+                  <input type="number" x-model.number="hotelCost.room" min="1" class="w-full p-1 border rounded">
+              </td>
+              <td class="border px-4 py-2">
+                  <input type="number" x-model.number="hotelCost.price" min="0" step="0.01" class="w-full p-1 border rounded">
+              </td>
+              <td class="border px-4 py-2" x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'"></td>
+              <td class="border px-4 py-2" x-text="JSON.stringify(hotelCost)"></td>
+          </tr>
+      </template>
+  </tbody>
+</table>
   <button @click="saveTourPackage" class="bg-green-500 text-white px-3 py-2 rounded mt-4">Save Changes</button>
 
 </div>

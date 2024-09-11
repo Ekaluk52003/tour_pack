@@ -40,7 +40,19 @@ window.tourPackage = function() {
         // Initialize the form with existing data for editing
         initEditForm(existingData) {
             console.log("initEditForm called with data:", existingData);
+
+            this.hotelCosts = existingData.hotelCosts.map(cost => {
+                console.log("Processing hotel cost:", cost);
+                return {
+                    name: cost.name,
+                    nights: parseInt(cost.nights) || 1,
+                    room: parseInt(cost.room) || 1,
+                    price: parseFloat(cost.price) || 0
+                };
+            });
+            console.log("Processed hotelCosts:", this.hotelCosts);
             if (existingData) {
+
                 this.packageId = existingData.id;  // Assign the package ID
                 this.name = existingData.name;
                 this.customerName = existingData.customer_name;
@@ -65,9 +77,6 @@ window.tourPackage = function() {
                         service_types: []
                     }
                 }));
-
-                // Load hotel costs (assuming existingData.hotelCosts is the list of hotel costs)
-                this.hotelCosts = existingData.hotelCosts || [];
 
                 // Load city services for each day
                 this.days.forEach((day, index) => this.updateCityServices(index));
@@ -106,23 +115,12 @@ window.tourPackage = function() {
         },
 
 
-        // Function to add a hotel cost entry
-        addHotelCost() {
-            this.hotelCosts.push({ name: '', type: '', room: 1, nights: 1, price: 0 });
-        },
 
-        // Function to remove a hotel cost entry by index
-        removeHotelCost(index) {
-            this.hotelCosts.splice(index, 1);
-        },
 
-        // Function to calculate the total hotel cost
         calculateHotelCostTotal() {
-            let total = 0;
-            this.hotelCosts.forEach(hotelCost => {
-                total += (hotelCost.room || 1) * (hotelCost.nights || 1) * (hotelCost.price || 0);
-            });
-            return total.toFixed(2);
+            return this.hotelCosts.reduce((total, cost) => {
+                return total + (cost.room * cost.nights * cost.price);
+            }, 0).toFixed(2);
         },
 
         updateGuideService(dayIndex, guideIndex) {
@@ -233,6 +231,7 @@ window.tourPackage = function() {
         // Remove a day by index
         removeDay(index) {
             this.days.splice(index, 1);
+            this.updateHotelCosts();
         },
 
         // Add a service to a day
@@ -290,6 +289,33 @@ window.tourPackage = function() {
             }
         },
 
+        updateHotelCosts() {
+            const hotelCounts = {};
+            this.days.forEach(day => {
+                if (day.hotel && day.cityServices.hotels) {
+                    const hotel = day.cityServices.hotels.find(h => h.id == day.hotel);
+                    if (hotel) {
+                        if (hotelCounts[hotel.name]) {
+                            hotelCounts[hotel.name].nights += 1;
+                        } else {
+                            const existingCost = this.hotelCosts.find(hc => hc.name === hotel.name);
+                            hotelCounts[hotel.name] = {
+                                nights: 1,
+                                room: existingCost ? existingCost.room : 1,
+                                price: existingCost ? existingCost.price : 0
+                            };
+                        }
+                    }
+                }
+            });
+
+            this.hotelCosts = Object.entries(hotelCounts).map(([name, data]) => ({
+                name: name,
+                nights: data.nights,
+                room: data.room,
+                price: data.price
+            }));
+        },
         // Update available services and hotels based on selected city
         updateCityServices(index) {
             const cityId = this.days[index].city;
@@ -297,6 +323,7 @@ window.tourPackage = function() {
                 fetch(`/get-city-services/${cityId}/?tour_pack_type=${this.tourPackType}`)
                     .then(response => response.json())
                     .then(data => {
+
                         this.days[index].cityServices = data;
                         const selectedHotel = this.days[index].hotel;
                         const selectedServices = this.days[index].services.map(service => service.name);
@@ -318,12 +345,36 @@ window.tourPackage = function() {
                             this.updateService(index, this.days[index].services.indexOf(service));
                         }
                         });
+
+                        this.updateHotelCosts();
                     });
             } else {
                 this.days[index].cityServices = { hotels: [], service_types: [] };
                 this.days[index].hotel = '';
                 this.days[index].services = [];
+                this.updateHotelCosts();
             }
+        },
+
+        updateHotelForDay(dayIndex) {
+            const day = this.days[dayIndex];
+            if (day.hotel && day.cityServices.hotels) {
+                const selectedHotel = day.cityServices.hotels.find(h => h.id == day.hotel);
+                if (selectedHotel) {
+                    let hotelCost = this.hotelCosts.find(hc => hc.name === selectedHotel.name);
+                    if (hotelCost) {
+                        hotelCost.nights += 1;
+                    } else {
+                        this.hotelCosts.push({
+                            name: selectedHotel.name,
+                            nights: 1,
+                            room: 1,
+                            price: 0
+                        });
+                    }
+                }
+            }
+            this.updateHotelCosts();
         },
 
         // Get service names based on the selected service type
@@ -490,6 +541,6 @@ window.tourPackage = function() {
                     }
                 });
         },
-        
+
     };
   }

@@ -23,23 +23,18 @@ def calculate_totals(package):
         service.price_at_booking for day in package.tour_days.all() for service in day.services.all()
     )
 
-    # Assuming guide services are part of the total as well
     guide_service_total = sum(
         guide_service.price_at_booking for day in package.tour_days.all() for guide_service in day.guide_services.all()
     )
 
-    # Assuming hotel costs are stored in the package as JSON (as in your earlier design)
     hotel_total = sum(
         Decimal(cost['price']) * int(cost['room']) * int(cost['nights']) for cost in package.hotel_costs
     )
-    # Combine all totals for grand total
 
-    # Calculate grand totals
     service_grand_total = Decimal(service_total) + guide_service_total
     hotel_grand_total = Decimal(hotel_total)
     total_discount = sum(Decimal(discount['amount']) for discount in package.discounts)
     grand_total = Decimal(service_total) + guide_service_total + hotel_total
-
 
     return service_grand_total, hotel_grand_total, grand_total, total_discount
 

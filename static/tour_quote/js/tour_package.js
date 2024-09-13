@@ -40,52 +40,50 @@ window.tourPackage = function() {
         packageId: null,
         draggingIndex: null,
 
+
         initEditForm(existingData) {
             if (existingData) {
-                this.discounts = existingData.discounts.map(discount => ({
-                    item: discount.item,
-                    amount: parseFloat(discount.amount) || 0
-                }));
-
                 this.packageId = existingData.id;
                 this.name = existingData.name;
                 this.customerName = existingData.customer_name;
                 this.remark = existingData.remark || '';
                 this.tourPackType = existingData.tour_pack_type;
                 this.days = existingData.days.map(day => ({
-                    ...day,
-                    hotel: String(day.hotel),
+                    date: day.date,
+                    city: day.city,
+                    hotel: day.hotel,
                     services: day.services.map(service => ({
-                        ...service,
-                        name: String(service.name),
-                        price: service.price || 0
+                        type: service.type,
+                        name: service.name,
+                        price: service.price,
+                        price_at_booking: service.price_at_booking
                     })),
                     guideServices: day.guideServices.map(gs => ({
-                        ...gs,
-                        name: String(gs.name),
-                        price: parseFloat(gs.price),
-                        price_at_booking: parseFloat(gs.price_at_booking)
+                        name: gs.name,
+                        price: gs.price,
+                        price_at_booking: gs.price_at_booking
                     })),
                     cityServices: {
                         hotels: [],
                         service_types: []
                     }
                 }));
-
                 this.hotelCosts = existingData.hotelCosts || [];
-                this.days.forEach((day, index) => this.initializeCityServices(index));
+                this.discounts = existingData.discounts || [];
+
+                // Initialize city services for each day
+                this.days.forEach((day, index) => {
+                    this.updateCityServices(index);
+                });
             }
         },
 
         initializeCityServices(index) {
+            if (!this.days[index]) {
+                this.days[index] = {};
+            }
             if (!this.days[index].cityServices) {
                 this.days[index].cityServices = { hotels: [], service_types: [] };
-            }
-            if (!this.days[index].cityServices.hotels) {
-                this.days[index].cityServices.hotels = [];
-            }
-            if (!this.days[index].cityServices.service_types) {
-                this.days[index].cityServices.service_types = [];
             }
         },
         applyPredefinedQuote() {
@@ -253,20 +251,18 @@ window.tourPackage = function() {
             let hotelTotal = 0;
 
             this.days.forEach(day => {
+                // Calculate regular services total
                 day.services.forEach(service => {
-                    const price = parseFloat(service.price) || 0;
-                    serviceTotal += price;
+                    serviceTotal += parseFloat(service.price_at_booking) || 0;
                 });
-            });
 
-            this.days.forEach(day => {
+                // Calculate guide services total
                 day.guideServices.forEach(guideService => {
-                    const guideServiceObj = this.guideServices.find(gs => gs.id == guideService.name);
-                    const price = guideServiceObj ? parseFloat(guideServiceObj.price) : 0;
-                    guideServiceTotal += price;
+                    guideServiceTotal += parseFloat(guideService.price_at_booking) || 0;
                 });
             });
 
+            // Calculate hotel total
             this.hotelCosts.forEach(hotelCost => {
                 const room = parseFloat(hotelCost.room) || 1;
                 const nights = parseFloat(hotelCost.nights) || 1;
@@ -276,7 +272,6 @@ window.tourPackage = function() {
 
             const serviceGrandTotal = serviceTotal + guideServiceTotal;
             const hotelGrandTotal = hotelTotal;
-            const discountTotal = parseFloat(this.calculateTotalDiscounts());
             const grandTotal = serviceGrandTotal + hotelGrandTotal;
 
             return {
@@ -318,6 +313,10 @@ window.tourPackage = function() {
 
         removeDay(index) {
             this.days.splice(index, 1);
+            // Re-initialize cityServices for all days after removal
+            for (let i = index; i < this.days.length; i++) {
+                this.initializeCityServices(i);
+            }
         },
 
         addService(dayIndex) {
@@ -329,8 +328,8 @@ window.tourPackage = function() {
                 const firstGuideService = this.guideServices[0];
                 this.days[dayIndex].guideServices.push({
                     name: String(firstGuideService.id),
-                    price: firstGuideService.price,
-                    price_at_booking: firstGuideService.price
+                    price: parseFloat(firstGuideService.price) || 0,
+                    price_at_booking: parseFloat(firstGuideService.price) || 0
                 });
                 this.updateGuideService(dayIndex, this.days[dayIndex].guideServices.length - 1);
             }

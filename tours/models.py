@@ -29,10 +29,13 @@ class ServiceType(models.Model):
 class Service(models.Model):
     name = models.CharField(max_length=200)
     service_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
-    city = models.ForeignKey(City, on_delete=models.CASCADE)
+
 
     def __str__(self):
-        return f"{self.name} - {self.service_type} - {self.city}"
+        return f"{self.name} - {self.service_type}"
+
+    def get_cities(self):
+        return list(set([price.city for price in self.prices.all()]))
 
 class TourPackType(models.Model):
     name = models.CharField(max_length=100)
@@ -45,9 +48,13 @@ class ServicePrice(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='prices')
     tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    city = models.ForeignKey(City, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ('service', 'tour_pack_type')
+        unique_together = ['service', 'tour_pack_type', 'city']
+
+    def __str__(self):
+        return f"{self.service} - {self.tour_pack_type} - {self.city} - ${self.price}"
 
 
 class GuideService(models.Model):
@@ -126,25 +133,39 @@ class TourDayGuideService(models.Model):
 
     def __str__(self):
         return f"{self.tour_day} - {self.guide_service}"
-
-
-class PredefinedPackage(models.Model):
+class PredefinedTourQuote(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
-    tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.SET_NULL, null=True)
+    tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
 
-class PredefinedPackageDay(models.Model):
-    predefined_package = models.ForeignKey(PredefinedPackage, on_delete=models.CASCADE, related_name="days")
+class PredefinedTourDay(models.Model):
+    predefined_tour_quote = models.ForeignKey(PredefinedTourQuote, on_delete=models.CASCADE, related_name='days')
+    day_number = models.PositiveIntegerField()
     city = models.ForeignKey(City, on_delete=models.CASCADE)
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
-    services = models.ManyToManyField(Service)
-    guide_services = models.ManyToManyField(GuideService, blank=True)
 
+    class Meta:
+        ordering = ['day_number']
 
     def __str__(self):
-        return f"{self.predefined_package.name} - Day {self.id}"
+        return f"{self.predefined_tour_quote.name} - Day {self.day_number}"
 
+class PredefinedTourDayService(models.Model):
+    tour_day = models.ForeignKey(PredefinedTourDay, on_delete=models.CASCADE, related_name='services')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
 
+    def __str__(self):
+        return f"{self.tour_day} - {self.service}"
+
+class PredefinedTourDayGuideService(models.Model):
+    tour_day = models.ForeignKey(PredefinedTourDay, on_delete=models.CASCADE, related_name='guide_services')
+    guide_service = models.ForeignKey(GuideService, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.tour_day} - {self.guide_service}"

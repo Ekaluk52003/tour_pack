@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'allauth',
     'allauth.account',
+     'admin_auto_filters',
 ]
 
 MIDDLEWARE = [

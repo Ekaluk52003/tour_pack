@@ -150,9 +150,7 @@ x-init="
             <div class="space-y-2">
               <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
                 <div class="flex items-center mb-2 bg-white p-2 rounded border service-item">
-           <div class="flex-none mr-2">
-
-          </div>
+    
           <select x-model="service.type" @change="service.name = ''" class="mr-2 p-2 border rounded">
             <option value="">Select Service Type</option>
             <option value="transfer">Transfer</option>

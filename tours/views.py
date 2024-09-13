@@ -2,7 +2,7 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
-from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedPackage, ReferenceID, ServicePrice, TourPackType
+from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedTourQuote, ReferenceID, ServicePrice, TourPackType
 import json
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
@@ -15,6 +15,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Prefetch
+import traceback
 
 def calculate_totals(package):
     service_total = sum(
@@ -107,19 +109,16 @@ def save_tour_package(request, package_id=None):
 
                 # Handle services
                 for service_data in day_data['services']:
-                    try:
-                        service = Service.objects.get(id=service_data['name'])
-                        service_price = ServicePrice.objects.get(
-                            service=service,
-                            tour_pack_type_id=package.tour_pack_type_id
-                        )
-                        TourDayService.objects.create(
-                            tour_day=tour_day,
-                            service=service,
-                            price_at_booking=service_price.price
-                        )
-                    except (Service.DoesNotExist, ServicePrice.DoesNotExist):
-                        return JsonResponse({'status': 'error', 'message': 'Service or price not found for the selected tour package type'}, status=400)
+                    service_price = ServicePrice.objects.get(
+                    service_id=service_data['name'],
+                    city_id=day_data['city'],
+                    tour_pack_type_id=data['tour_pack_type']
+                )
+                    TourDayService.objects.create(
+                        tour_day=tour_day,
+                        service=service_price.service,
+                         price_at_booking=service_data.get('price_at_booking', service_price.price)
+                    )
 
                 # Handle guide services
                 for guide_service_data in day_data['guide_services']:
@@ -149,7 +148,8 @@ def save_tour_package(request, package_id=None):
 
         return JsonResponse({
             'status': 'success',
-            'redirect_url': reverse('tour_package_detail', args=[package.id])
+            'message': 'Tour package saved successfully',
+            'package_id': package.id
         })
 
     except Exception as e:
@@ -297,7 +297,8 @@ def tour_package_edit(request, pk):
 def tour_package_quote(request):
     cities = City.objects.all()
     service_types = ServiceType.objects.all()
-    predefined_packages = PredefinedPackage.objects.all()
+
+    predefined_quotes = PredefinedTourQuote.objects.all()
     tour_pack_types = TourPackType.objects.all()
     # Query guide services and convert price (Decimal) to float
     guide_services = list(
@@ -311,7 +312,7 @@ def tour_package_quote(request):
         'cities': cities,
         'service_types': service_types,
         'guide_services_json': json.dumps(guide_services, cls=DjangoJSONEncoder),
-        'predefined_packages': predefined_packages,
+        'predefined_quotes': predefined_quotes,
         'tour_pack_types': tour_pack_types,
     }
 
@@ -320,37 +321,48 @@ def tour_package_quote(request):
 @login_required
 @require_http_methods(["GET"])
 def get_city_services(request, city_id):
-    tour_pack_type_id = request.GET.get('tour_pack_type')
-    hotels = Hotel.objects.filter(city_id=city_id).values('id', 'name')
-    services = Service.objects.filter(city_id=city_id).select_related('service_type')
+    try:
+        tour_pack_type_id = request.GET.get('tour_pack_type')
+        city = get_object_or_404(City, id=city_id)
+        tour_pack_type = get_object_or_404(TourPackType, id=tour_pack_type_id)
 
-    service_types = {}
-    for service in services:
-        if service.service_type.name not in service_types:
-            service_types[service.service_type.name] = []
+        hotels = list(Hotel.objects.filter(city=city).values('id', 'name'))
 
+        service_prices = ServicePrice.objects.filter(
+            city=city,
+            tour_pack_type=tour_pack_type
+        ).select_related('service__service_type')
 
-        try:
-            price = ServicePrice.objects.get(service=service, tour_pack_type_id=tour_pack_type_id).price
-        except ServicePrice.DoesNotExist:
-            price = None
+        service_types = {}
+        for sp in service_prices:
+            service_type = sp.service.service_type.name
+            if service_type not in service_types:
+                service_types[service_type] = []
 
-        service_types[service.service_type.name].append({
-            'id': service.id,
-            'name': service.name,
-            'price': price
-        })
+            service_types[service_type].append({
+                'id': sp.service.id,
+                'name': sp.service.name,
+                'price': float(sp.price)
+            })
 
-    return JsonResponse({
-        'hotels': list(hotels),
-        'service_types': [
-            {'type': st, 'services': services}
-            for st, services in service_types.items()
-        ]
-    })
+        guide_services = list(GuideService.objects.all().values('id', 'name', 'price'))
+        for gs in guide_services:
+            gs['price'] = float(gs['price'])
 
+        response_data = {
+            'hotels': hotels,
+            'service_types': [
+                {'type': st, 'services': services}
+                for st, services in service_types.items()
+            ],
+            'guide_services': guide_services
+        }
 
-
+        print("Response data:", response_data)
+        return JsonResponse(response_data, safe=False, content_type='application/json')
+    except Exception as e:
+        print("Error in get_city_services:", str(e))
+        return JsonResponse({'error': str(e)}, status=500, content_type='application/json')
 
 
 @login_required
@@ -377,29 +389,102 @@ def tour_packages(request):
     }
     return render(request, 'tour_quote/tour_packages.html', context)
 
-
-
 @login_required
-def get_predefined_package(request, package_id):
-    package = PredefinedPackage.objects.get(id=package_id)
+@require_http_methods(["GET"])
+def get_predefined_tour_quote(request, quote_id):
+    quote = get_object_or_404(PredefinedTourQuote.objects.select_related('tour_pack_type'), id=quote_id)
     days = []
-    for day in package.days.all():
+
+    for day in quote.days.all().select_related('city', 'hotel'):
         day_data = {
             'city': day.city.id,
             'hotel': day.hotel.id,
             'services': [],
             'guideServices': []
         }
-        for service in day.services.all():
-            try:
-                price = ServicePrice.objects.get(service=service, tour_pack_type=package.tour_pack_type).price
-            except ServicePrice.DoesNotExist:
-                price = None
-            day_data['services'].append({'name': service.id, 'price': price})
 
-        for guide_service in day.guide_services.all():
-            day_data['guideServices'].append({'name': guide_service.id, 'price': guide_service.price})
+        for day_service in day.services.all().select_related('service__service_type'):
+            service = day_service.service
+            service_prices = ServicePrice.objects.filter(
+                service=service,
+                tour_pack_type=quote.tour_pack_type,
+                city=day.city
+            )
+
+            price = service_prices.first().price if service_prices.exists() else None
+
+            day_data['services'].append({
+                'id': service.id,
+                'name': service.name,
+                'type': service.service_type.name,
+                'price': float(price) if price is not None else None,
+                'quantity': day_service.quantity
+            })
+
+        for guide_service in day.guide_services.all().select_related('guide_service'):
+            day_data['guideServices'].append({
+                'id': guide_service.guide_service.id,
+                'name': guide_service.guide_service.name,
+                'price': float(guide_service.guide_service.price)
+            })
 
         days.append(day_data)
 
-    return JsonResponse({'days': days, 'tour_pack_type': package.tour_pack_type_id})
+    response_data = {
+        'id': quote.id,
+        'name': quote.name,
+        'description': quote.description,
+        'tour_pack_type': quote.tour_pack_type_id,
+        'days': days
+    }
+
+    print("Predefined tour quote response data:", response_data)  # Add this line for debugging
+
+    return JsonResponse(response_data)
+
+@login_required
+@require_http_methods(["GET"])
+def get_city_services(request, city_id):
+    try:
+        tour_pack_type_id = request.GET.get('tour_pack_type')
+        city = get_object_or_404(City, id=city_id)
+        tour_pack_type = get_object_or_404(TourPackType, id=tour_pack_type_id)
+
+        hotels = list(Hotel.objects.filter(city=city).values('id', 'name'))
+
+        service_prices = ServicePrice.objects.filter(
+            city=city,
+            tour_pack_type=tour_pack_type
+        ).select_related('service__service_type')
+
+        service_types = {}
+        for sp in service_prices:
+            service_type = sp.service.service_type.name
+            if service_type not in service_types:
+                service_types[service_type] = []
+
+            service_types[service_type].append({
+                'id': sp.service.id,
+                'name': sp.service.name,
+                'price': float(sp.price)
+            })
+
+        guide_services = list(GuideService.objects.all().values('id', 'name', 'price'))
+        for gs in guide_services:
+            gs['price'] = float(gs['price'])
+
+        response_data = {
+            'hotels': hotels,
+            'service_types': [
+                {'type': st, 'services': services}
+                for st, services in service_types.items()
+            ],
+            'guide_services': guide_services
+        }
+
+        print("Response data:", response_data)
+        return JsonResponse(response_data)
+    except Exception as e:
+        print("Error in get_city_services:", str(e))
+        print(traceback.format_exc())
+        return JsonResponse({'error': str(e)}, status=500)

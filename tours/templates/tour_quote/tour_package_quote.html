@@ -62,7 +62,6 @@
         {% endfor %}
     </select>
 </div>
-
   <div class="mb-4" x-show="errors.days">
     <p class="text-red-500 text-sm" x-text="errors.days"></p>
 </div>
@@ -76,19 +75,14 @@
     </div>
 </template>
 
-  <div class="mb-4">
-    <label class="block text-sm font-medium text-gray-700">Click for Adding Packages</label>
-    <div class="flex flex-wrap">
-        {% for package in predefined_packages %}
-            <button
-                @click="applyPredefinedPackage({{ package.id }})"
-                class="bg-green-500 text-white px-4 py-2 m-2 rounded"
-            >
-                {{ package.name }}
-            </button>
-        {% endfor %}
-    </div>
-</div>
+<!-- Predefined Tour Quote Selection -->
+<select x-model="selectedPredefinedQuote">
+  <option value="">Select a predefined quote</option>
+  {% for quote in predefined_quotes %}
+      <option value="{{ quote.id }}">{{ quote.name }}</option>
+  {% endfor %}
+</select>
+<button @click="applyPredefinedQuote()">Apply Predefined Quote</button>
 
     <div class="space-y-2">
         <template x-for="(day, dayIndex) in days" :key="dayIndex">
@@ -125,82 +119,74 @@
                     <option value="{{ city.id }}">{{ city.name }}</option>
                   {% endfor %}
                 </select>
-              </div>
-
-              <div class="mb-2">
-                <label class="block mb-2">Hotel</label>
-                <select x-model="day.hotel" @change="updateHotelForDay(dayIndex)" class="w-full border rounded px-3 py-2">
-                    <option value="">Select Hotel</option>
-                    <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
-                        <option :value="String(hotel.id)" x-text="hotel.name"></option>
-                    </template>
-                </select>
             </div>
 
-              <div class="mb-4">
-                <h3 class="text-lg font-semibold mb-2">Services</h3>
-                <div class="space-y-2">
-                  <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
-                    <div class="flex items-center mb-2 bg-white p-2 rounded border service-item">
-               <div class="flex-none mr-2">
-
-              </div>
-              <select x-model="service.type" @change="service.name = ''" class="mr-2 p-2 border rounded">
-                <option value="">Select Service Type</option>
-                <option value="transfer">Transfer</option>
-                <option value="tour">Tour</option>
-              </select>
-              <select x-model="service.name" @change="updateService(dayIndex, serviceIndex)" class="mr-2 p-2 border rounded">
-                <option value="">Select Service</option>
-                <template x-for="option in getServiceNames(dayIndex, service.type)" :key="option.id">
-                  <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="service.name == option.id"></option>
-                </template>
-              </select>
-
-              <!-- <span class="ml-2" x-text="`Current: ${service.price} USD`"></span> -->
-              <button @click="removeService(dayIndex, serviceIndex)" class="ml-2 text-red-600">Remove</button>
-
-
-
-                    </div>
+            <div class="mb-2">
+              <label :for="`day-${dayIndex}-hotel`" class="block">Hotel</label>
+              <select :id="`day-${dayIndex}-hotel`" x-model.number="day.hotel" class="w-full p-2 border rounded">
+                  <option value="">Select Hotel</option>
+                  <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
+                      <option :value="hotel.id" x-text="hotel.name" :selected="hotel.id === day.hotel"></option>
                   </template>
-                </div>
-
-                <button @click="addService(dayIndex)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Service</button>
-              </div>
-
-              <div class="mb-4">
-                <h3 class="text-lg font-semibold mb-2 mt-4">Guide Services</h3>
-                <template x-for="(guideService, guideIndex) in day.guideServices" :key="guideIndex">
-                  <div class="flex items-center mb-2">
-                    <select x-model="guideService.name" @change="updateGuideService(dayIndex, guideIndex)" class="w-3/4 border rounded px-3 py-2 mr-2">
-                      <option value="">Select Guide Service</option>
-                      <template x-for="option in guideServices" :key="option.id">
-                        <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="guideService.name == option.id"></option>
-                      </template>
-                    </select>
+              </select>
+          </div>
 
 
-                    <button @click="removeGuideService(dayIndex, guideIndex)"  class="ml-2 text-red-600">Remove</button>
+            <!-- Services -->
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold mb-2">Services</h3>
+              <div class="space-y-2">
+                <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
+                  <div class="flex items-center mb-2 bg-white p-2 rounded border service-item">
+
+            <select x-model="service.type" @change="service.name = ''" class="mr-2 p-2 border rounded">
+              <option value="">Select Service Type</option>
+              <option value="transfer">Transfer</option>
+              <option value="tour">Tour</option>
+            </select>
+            <select x-model="service.name" @change="updateService(dayIndex, serviceIndex)" class="mr-2 p-2 border rounded">
+              <option value="">Select Service</option>
+              <template x-for="option in getServiceNames(dayIndex, service.type)" :key="option.id">
+                <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="service.name == option.id"></option>
+              </template>
+            </select>
+
+            <!-- <span class="ml-2" x-text="`Current: ${service.price} USD`"></span> -->
+            <button @click="removeService(dayIndex, serviceIndex)" class="ml-2 text-red-600">Remove</button>
+
+
+
                   </div>
                 </template>
-                <button @click="addGuideService(dayIndex)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Guide Service</button>
               </div>
 
+              <button @click="addService(dayIndex)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Service</button>
+            </div>
+            <!-- Guide Services -->
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold mb-2 mt-4">Guide Services</h3>
+              <template x-for="(guideService, guideIndex) in day.guideServices" :key="guideIndex">
+                <div class="flex items-center mb-2">
+                  <select x-model="guideService.name" @change="updateGuideService(dayIndex, guideIndex)" class="w-3/4 border rounded px-3 py-2 mr-2">
+                    <option value="">Select Guide Service</option>
+                    <template x-for="option in guideServices" :key="option.id">
+                      <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="guideService.name == option.id"></option>
+                    </template>
+                  </select>
+
+                  <!-- <span class="ml-2" x-text="`Current: ${guideService.price.toFixed(2)} USD`"></span> -->
+
+                  <button @click="removeGuideService(dayIndex, guideIndex)"  class="ml-2 text-red-600">Remove</button>
+                </div>
+              </template>
+              <button @click="addGuideService(dayIndex)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Guide Service</button>
             </div>
 
-            <!-- Plus button to add day between (except after the last day) -->
-            <template x-if="dayIndex < days.length - 1">
-              <button @click="insertDayBelow(dayIndex)"
-                      class="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-4 rounded-full flex items-center justify-center mb-2"
-                      title="Insert day here">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-              </button>
-            </template>
-          </div>
-        </template>
+
+        </div>
+    </template>
+
+    <button @click="addDay()" class="mb-4">Add Day</button>
 
         <!-- Add Day button at the end -->
         <button @click="insertDayBelow(days.length - 1)"

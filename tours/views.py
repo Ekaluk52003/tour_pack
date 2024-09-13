@@ -27,8 +27,11 @@ def calculate_totals(package):
         guide_service.price_at_booking for day in package.tour_days.all() for guide_service in day.guide_services.all()
     )
 
+
     hotel_total = sum(
-        Decimal(cost['price']) * int(cost['room']) * int(cost['nights']) for cost in package.hotel_costs
+        (Decimal(cost['price']) * int(cost['room']) * int(cost['nights'])) +
+        (Decimal(cost.get('extraBedPrice', 0)) * int(cost['nights']))
+        for cost in package.hotel_costs
     )
 
     service_grand_total = Decimal(service_total) + guide_service_total
@@ -157,9 +160,16 @@ def tour_package_pdf(request, pk):
     # Prepare hotel costs with total calculation
     hotel_costs_with_total = []
     for cost in package.hotel_costs:
-        total_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
-        cost['total'] = total_cost
-        hotel_costs_with_total.append(cost)
+        room_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
+        extra_bed_cost = float(cost.get('extraBedPrice', 0)) * float(cost['nights'])
+        total_cost = room_cost + extra_bed_cost
+
+        cost_with_total = cost.copy()  # Create a copy to avoid modifying the original
+        cost_with_total['room_cost'] = room_cost
+        cost_with_total['extra_bed_cost'] = extra_bed_cost
+        cost_with_total['total'] = total_cost
+
+        hotel_costs_with_total.append(cost_with_total)
 
     # Render the template to HTML
     html_string = render_to_string('tour_quote/tour_package_pdf.html', {
@@ -203,9 +213,16 @@ def tour_package_detail(request, pk):
     # Calculate total costs for hotels
     hotel_costs_with_total = []
     for cost in package.hotel_costs:
-        total_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
-        cost['total'] = total_cost  # Add total cost to the cost dictionary
-        hotel_costs_with_total.append(cost)
+        room_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
+        extra_bed_cost = float(cost.get('extraBedPrice', 0)) * float(cost['nights'])
+        total_cost = room_cost + extra_bed_cost
+
+        cost_with_total = cost.copy()  # Create a copy to avoid modifying the original
+        cost_with_total['room_cost'] = room_cost
+        cost_with_total['extra_bed_cost'] = extra_bed_cost
+        cost_with_total['total'] = total_cost
+
+        hotel_costs_with_total.append(cost_with_total)
 
       # Prepare discount information
 

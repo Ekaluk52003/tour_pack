@@ -143,7 +143,7 @@ window.tourPackage = function() {
                 });
         },
         addHotelCost() {
-            this.hotelCosts.push({ name: '', type: '', room: 1, nights: 1, price: 0 });
+            this.hotelCosts.push({ name: '', type: '', room: 1, nights: 1, price: 0, extraBedPrice: 0 });
         },
 
         removeHotelCost(index) {
@@ -191,7 +191,9 @@ window.tourPackage = function() {
 
         calculateHotelCostTotal() {
             return this.hotelCosts.reduce((total, cost) => {
-                return total + (cost.room * cost.nights * cost.price);
+                const roomCost = (parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0);
+                const extraBedCost = (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0);
+                return total + roomCost + extraBedCost;
             }, 0).toFixed(2);
         },
 
@@ -245,7 +247,7 @@ window.tourPackage = function() {
         },
 
         calculateGrandTotal() {
-            console.log('Entering calculateGrandTotal');
+
             let serviceTotal = 0;
             let guideServiceTotal = 0;
             let hotelTotal = 0;
@@ -260,7 +262,7 @@ window.tourPackage = function() {
             }
 
             this.days.forEach((day, index) => {
-                console.log(`Processing Day ${index + 1}:`, day);
+
 
                 if (day.services && Array.isArray(day.services)) {
                     day.services.forEach(service => {
@@ -281,19 +283,8 @@ window.tourPackage = function() {
                 }
             });
 
-            console.log('Service Total:', serviceTotal);
-            console.log('Guide Service Total:', guideServiceTotal);
 
-            if (this.hotelCosts && Array.isArray(this.hotelCosts)) {
-                this.hotelCosts.forEach(hotelCost => {
-                    const room = parseFloat(hotelCost.room) || 1;
-                    const nights = parseFloat(hotelCost.nights) || 1;
-                    const price = parseFloat(hotelCost.price) || 0;
-                    hotelTotal += room * nights * price;
-                });
-            } else {
-                console.warn('this.hotelCosts is not an array:', this.hotelCosts);
-            }
+            hotelTotal = parseFloat(this.calculateHotelCostTotal());
 
             const serviceGrandTotal = serviceTotal + guideServiceTotal;
             const hotelGrandTotal = hotelTotal;
@@ -565,6 +556,8 @@ window.tourPackage = function() {
                 return;
             }
 
+            const totals = this.calculateGrandTotal();
+            
             const data = {
                 name: this.name,
                 customer_name: this.customerName,

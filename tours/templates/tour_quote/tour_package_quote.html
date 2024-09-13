@@ -217,34 +217,26 @@
               <th class="px-2 text-left">Nights</th>
               <th class="px-2 text-left">Rooms</th>
               <th class="px-2 text-left">Price per Night</th>
+              <th class="px-4 py-2">Extra Bed Price</th>
               <th class="px-2 text-left">Total</th>
               <th class="px-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <template x-for="(hotelCost, index) in hotelCosts" :key="index">
+            <template x-for="(cost, index) in hotelCosts" :key="index">
               <tr>
-                <td class="border px-2">
-                  <input type="text" x-model="hotelCost.name" class="w-full p-1 border rounded">
-                </td>
-                <td class="border px-2">
-                  <input type="text" x-model="hotelCost.type" class="w-full p-1 border rounded">
-                </td>
-                <td class="border px-2">
-                  <input type="number" x-model.number="hotelCost.nights" min="1" class="w-full p-1 border rounded">
-                </td>
-                <td class="border px-2">
-                  <input type="number" x-model.number="hotelCost.room" min="1" class="w-full p-1 border rounded">
-                </td>
-                <td class="border px-2">
-                  <input type="number" x-model.number="hotelCost.price" min="0" step="0.01" class="w-full p-1 border rounded">
-                </td>
-                <td class="border px-2" x-text="(hotelCost.room * hotelCost.nights * hotelCost.price).toFixed(2) + ' USD'"></td>
-                <td class="border px-4 py-2">
-                  <button @click="removeHotelCost(index)" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
-                </td>
+                  <td class="border px-2"><input x-model="cost.name" class="w-full p-1 border rounded"></td>
+                  <td class="border px-2"><input x-model="cost.type" class="w-full p-1 border rounded"></td>
+                  <td class="border px-2"><input type="number" x-model="cost.nights" class="w-full p-1 border rounded"></td>
+                  <td class="border px-2"><input type="number" x-model="cost.room" class="w-full p-1 border rounded"></td>
+                  <td class="border px-2"><input type="number" x-model="cost.price" class="w-full p-1 border rounded"></td>
+                  <td class="border px-2"><input type="number" x-model="cost.extraBedPrice" class="w-full p-1 border rounded"></td>
+                  <td class="border px-2" x-text="((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2) + ' USD'"></td>
+                  <td class="px-4 py-2">
+                      <button @click="removeHotelCost(index)" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                  </td>
               </tr>
-            </template>
+          </template>
           </tbody>
         </table>
       </div>

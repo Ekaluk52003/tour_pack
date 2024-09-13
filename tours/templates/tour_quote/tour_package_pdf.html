@@ -182,6 +182,7 @@
                     <th>Rooms</th>
                     <th>Nights</th>
                     <th>Price per Night (USD)</th>
+                    <th>Extra Bed (USD)</th>
                     <th>Total (USD)</th>
                 </tr>
             </thead>
@@ -193,6 +194,7 @@
                     <td>{{ hotel_cost.room }}</td>
                     <td>{{ hotel_cost.nights }}</td>
                     <td>{{ hotel_cost.price }}</td>
+                    <td>{{ hotel_cost.extraBedPrice}}</td>
                     <td>{{ hotel_cost.total|floatformat:"2" }}</td>
                 </tr>
                 {% endfor %}

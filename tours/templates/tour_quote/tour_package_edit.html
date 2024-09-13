@@ -70,7 +70,6 @@ x-init="
           <option value="{{ pack_type.id }}">{{ pack_type.name }}</option>
       {% endfor %}
   </select>
-  <p class="text-red-500 text-xs italic" x-show="errors.tourPackType" x-text="errors.tourPackType"></p>
 </div>
 <div class="mb-4" x-show="errors.days">
   <p class="text-red-500 text-sm" x-text="errors.days"></p>
@@ -85,19 +84,15 @@ x-init="
   </div>
 </template>
 
-<div class="mb-4">
-  <label class="block text-sm font-medium text-gray-700">Click for Adding Packages</label>
-  <div class="flex flex-wrap">
-      {% for package in predefined_packages %}
-          <button
-              @click="applyPredefinedPackage({{ package.id }})"
-              class="bg-green-500 text-white px-4 py-2 m-2 rounded"
-          >
-              {{ package.name }}
-          </button>
-      {% endfor %}
-  </div>
-</div>
+<!-- Predefined Tour Quote Selection -->
+<select x-model="selectedPredefinedQuote">
+  <option value="">Select a predefined quote</option>
+  {% for quote in predefined_quotes %}
+      <option value="{{ quote.id }}">{{ quote.name }}</option>
+  {% endfor %}
+</select>
+<button @click="applyPredefinedQuote()">Apply Predefined Quote</button>
+
   <div class="space-y-2">
     <template x-for="(day, dayIndex) in days" :key="dayIndex">
       <div class="mb-4"
@@ -219,8 +214,7 @@ x-init="
       Add Day
     </button>
   </div>
-  <p class="text-lg font-semibold">Service Grand Total: <span x-text="calculateGrandTotal().serviceGrandTotal + ' USD'"></span></p>
-  
+
   <div class="my-4">
     <h3 class="text-lg font-semibold">Service Grand Total: <span x-text="calculateGrandTotal().serviceGrandTotal + ' USD'"></span></h3>
 </div>

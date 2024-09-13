@@ -55,13 +55,13 @@ window.tourPackage = function() {
                     services: day.services.map(service => ({
                         type: service.type,
                         name: service.name,
-                        price: service.price,
-                        price_at_booking: service.price_at_booking
+                        price: parseFloat(service.price_at_booking) || 0,
+                        price_at_booking: parseFloat(service.price_at_booking) || 0
                     })),
                     guideServices: day.guideServices.map(gs => ({
                         name: gs.name,
-                        price: gs.price,
-                        price_at_booking: gs.price_at_booking
+                        price: parseFloat(gs.price_at_booking) || 0,
+                        price_at_booking: parseFloat(gs.price_at_booking) || 0
                     })),
                     cityServices: {
                         hotels: [],
@@ -77,7 +77,6 @@ window.tourPackage = function() {
                 });
             }
         },
-
         initializeCityServices(index) {
             if (!this.days[index]) {
                 this.days[index] = {};
@@ -246,33 +245,65 @@ window.tourPackage = function() {
         },
 
         calculateGrandTotal() {
+            console.log('Entering calculateGrandTotal');
             let serviceTotal = 0;
             let guideServiceTotal = 0;
             let hotelTotal = 0;
 
-            this.days.forEach(day => {
-                // Calculate regular services total
-                day.services.forEach(service => {
-                    serviceTotal += parseFloat(service.price_at_booking) || 0;
-                });
+            if (!this.days || !Array.isArray(this.days)) {
+                console.error('this.days is not an array:', this.days);
+                return {
+                    serviceGrandTotal: '0.00',
+                    hotelGrandTotal: '0.00',
+                    grandTotal: '0.00'
+                };
+            }
 
-                // Calculate guide services total
-                day.guideServices.forEach(guideService => {
-                    guideServiceTotal += parseFloat(guideService.price_at_booking) || 0;
-                });
+            this.days.forEach((day, index) => {
+                console.log(`Processing Day ${index + 1}:`, day);
+
+                if (day.services && Array.isArray(day.services)) {
+                    day.services.forEach(service => {
+                        console.log('Regular service:', service);
+                        serviceTotal += parseFloat(service.price) || 0; // Changed from price_at_booking to price
+                    });
+                } else {
+                    console.warn(`Day ${index + 1} services is not an array:`, day.services);
+                }
+
+                if (day.guideServices && Array.isArray(day.guideServices)) {
+                    day.guideServices.forEach(guideService => {
+                        console.log('Guide service:', guideService);
+                        guideServiceTotal += parseFloat(guideService.price) || 0; // Changed from price_at_booking to price
+                    });
+                } else {
+                    console.warn(`Day ${index + 1} guideServices is not an array:`, day.guideServices);
+                }
             });
 
-            // Calculate hotel total
-            this.hotelCosts.forEach(hotelCost => {
-                const room = parseFloat(hotelCost.room) || 1;
-                const nights = parseFloat(hotelCost.nights) || 1;
-                const price = parseFloat(hotelCost.price) || 0;
-                hotelTotal += room * nights * price;
-            });
+            console.log('Service Total:', serviceTotal);
+            console.log('Guide Service Total:', guideServiceTotal);
+
+            if (this.hotelCosts && Array.isArray(this.hotelCosts)) {
+                this.hotelCosts.forEach(hotelCost => {
+                    const room = parseFloat(hotelCost.room) || 1;
+                    const nights = parseFloat(hotelCost.nights) || 1;
+                    const price = parseFloat(hotelCost.price) || 0;
+                    hotelTotal += room * nights * price;
+                });
+            } else {
+                console.warn('this.hotelCosts is not an array:', this.hotelCosts);
+            }
 
             const serviceGrandTotal = serviceTotal + guideServiceTotal;
             const hotelGrandTotal = hotelTotal;
             const grandTotal = serviceGrandTotal + hotelGrandTotal;
+
+            console.log('Calculation complete. Returning:', {
+                serviceGrandTotal: serviceGrandTotal.toFixed(2),
+                hotelGrandTotal: hotelGrandTotal.toFixed(2),
+                grandTotal: grandTotal.toFixed(2)
+            });
 
             return {
                 serviceGrandTotal: serviceGrandTotal.toFixed(2),
@@ -362,7 +393,7 @@ window.tourPackage = function() {
             return new Promise((resolve, reject) => {
                 this.initializeCityServices(index);
                 const cityId = this.days[index].city;
-                console.log(`Updating city services for day ${index}, city ID: ${cityId}`);
+
 
                 if (cityId && this.tourPackType) {
                     fetch(`/get-city-services/${cityId}/?tour_pack_type=${this.tourPackType}`)
@@ -373,7 +404,7 @@ window.tourPackage = function() {
                             return response.text(); // Get the raw response text
                         })
                         .then(text => {
-                            console.log('Raw response:', text); // Log the raw response
+
                             try {
                                 return JSON.parse(text); // Try to parse it as JSON
                             } catch (e) {

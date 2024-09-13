@@ -227,7 +227,7 @@ def tour_package_edit(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
     cities = City.objects.all()
     guide_services = list(GuideService.objects.values('id', 'name', 'price'))
-    predefined_packages = PredefinedTourQuote.objects.all()
+    predefined_quotes = PredefinedTourQuote.objects.all()
     tour_pack_types = TourPackType.objects.all()
 
     if request.method == 'POST':
@@ -282,7 +282,7 @@ def tour_package_edit(request, pk):
         'cities': cities,
         'guide_services_json': json.dumps(guide_services, cls=DjangoJSONEncoder),
         'package_json': json.dumps(package_data, cls=DjangoJSONEncoder),
-        'predefined_packages': predefined_packages,
+          'predefined_quotes': predefined_quotes,
         'tour_pack_types': tour_pack_types,
     }
 
@@ -353,7 +353,7 @@ def get_city_services(request, city_id):
             'guide_services': guide_services
         }
 
-        print("Response data:", response_data)
+
         return JsonResponse(response_data, safe=False, content_type='application/json')
     except Exception as e:
         print("Error in get_city_services:", str(e))

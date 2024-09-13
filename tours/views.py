@@ -232,7 +232,7 @@ def tour_package_edit(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
     cities = City.objects.all()
     guide_services = list(GuideService.objects.values('id', 'name', 'price'))
-    predefined_packages = PredefinedPackage.objects.all()
+    predefined_packages = PredefinedTourQuote.objects.all()
     tour_pack_types = TourPackType.objects.all()
 
     if request.method == 'POST':

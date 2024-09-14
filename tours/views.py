@@ -88,6 +88,7 @@ def save_tour_package(request, package_id=None):
                 package.customer_name = data['customer_name']
                 package.remark = data.get('remark', '')
                 package.tour_pack_type_id = data['tour_pack_type']
+                package.commission_rate = Decimal(data.get('commission_rate', 0))
                 package.tour_days.all().delete()  # Remove existing tour days to recreate them
             else:
                 # Create new package
@@ -95,7 +96,8 @@ def save_tour_package(request, package_id=None):
                     name=data['name'],
                     customer_name=data['customer_name'],
                     remark=data.get('remark', ''),
-                    tour_pack_type_id=data['tour_pack_type']
+                    tour_pack_type_id=data['tour_pack_type'],
+                    commission_rate=Decimal(data.get('commission_rate', 0))
                 )
                 # Generate package_reference if not provided
                 if not package.package_reference:
@@ -148,6 +150,11 @@ def save_tour_package(request, package_id=None):
             package.hotel_grand_total = hotel_grand_total
             total_discount = sum(Decimal(discount['amount']) for discount in package.discounts)
             package.grand_total_cost = grand_total_cost - total_discount
+
+            # Calculate commission amount
+            total_nights = sum(int(cost['nights']) for cost in package.hotel_costs)
+            package.commission_amount = package.commission_rate * total_nights
+
             package.save()
 
         return JsonResponse({
@@ -266,6 +273,7 @@ def tour_package_edit(request, pk):
         'customer_name': package.customer_name,
         'remark': package.remark,
         'tour_pack_type': package.tour_pack_type_id,
+        'commission_rate': float(package.commission_rate), 
         'days': [
             {
                 'date': day.date.isoformat(),

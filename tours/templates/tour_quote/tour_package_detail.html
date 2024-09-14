@@ -102,6 +102,11 @@
         <h2 class="text-xl font-semibold">Grand Total Cost: {{ package.grand_total_cost }} USD</h2>
     </div>
 
+    <div class="mt-4">
+        <p><strong>Commission Rate:</strong> {{ package.commission_rate }}</p>
+        <p><strong>Commission Amount:</strong> ${{ package.commission_amount|floatformat:2 }}</p>
+      </div>
+
     <div class="block my-4">
         <a href="{% url 'tour_package_edit' package.id %}" class="bg-blue-500 text-white px-4 py-2 rounded">Edit Package</a>
     </div>

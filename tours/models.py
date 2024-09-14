@@ -99,6 +99,10 @@ class TourPackageQuote(models.Model):
     package_reference = models.CharField(max_length=5, unique=True, blank=True, null=True)
     tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.SET_NULL, null=True)
 
+# New fields for commission
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    commission_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
     def __str__(self):
         return f"{self.name} - {self.customer_name}"
 

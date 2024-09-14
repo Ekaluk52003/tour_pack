@@ -302,6 +302,18 @@ x-init="
     <span x-text="(parseFloat(calculateGrandTotal().grandTotal) - calculateTotalDiscounts()).toFixed(2) + ' USD'"></span>
   </h3>
 </div>
+
+<!-- Add this inside your form, where appropriate -->
+<div class="mb-4">
+  <label for="commissionRate" class="block text-sm font-medium text-gray-700">Commission Rate (%)</label>
+  <input type="number" id="commissionRate" name="commissionRate" x-model="commissionRate" step="0.01" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+</div>
+
+<!-- Add this where you display the totals -->
+<div class="mt-4">
+  <p class="font-semibold">Commission Amount: $<span x-text="calculateGrandTotal().commissionAmount"></span></p>
+</div>
+
   <button @click="saveTourPackage" class="bg-green-500 text-white px-3 py-2 rounded mt-4">Save Changes</button>
 
 </div>

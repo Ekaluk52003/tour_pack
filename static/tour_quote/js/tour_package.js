@@ -22,6 +22,7 @@ window.tourPackage = function() {
         remark: '',
         tourPackType: '',
         selectedPredefinedQuote: '',
+        commissionRate: 0,
         days: [{
             date: '',
             city: '',
@@ -48,6 +49,7 @@ window.tourPackage = function() {
                 this.customerName = existingData.customer_name;
                 this.remark = existingData.remark || '';
                 this.tourPackType = existingData.tour_pack_type;
+                this.commissionRate = existingData.commission_rate || 0;
                 this.days = existingData.days.map(day => ({
                     date: day.date,
                     city: day.city,
@@ -296,10 +298,14 @@ window.tourPackage = function() {
                 grandTotal: grandTotal.toFixed(2)
             });
 
+            const totalNights = this.hotelCosts.reduce((total, cost) => total + parseInt(cost.nights), 0);
+            const commissionAmount = (parseFloat(this.commissionRate) * totalNights).toFixed(2);
+
             return {
                 serviceGrandTotal: serviceGrandTotal.toFixed(2),
                 hotelGrandTotal: hotelGrandTotal.toFixed(2),
-                grandTotal: grandTotal.toFixed(2)
+                grandTotal: grandTotal.toFixed(2),
+                commissionAmount: commissionAmount
             };
         },
 
@@ -563,6 +569,7 @@ window.tourPackage = function() {
                 customer_name: this.customerName,
                 remark: this.remark,
                 tour_pack_type: this.tourPackType,
+                commission_rate: this.commissionRate,
                 days: this.days.map(day => ({
                     date: day.date,
                     city: day.city,

@@ -1,4 +1,4 @@
-window.tourPackage = function() {
+window.tourPackage = function(isSuperUser) {
 
     function getCookie(name) {
         let cookieValue = null;
@@ -20,9 +20,11 @@ window.tourPackage = function() {
         name: '',
         customerName: '',
         remark: '',
+        remark2: '',
         tourPackType: '',
         selectedPredefinedQuote: '',
-        commissionRate: 0,
+        commission_rate_hotel: 0,
+        commission_rate_services: 0,
         days: [{
             date: '',
             city: '',
@@ -42,7 +44,6 @@ window.tourPackage = function() {
         draggingIndex: null,
         isSuperUser: false,
 
-
         initEditForm(existingData, isSuperUser) {
             this.isSuperUser = isSuperUser;
             if (existingData) {
@@ -50,8 +51,10 @@ window.tourPackage = function() {
                 this.name = existingData.name;
                 this.customerName = existingData.customer_name;
                 this.remark = existingData.remark || '';
+                this.remark2 = existingData.remark2 || '';
                 this.tourPackType = existingData.tour_pack_type;
-                this.commissionRate = existingData.commission_rate || 0;
+                this.commission_rate_hotel = existingData.commission_rate_hotel || 0;
+                this.commission_rate_services = existingData.commission_rate_services || 0;
                 this.days = existingData.days.map(day => ({
                     date: day.date,
                     city: day.city,
@@ -261,7 +264,9 @@ window.tourPackage = function() {
                 return {
                     serviceGrandTotal: '0.00',
                     hotelGrandTotal: '0.00',
-                    grandTotal: '0.00'
+                    grandTotal: '0.00',
+                    commission_amount_hotel: '0.00',
+                    commission_amount_services: '0.00'
                 };
             }
 
@@ -294,20 +299,20 @@ window.tourPackage = function() {
             const hotelGrandTotal = hotelTotal;
             const grandTotal = serviceGrandTotal + hotelGrandTotal;
 
-            console.log('Calculation complete. Returning:', {
-                serviceGrandTotal: serviceGrandTotal.toFixed(2),
-                hotelGrandTotal: hotelGrandTotal.toFixed(2),
-                grandTotal: grandTotal.toFixed(2)
-            });
+            const totalRoomNights = this.hotelCosts.reduce((total, cost) => {
+                return total + (parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0);
+            }, 0);
 
-            const totalNights = this.hotelCosts.reduce((total, cost) => total + parseInt(cost.nights), 0);
-            const commissionAmount = (parseFloat(this.commissionRate) * totalNights).toFixed(2);
+            const commission_amount_hotel = (parseFloat(this.commission_rate_hotel) * totalRoomNights).toFixed(2);
+            const commission_amount_services = (parseFloat(this.commission_rate_services) * serviceGrandTotal / 100).toFixed(2);
+
 
             return {
                 serviceGrandTotal: serviceGrandTotal.toFixed(2),
                 hotelGrandTotal: hotelGrandTotal.toFixed(2),
                 grandTotal: grandTotal.toFixed(2),
-                commissionAmount: commissionAmount
+                commission_amount_hotel: commission_amount_hotel,
+                commission_amount_services: commission_amount_services
             };
         },
 
@@ -559,26 +564,24 @@ window.tourPackage = function() {
 
         // Save the tour package data to the backend
         saveTourPackage() {
-            if (!this.validateForm()) {
-                alert("Please correct the errors before submitting.");
-                return;
-            }
+            // if (!this.validateForm()) {
+            //     console.log('Form validation failed', this.errors);
+            //     alert("Please correct the errors before submitting.");
+            //     return;
+            // }
 
             const totals = this.calculateGrandTotal();
 
-            let data = {
-                id: this.packageId,  // Include the package ID for existing packages
-                hotelCosts: this.hotelCosts,
-            };
-
-            if (this.isSuperUser) {
                 data = {
-                    ...data,
+                    id: this.packageId,  // Include the package ID for existing packages
+                    hotelCosts: this.hotelCosts,
                     name: this.name,
                     customer_name: this.customerName,
                     remark: this.remark,
+                    remark2: this.remark2,
                     tour_pack_type: this.tourPackType,
-                    commission_rate: this.commissionRate,
+                    commission_rate_hotel: this.commission_rate_hotel,
+                    commission_rate_services: this.commission_rate_services,
                     days: this.days.map(day => ({
                         date: day.date,
                         city: day.city,
@@ -598,7 +601,7 @@ window.tourPackage = function() {
                 };
 
 
-            }
+
 
 
             fetch('/save-tour-package/', {

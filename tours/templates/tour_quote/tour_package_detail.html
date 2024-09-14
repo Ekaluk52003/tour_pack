@@ -1,119 +1,150 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto px-4">
-    <h1 class="text-2xl font-bold mb-4">{{ package.name }}</h1>
-    <p><strong>Reference ID:</strong> {{ package.package_reference }}</p>
-    <p><strong>Tour Pack:</strong> {{ tour_pack_type.name }}</p>
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Header Section -->
+        <div class="bg-blue-600 text-white p-6">
+            <h1 class="text-3xl font-bold mb-2">{{ package.name }}</h1>
+            <p class="text-lg"><strong>Reference ID:</strong> {{ package.package_reference }}</p>
+            <p class="text-lg"><strong>Tour Pack:</strong> {{ tour_pack_type.name }}</p>
+        </div>
 
-    <p class="mb-2"><strong>Customer:</strong> {{ package.customer_name }}</p>
-    <p class="mb-2"><strong>Remark:</strong> {{ package.remark }}</p>
-    <p class="mb-4"><strong>Created:</strong> {{ package.created_at|date:"Y-m-d H:i" }}</p>
+        <!-- Customer Info Section -->
+        <div class="p-6 border-b">
+            <h2 class="text-2xl font-semibold mb-4">Customer Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <p><strong>Customer:</strong> {{ package.customer_name }}</p>
+                <p><strong>Created:</strong> {{ package.created_at|date:"Y-m-d H:i" }}</p>
+                <p><strong>Remark:</strong> {{ package.remark }}</p>
+                <p><strong>Remark2:</strong> {{ package.remark2 }}</p>
+            </div>
+        </div>
 
-    {% for day in package.tour_days.all %}
-    <div class="mb-6 p-4 border border-gray-300 rounded">
-        <h2 class="text-xl font-semibold mb-2">Day {{ forloop.counter }} - {{ day.date|date:"Y-m-d" }}</h2>
-        <p><strong>City:</strong> {{ day.city.name }}</p>
-        <p><strong>Hotel:</strong> {{ day.hotel.name }}</p>
+        <!-- Itinerary Section -->
+        <div class="p-6 border-b">
+            <h2 class="text-2xl font-semibold mb-4">Itinerary</h2>
+            {% for day in package.tour_days.all %}
+            <div class="mb-6 p-4 bg-gray-100 rounded-lg">
+                <h3 class="text-xl font-semibold mb-2">Day {{ forloop.counter }} - {{ day.date|date:"Y-m-d" }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <p><strong>City:</strong> {{ day.city.name }}</p>
+                    <p><strong>Hotel:</strong> {{ day.hotel.name }}</p>
+                </div>
 
-        <h3 class="text-lg font-semibold mt-2 mb-1">Services:</h3>
-        <ul class="list-disc pl-5">
-            {% for service in day.services.all %}
-            <li>{{ service.service.name }} ({{ service.service.service_type.name }}) -
-                {{ service.price_at_booking|floatformat:2 }} USD
-            </li>
+                <h4 class="text-lg font-semibold mt-2 mb-1">Services:</h4>
+                <ul class="list-disc pl-5 mb-2">
+                    {% for service in day.services.all %}
+                    <li>{{ service.service.name }} ({{ service.service.service_type.name }}) -
+                        {{ service.price_at_booking|floatformat:2 }} USD
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                {% if day.guide_services.all %}
+                <h4 class="text-lg font-semibold mt-2 mb-1">Guide Services:</h4>
+                <ul class="list-disc pl-5">
+                    {% for guide_service in day.guide_services.all %}
+                    <li>{{ guide_service.guide_service.name }} -
+                        {{ guide_service.price_at_booking|floatformat:2 }} USD
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
             {% endfor %}
-        </ul>
+        </div>
 
-        <!-- Only show Guide Services if there are any -->
-        {% if day.guide_services.all %}
-        <h3 class="text-lg font-semibold mt-2 mb-1">Guide Services:</h3>
-        <ul class="list-disc pl-5">
-            {% for guide_service in day.guide_services.all %}
-            <li>{{ guide_service.guide_service.name }} -
-                {{ guide_service.price_at_booking|floatformat:2 }} USD
-            </li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+        <!-- Cost Breakdown Section -->
+        <div class="p-6 border-b">
+        
 
-    </div>
-    {% endfor %}
+            <!-- Service Costs -->
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2">Service Costs</h3>
+                <p class="text-lg">Total Service Cost: <span class="font-bold">{{ package.service_grand_total }} USD</span></p>
+            </div>
 
-    <div class="my-12">
-        <h2 class="text-xl font-semibold">Total Service Cost: {{ package.service_grand_total }} USD</h2>
-    </div>
+            <!-- Hotel Costs -->
+            {% if hotel_costs_with_total %}
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2">Hotel Costs</h3>
+                <ul class="list-disc pl-5 mb-2">
+                    {% for hotel_cost in hotel_costs_with_total %}
+                    <li class="mb-2">
+                        <strong>{{ hotel_cost.name }}</strong> ({{ hotel_cost.type }})
+                        <br>
+                        {{ hotel_cost.room }} room(s), {{ hotel_cost.nights }} night(s) at {{ hotel_cost.price }} USD per night
+                        {% if hotel_cost.extraBedPrice %}
+                        <br>
+                        Extra bed: {{ hotel_cost.extraBedPrice }} USD per night
+                        {% endif %}
+                        <br>
+                        <strong>Total: {{ hotel_cost.total|floatformat:"2" }} USD</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <p class="text-lg">Total Hotel Cost: <span class="font-bold">{{ package.hotel_grand_total }} USD</span></p>
+            </div>
+            {% endif %}
 
+            <!-- Discounts -->
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2">Discounts</h3>
+                <table class="w-full">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="p-2 text-left">Item</th>
+                            <th class="p-2 text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for discount in discounts %}
+                        <tr>
+                            <td class="p-2 border-b">{{ discount.item }}</td>
+                            <td class="p-2 border-b text-right">${{ discount.amount }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="p-2 text-center">No discounts applied</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="font-bold">
+                        <tr>
+                            <td class="p-2">Total Discount</td>
+                            <td class="p-2 text-right">${{ total_discount }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
 
+            <!-- Grand Total -->
+            <div class="mt-6 bg-blue-100 p-4 rounded-lg">
+                <h3 class="text-2xl font-bold text-blue-800">Grand Total Cost: {{ package.grand_total_cost }} USD</h3>
+            </div>
+        </div>
 
-
-    <!-- Display Hotel Costs -->
-    {% if hotel_costs_with_total %}
-    <div class="mb-6 p-4 border border-gray-300 rounded">
-        <h2 class="text-xl font-semibold mb-2">Hotel Costs</h2>
-        <ul class="list-disc pl-5">
-            {% for hotel_cost in hotel_costs_with_total %}
-            <li>
-                {{ hotel_cost.name }} ({{ hotel_cost.type }}) -
-                {{ hotel_cost.room }} room(s),
-                {{ hotel_cost.nights }} night(s) -
-                {{ hotel_cost.price }} USD per night
-                {{ hotel_cost.extraBedPrice|default:"-" }}  Extra bed per night
-                (Total: {{ hotel_cost.total|floatformat:"2" }} USD)
-            </li>
-            {% endfor %}
-        </ul>
-        <div class="mt-4">
-            <h2 class="text-xl font-semibold">Total Hotel Cost: {{ package.hotel_grand_total }} USD</h2>
+        <!-- Commission Section -->
+        <div class="p-6">
+            <h2 class="text-2xl font-semibold mb-4">Commission Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p><strong>Hotel Commission Rate:</strong> {{ package.commission_rate_hotel }}</p>
+                    <p><strong>Hotel Commission Amount:</strong> ${{ package.commission_amount_hotel|floatformat:2 }}</p>
+                </div>
+                <div>
+                    <p><strong>Service Commission Rate:</strong> {{ package.commission_rate_services }}</p>
+                    <p><strong>Service Commission Amount:</strong> ${{ package.commission_amount_services|floatformat:2 }}</p>
+                </div>
+            </div>
         </div>
     </div>
-    {% endif %}
 
-    <h2>Discounts</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Item</th>
-                <th>Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for discount in discounts %}
-            <tr>
-                <td>{{ discount.item }}</td>
-                <td>${{ discount.amount }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="2">No discounts applied</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr>
-                <th>Total Discount</th>
-                <th>${{ total_discount }}</th>
-            </tr>
-        </tfoot>
-    </table>
-
-    <!-- Grand Total -->
-    <div class="my-12">
-        <h2 class="text-xl font-semibold">Grand Total Cost: {{ package.grand_total_cost }} USD</h2>
+    <!-- Action Buttons -->
+    <div class="mt-8 flex space-x-4">
+        <a href="{% url 'tour_package_edit' package.id %}" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition duration-300">Edit Package</a>
+        <a href="{% url 'tour_package_pdf' package.id %}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition duration-300">Print PDF</a>
     </div>
-
-    <div class="mt-4">
-        <p><strong>Commission Rate:</strong> {{ package.commission_rate }}</p>
-        <p><strong>Commission Amount:</strong> ${{ package.commission_amount|floatformat:2 }}</p>
-      </div>
-
-    <div class="block my-4">
-        <a href="{% url 'tour_package_edit' package.id %}" class="bg-blue-500 text-white px-4 py-2 rounded">Edit Package</a>
-    </div>
-
-    <div class="block my-4">
-        <a href="{% url 'tour_package_pdf' package.id %}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded">Print PDF</a>
-    </div>
-
 </div>
 {% endblock %}

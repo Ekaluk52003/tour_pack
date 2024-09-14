@@ -17,6 +17,21 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Prefetch
 import traceback
+from decimal import Decimal, InvalidOperation
+import json
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def safe_decimal(value, default=Decimal('0')):
+    if isinstance(value, (list, tuple)):
+        return default  # Return default if value is a sequence
+    try:
+        return Decimal(str(value))
+    except (ValueError, TypeError, InvalidOperation):
+        logger.warning(f"Failed to convert {value} to Decimal. Using default value {default}")
+        return default
 
 def calculate_totals(package):
     service_total = sum(
@@ -28,17 +43,17 @@ def calculate_totals(package):
     )
 
 
-    # hotel_total = sum(
-    #     (Decimal(cost['price']) * int(cost['room']) * int(cost['nights'])) +
-    #     (Decimal(cost.get('extraBedPrice', 0)) * int(cost['nights']))
-    #     for cost in package.hotel_costs
-    # )
-
     hotel_total = sum(
         (Decimal(cost['price']) * int(cost['room']) * int(cost['nights'])) +
-        (Decimal(cost.get('extraBedPrice', 0)) * int(cost['nights']) if cost.get('extraBedPrice') and cost['extraBedPrice'].strip() else 0)
+        (Decimal(cost.get('extraBedPrice', 0)) * int(cost['nights']))
         for cost in package.hotel_costs
     )
+
+    # hotel_total = sum(
+    # (safe_decimal(cost['price']) * safe_decimal(cost['room']) * safe_decimal(cost['nights'])) +
+    # (safe_decimal(cost.get('extraBedPrice', 0)) * safe_decimal(cost['nights']) if cost.get('extraBedPrice') else Decimal(0))
+    # for cost in package.hotel_costs
+    # )
 
     service_grand_total = Decimal(service_total) + guide_service_total
     hotel_grand_total = Decimal(hotel_total)
@@ -49,56 +64,45 @@ def calculate_totals(package):
 
 
 @login_required
+@require_http_methods(["POST"])
 def save_tour_package(request):
-    data = json.loads(request.body)
-    errors = {}
-
-    # Check if the user is a superuser
-    is_superuser = request.user.is_superuser
-
-    # Validation
-    if is_superuser:
-        if not data.get('name'):
-            errors['name'] = "Package name is required."
-        if not data.get('customer_name'):
-            errors['customer_name'] = "Customer name is required."
-        if not data.get('tour_pack_type'):
-            errors['tour_pack_type'] = "Tour package type is required."
-        if not data.get('days'):
-            errors['days'] = "At least one day is required."
-
-    if 'hotelCosts' not in data:
-        errors['hotelCosts'] = "Hotel costs are required."
-
-    if errors:
-        return JsonResponse({'status': 'error', 'errors': errors}, status=400)
-
     try:
+        data = json.loads(request.body)
         with transaction.atomic():
-            package_id = data.get('id')
-            if package_id:
-                # Update existing package
-                package = get_object_or_404(TourPackageQuote, id=package_id)
-
+            # Determine if it's a new package or an update
+            if 'id' in data and data['id']:
+                package = TourPackageQuote.objects.get(id=data['id'])
+                is_new = False
             else:
-                # Create new package (only for superusers)
-                if not is_superuser:
+                if request.user.is_superuser:
+                    package = TourPackageQuote()
+                    is_new = True
+                else:
                     return JsonResponse({'status': 'error', 'message': 'You do not have permission to create new packages'}, status=403)
-                package = TourPackageQuote()
-                package.package_reference = ReferenceID.get_next_reference()
 
-            # Update fields for superusers
-            if is_superuser:
+            if request.user.is_superuser:
+                # Superusers can edit everything, and new packages can be created with all fields
                 package.name = data['name']
                 package.customer_name = data['customer_name']
                 package.remark = data.get('remark', '')
+                package.remark2 = data.get('remark2', '')
                 package.tour_pack_type_id = data['tour_pack_type']
-                package.commission_rate = Decimal(data.get('commission_rate', 0))
+                package.commission_rate_hotel = data.get('commission_rate_hotel', 0)
+                package.commission_rate_services = data.get('commission_rate_services', 0)
+                package.discounts = data.get('discounts', [])
 
-                # Remove existing tour days to recreate them
-                package.tour_days.all().delete()
+            # Both superusers and non-superusers can edit hotel costs
+            package.hotel_costs = data['hotelCosts']
 
-                # Create Tour Days
+            # Save the package to get a primary key
+            package.save()
+
+            if request.user.is_superuser or is_new:
+                # Clear existing days and services if it's an update
+                if not is_new:
+                    package.tour_days.all().delete()
+
+                # Create new days and services
                 for day_data in data['days']:
                     tour_day = TourDay.objects.create(
                         tour_package=package,
@@ -107,7 +111,7 @@ def save_tour_package(request):
                         hotel_id=day_data['hotel']
                     )
 
-                    # Handle services
+                    # Create services for the day
                     for service_data in day_data['services']:
                         service_price = ServicePrice.objects.get(
                             service_id=service_data['name'],
@@ -120,8 +124,8 @@ def save_tour_package(request):
                             price_at_booking=service_data.get('price_at_booking', service_price.price)
                         )
 
-                    # Handle guide services
-                    for guide_service_data in day_data['guide_services']:
+                    # Create guide services for the day
+                    for guide_service_data in day_data.get('guide_services', []):
                         guide_service = GuideService.objects.get(id=guide_service_data['name'])
                         TourDayGuideService.objects.create(
                             tour_day=tour_day,
@@ -129,30 +133,26 @@ def save_tour_package(request):
                             price_at_booking=guide_service_data.get('price_at_booking', guide_service.price)
                         )
 
-                package.discounts = data.get('discounts', [])
+            # Recalculate totals
+            service_grand_total, hotel_grand_total, grand_total, total_discount = calculate_totals(package)
 
-            # Update hotel costs for all users
-            package.hotel_costs = data['hotelCosts']
-
-            # Calculate totals
-            if is_superuser:
-                service_grand_total = Decimal(data['total_cost']['serviceGrandTotal'])
-                hotel_grand_total = Decimal(data['total_cost']['hotelGrandTotal'])
-                grand_total_cost = Decimal(data['total_cost']['grandTotal'])
-                total_discount = sum(Decimal(discount['amount']) for discount in package.discounts)
-            else:
-                service_grand_total, hotel_grand_total, grand_total_cost, total_discount = calculate_totals(package)
-
-            # Save grand totals
             package.service_grand_total = service_grand_total
             package.hotel_grand_total = hotel_grand_total
-            package.grand_total_cost = grand_total_cost - total_discount
+            package.grand_total_cost = grand_total - total_discount  # Apply discount to grand total
 
-            # Calculate commission amount
-            total_nights = sum(int(cost['nights']) for cost in package.hotel_costs)
-            package.commission_amount = package.commission_rate * total_nights
+            # Recalculate commission amounts
+            total_room_nights = sum(
+                safe_decimal(hotel.get('room')) * safe_decimal(hotel.get('nights'))
+                for hotel in package.hotel_costs
+            )
 
-            package.save()
+            package.commission_rate_hotel = safe_decimal(package.commission_rate_hotel)
+            package.commission_rate_services = safe_decimal(package.commission_rate_services)
+
+            package.commission_amount_hotel = package.commission_rate_hotel * total_room_nights
+            package.commission_amount_services = package.commission_rate_services * package.service_grand_total / Decimal('100')
+
+            package.save()  # Save the package with all updates
 
         return JsonResponse({
             'status': 'success',
@@ -160,6 +160,8 @@ def save_tour_package(request):
             'package_id': package.id
         })
 
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
@@ -269,8 +271,10 @@ def tour_package_edit(request, pk):
         'name': package.name,
         'customer_name': package.customer_name,
         'remark': package.remark,
+        'remark2': package.remark2,
         'tour_pack_type': package.tour_pack_type_id,
-        'commission_rate': float(package.commission_rate),
+        'commission_rate_hotel': float(package.commission_rate_hotel),  # Add hotel commission rate
+        'commission_rate_services': float(package.commission_rate_services),
         'days': [
             {
                 'date': day.date.isoformat(),

@@ -35,46 +35,69 @@
 
 
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col" >
-    <header class="bg-blue-600 text-white shadow-md">
-        <nav class="container mx-auto px-6 py-3">
-            <div class="flex items-center justify-between">
-                <div>
-                    <a href="{% url 'tour_packages' %}" class="text-xl font-bold">Tour Package System</a>
+<body class="flex flex-col min-h-screen">
+    <nav class="bg-blue-600 text-white" x-data="{ isOpen: false }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{% url 'tour_packages' %}" class="text-xl font-bold">Jimmy Tour Package System</a>
                 </div>
-                <div>
-                    <a href="{% url 'tour_packages' %}" class="px-3 py-2 rounded hover:bg-blue-700">Packages</a>
-                    <a href="{% url 'tour_package_quote' %}" class="px-3 py-2 rounded hover:bg-blue-700">Create New</a>
-                    <!-- Add more navigation items as needed -->
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="{% url 'tour_packages' %}" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700">Packages</a>
+                        {% if user.is_superuser %}
+                            <a href="{% url 'tour_package_quote' %}" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700">Create New</a>
+                        {% endif %}
+                        {% if user.is_authenticated %}
+                            <span class="px-3 py-2 rounded-md text-sm font-medium">Welcome, {{ user.username }}</span>
+                            <a href="{% url 'account_logout' %}" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700">Logout</a>
+                        {% else %}
+                            <a href="{% url 'account_login' %}" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700">Login</a>
+                            <a href="{% url 'account_signup' %}" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700">Sign Up</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mr-2 flex md:hidden">
+                    <button @click="isOpen = !isOpen" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-800 focus:ring-white" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg class="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
             </div>
-        </nav>
-    </header>
+        </div>
 
-    <main class="flex-grow container mx-auto px-6 py-8">
-        {% block content %}
-        <!-- Content will be inserted here by child templates -->
-        {% endblock %}
+        <div class="md:hidden" id="mobile-menu" x-show="isOpen" @click.away="isOpen = false">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="{% url 'tour_packages' %}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">Packages</a>
+                {% if user.is_superuser %}
+                    <a href="{% url 'tour_package_quote' %}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">Create New</a>
+                {% endif %}
+                {% if user.is_authenticated %}
+                    <span class="block px-3 py-2 rounded-md text-base font-medium">Welcome, {{ user.username }}</span>
+                    <a href="{% url 'account_logout' %}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">Logout</a>
+                {% else %}
+                    <a href="{% url 'account_login' %}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">Login</a>
+                    <a href="{% url 'account_signup' %}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
     </main>
 
     <footer class="bg-gray-800 text-white py-4">
-        <div class="container mx-auto px-6 text-center">
-            <p>&copy; {% now "Y" %} Tour Package System. All rights reserved.</p>
-            {% if user.is_authenticated %}
-                <span>Welcome, {{ user.username }}</span>
-                <a href="{% url 'account_logout' %}">Logout</a>
-            {% else %}
-                <a href="{% url 'account_login' %}">Login</a>
-                <a href="{% url 'account_signup' %}">Sign Up</a>
-            {% endif %}
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center">
+            <p>&copy; {% now "Y" %} Jimmy Tour Package System. All rights reserved.</p>
         </div>
     </footer>
 
-
-
     {% block extra_scripts %}{% endblock %}
-
 </body>
-
-
-</html>`
+</html>

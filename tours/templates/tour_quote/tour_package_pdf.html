@@ -194,7 +194,7 @@
                     <td>{{ hotel_cost.room }}</td>
                     <td>{{ hotel_cost.nights }}</td>
                     <td>{{ hotel_cost.price }}</td>
-                    <td>{{ hotel_cost.extraBedPrice}}</td>
+                    <td> {{ hotel_cost.extraBedPrice|default:"-" }}</td>
                     <td>{{ hotel_cost.total|floatformat:"2" }}</td>
                 </tr>
                 {% endfor %}

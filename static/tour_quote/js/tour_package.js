@@ -143,7 +143,7 @@ window.tourPackage = function() {
                 });
         },
         addHotelCost() {
-            this.hotelCosts.push({ name: '', type: '', room: 1, nights: 1, price: 0, extraBedPrice: 0 });
+            this.hotelCosts.push({ name: '', type: '', room: 1, nights: 1, price: 0, extraBedPrice: '' });
         },
 
         removeHotelCost(index) {
@@ -557,7 +557,7 @@ window.tourPackage = function() {
             }
 
             const totals = this.calculateGrandTotal();
-            
+
             const data = {
                 name: this.name,
                 customer_name: this.customerName,

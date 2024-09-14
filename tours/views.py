@@ -28,9 +28,15 @@ def calculate_totals(package):
     )
 
 
+    # hotel_total = sum(
+    #     (Decimal(cost['price']) * int(cost['room']) * int(cost['nights'])) +
+    #     (Decimal(cost.get('extraBedPrice', 0)) * int(cost['nights']))
+    #     for cost in package.hotel_costs
+    # )
+
     hotel_total = sum(
         (Decimal(cost['price']) * int(cost['room']) * int(cost['nights'])) +
-        (Decimal(cost.get('extraBedPrice', 0)) * int(cost['nights']))
+        (Decimal(cost.get('extraBedPrice', 0)) * int(cost['nights']) if cost.get('extraBedPrice') and cost['extraBedPrice'].strip() else 0)
         for cost in package.hotel_costs
     )
 
@@ -161,7 +167,8 @@ def tour_package_pdf(request, pk):
     hotel_costs_with_total = []
     for cost in package.hotel_costs:
         room_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
-        extra_bed_cost = float(cost.get('extraBedPrice', 0)) * float(cost['nights'])
+        extra_bed_price = cost.get('extraBedPrice', '')
+        extra_bed_cost = float(extra_bed_price) * float(cost['nights']) if extra_bed_price and extra_bed_price.strip() else 0
         total_cost = room_cost + extra_bed_cost
 
         cost_with_total = cost.copy()  # Create a copy to avoid modifying the original
@@ -214,7 +221,10 @@ def tour_package_detail(request, pk):
     hotel_costs_with_total = []
     for cost in package.hotel_costs:
         room_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
-        extra_bed_cost = float(cost.get('extraBedPrice', 0)) * float(cost['nights'])
+
+        extra_bed_price = cost.get('extraBedPrice', '')
+        extra_bed_cost = float(extra_bed_price) * float(cost['nights']) if extra_bed_price and extra_bed_price.strip() else 0
+
         total_cost = room_cost + extra_bed_cost
 
         cost_with_total = cost.copy()  # Create a copy to avoid modifying the original

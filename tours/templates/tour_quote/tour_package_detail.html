@@ -58,7 +58,7 @@
                 {{ hotel_cost.room }} room(s),
                 {{ hotel_cost.nights }} night(s) -
                 {{ hotel_cost.price }} USD per night
-                {{ hotel_cost.extraBedPrice }} Extra per night
+                {{ hotel_cost.extraBedPrice|default:"-" }}  Extra bed per night
                 (Total: {{ hotel_cost.total|floatformat:"2" }} USD)
             </li>
             {% endfor %}

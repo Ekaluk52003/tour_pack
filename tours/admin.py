@@ -1,12 +1,17 @@
 # admin.py
 
 from django.contrib import admin
+from import_export import resources, fields
+from import_export.widgets import ForeignKeyWidget
+from import_export.admin import ImportExportModelAdmin
+from django.core.exceptions import ValidationError
 from .models import (
     City, Hotel, Service, GuideService, ServiceType, TourPackType,
     PredefinedTourQuote, PredefinedTourDay, PredefinedTourDayService,
     PredefinedTourDayGuideService, TourPackageQuote, TourDay,
     TourDayService, TourDayGuideService, ServicePrice
 )
+from import_export.formats import base_formats
 
 @admin.register(City)
 class CityAdmin(admin.ModelAdmin):
@@ -42,17 +47,7 @@ class TourPackTypeAdmin(admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
 
-class ServicePriceInline(admin.TabularInline):
-    model = ServicePrice
-    extra = 1
-    autocomplete_fields = ['service', 'city', 'tour_pack_type']
 
-@admin.register(ServicePrice)
-class ServicePriceAdmin(admin.ModelAdmin):
-    list_display = ('service', 'tour_pack_type', 'city', 'price')
-    list_filter = ('tour_pack_type', 'city')
-    search_fields = ('service__name', 'tour_pack_type__name', 'city__name')
-    autocomplete_fields = ['service', 'tour_pack_type', 'city']
 
 class PredefinedTourDayServiceInline(admin.TabularInline):
     model = PredefinedTourDayService
@@ -143,3 +138,72 @@ admin.site.register(PredefinedTourDayService)
 admin.site.register(PredefinedTourDayGuideService)
 admin.site.register(TourDayService)
 admin.site.register(TourDayGuideService)
+
+####Service Price
+class ServicePriceResource(resources.ModelResource):
+    service = fields.Field(
+        column_name='service',
+        attribute='service',
+        widget=ForeignKeyWidget(Service, 'name')
+    )
+    service_type = fields.Field(
+        column_name='service_type',
+        attribute='service__service_type__name',
+        readonly=True
+    )
+    tour_pack_type = fields.Field(
+        column_name='tour_pack_type',
+        attribute='tour_pack_type',
+        widget=ForeignKeyWidget(TourPackType, 'name')
+    )
+    city = fields.Field(
+        column_name='city',
+        attribute='city',
+        widget=ForeignKeyWidget(City, 'name')
+    )
+
+    class Meta:
+        model = ServicePrice
+        fields = ('service', 'service_type', 'tour_pack_type', 'price', 'city')
+        export_order = fields
+        import_id_fields = ('service', 'tour_pack_type', 'city')
+        skip_unchanged = True
+        report_skipped = True
+
+    def before_import_row(self, row, **kwargs):
+        service_name = row['service']
+        service_type_name = row['service_type']
+        tour_pack_type_name = row['tour_pack_type']
+        city_name = row['city']
+
+        # Get or create related objects
+        service_type, _ = ServiceType.objects.get_or_create(name=service_type_name)
+        service, _ = Service.objects.get_or_create(name=service_name, service_type=service_type)
+        tour_pack_type, _ = TourPackType.objects.get_or_create(name=tour_pack_type_name)
+        city, _ = City.objects.get_or_create(name=city_name)
+
+        # Update row with object instances
+        row['service'] = service.name
+        row['tour_pack_type'] = tour_pack_type.name
+        row['city'] = city.name
+
+    def export_field(self, field, obj):
+        if field.column_name == 'service_type':
+            return obj.service.service_type.name
+        return super().export_field(field, obj)
+
+@admin.register(ServicePrice)
+class ServicePriceAdmin(ImportExportModelAdmin):
+    resource_class = ServicePriceResource
+    list_display = ('id', 'service', 'get_service_type', 'tour_pack_type', 'city', 'price')
+    list_filter = ('service__service_type', 'tour_pack_type', 'city')
+    search_fields = ('service__name', 'service__service_type__name', 'tour_pack_type__name', 'city__name')
+    autocomplete_fields = ['service', 'tour_pack_type', 'city']
+
+    def get_service_type(self, obj):
+        return obj.service.service_type
+    get_service_type.short_description = 'Service Type'
+    get_service_type.admin_order_field = 'service__service_type__name'
+
+
+####Service Price end

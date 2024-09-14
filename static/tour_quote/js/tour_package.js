@@ -40,9 +40,11 @@ window.tourPackage = function() {
         discounts: [],
         packageId: null,
         draggingIndex: null,
+        isSuperUser: false,
 
 
-        initEditForm(existingData) {
+        initEditForm(existingData, isSuperUser) {
+            this.isSuperUser = isSuperUser;
             if (existingData) {
                 this.packageId = existingData.id;
                 this.name = existingData.name;
@@ -564,29 +566,40 @@ window.tourPackage = function() {
 
             const totals = this.calculateGrandTotal();
 
-            const data = {
-                name: this.name,
-                customer_name: this.customerName,
-                remark: this.remark,
-                tour_pack_type: this.tourPackType,
-                commission_rate: this.commissionRate,
-                days: this.days.map(day => ({
-                    date: day.date,
-                    city: day.city,
-                    hotel: day.hotel,
-                    services: day.services.map(service => ({
-                        name: service.name,
-                        price_at_booking: service.price_at_booking
-                    })),
-                    guide_services: day.guideServices.map(gs => ({
-                        name: gs.name,
-                        price_at_booking: gs.price_at_booking
-                    }))
-                })),
+            let data = {
+                id: this.packageId,  // Include the package ID for existing packages
                 hotelCosts: this.hotelCosts,
-                discounts: this.discounts,
-                total_cost: this.calculateGrandTotal()
             };
+
+            if (this.isSuperUser) {
+                data = {
+                    ...data,
+                    name: this.name,
+                    customer_name: this.customerName,
+                    remark: this.remark,
+                    tour_pack_type: this.tourPackType,
+                    commission_rate: this.commissionRate,
+                    days: this.days.map(day => ({
+                        date: day.date,
+                        city: day.city,
+                        hotel: day.hotel,
+                        services: day.services.map(service => ({
+                            name: service.name,
+                            price_at_booking: service.price_at_booking
+                        })),
+                        guide_services: day.guideServices.map(gs => ({
+                            name: gs.name,
+                            price_at_booking: gs.price_at_booking
+                        }))
+                    })),
+                    // hotelCosts: this.hotelCosts,
+                    discounts: this.discounts,
+                    total_cost: this.calculateGrandTotal()
+                };
+
+
+            }
+
 
             fetch('/save-tour-package/', {
                 method: 'POST',

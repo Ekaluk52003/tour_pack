@@ -47,108 +47,105 @@ def calculate_totals(package):
 
     return service_grand_total, hotel_grand_total, grand_total, total_discount
 
+
 @login_required
-def save_tour_package(request, package_id=None):
+def save_tour_package(request):
     data = json.loads(request.body)
     errors = {}
 
-    # Validate package name
-    if not data.get('name'):
-        errors['name'] = "Package name is required."
+    # Check if the user is a superuser
+    is_superuser = request.user.is_superuser
 
-    # Validate customer name
-    if not data.get('customer_name'):
-        errors['customer_name'] = "Customer name is required."
+    # Validation
+    if is_superuser:
+        if not data.get('name'):
+            errors['name'] = "Package name is required."
+        if not data.get('customer_name'):
+            errors['customer_name'] = "Customer name is required."
+        if not data.get('tour_pack_type'):
+            errors['tour_pack_type'] = "Tour package type is required."
+        if not data.get('days'):
+            errors['days'] = "At least one day is required."
 
-    if not data.get('tour_pack_type'):
-        errors['tour_pack_type'] = "Tour package type is required."
-
-    # Validate days
-    if not data.get('days'):
-        errors['days'] = "At least one day is required."
-    else:
-        for i, day in enumerate(data['days']):
-            if not day.get('date'):
-                errors[f'day{i+1}_date'] = f"Date is required for Day {i+1}."
-            if not day.get('city'):
-                errors[f'day{i+1}_city'] = f"City is required for Day {i+1}."
-            if not day.get('hotel'):
-                errors[f'day{i+1}_hotel'] = f"Hotel is required for Day {i+1}."
+    if 'hotelCosts' not in data:
+        errors['hotelCosts'] = "Hotel costs are required."
 
     if errors:
         return JsonResponse({'status': 'error', 'errors': errors}, status=400)
 
-    # Proceed with saving the package
     try:
         with transaction.atomic():
+            package_id = data.get('id')
             if package_id:
                 # Update existing package
                 package = get_object_or_404(TourPackageQuote, id=package_id)
+
+            else:
+                # Create new package (only for superusers)
+                if not is_superuser:
+                    return JsonResponse({'status': 'error', 'message': 'You do not have permission to create new packages'}, status=403)
+                package = TourPackageQuote()
+                package.package_reference = ReferenceID.get_next_reference()
+
+            # Update fields for superusers
+            if is_superuser:
                 package.name = data['name']
                 package.customer_name = data['customer_name']
                 package.remark = data.get('remark', '')
                 package.tour_pack_type_id = data['tour_pack_type']
                 package.commission_rate = Decimal(data.get('commission_rate', 0))
-                package.tour_days.all().delete()  # Remove existing tour days to recreate them
-            else:
-                # Create new package
-                package = TourPackageQuote.objects.create(
-                    name=data['name'],
-                    customer_name=data['customer_name'],
-                    remark=data.get('remark', ''),
-                    tour_pack_type_id=data['tour_pack_type'],
-                    commission_rate=Decimal(data.get('commission_rate', 0))
-                )
-                # Generate package_reference if not provided
-                if not package.package_reference:
-                    package.package_reference = ReferenceID.get_next_reference()
-                package.save()
 
-            # Create Tour Days
-            for day_data in data['days']:
-                tour_day = TourDay.objects.create(
-                    tour_package=package,
-                    date=day_data['date'],
-                    city_id=day_data['city'],
-                    hotel_id=day_data['hotel']
-                )
+                # Remove existing tour days to recreate them
+                package.tour_days.all().delete()
 
-                # Handle services
-                for service_data in day_data['services']:
-                    service_price = ServicePrice.objects.get(
-                    service_id=service_data['name'],
-                    city_id=day_data['city'],
-                    tour_pack_type_id=data['tour_pack_type']
-                )
-                    TourDayService.objects.create(
-                        tour_day=tour_day,
-                        service=service_price.service,
-                         price_at_booking=service_data.get('price_at_booking', service_price.price)
+                # Create Tour Days
+                for day_data in data['days']:
+                    tour_day = TourDay.objects.create(
+                        tour_package=package,
+                        date=day_data['date'],
+                        city_id=day_data['city'],
+                        hotel_id=day_data['hotel']
                     )
 
-                # Handle guide services
-                for guide_service_data in day_data['guide_services']:
-                    try:
+                    # Handle services
+                    for service_data in day_data['services']:
+                        service_price = ServicePrice.objects.get(
+                            service_id=service_data['name'],
+                            city_id=day_data['city'],
+                            tour_pack_type_id=data['tour_pack_type']
+                        )
+                        TourDayService.objects.create(
+                            tour_day=tour_day,
+                            service=service_price.service,
+                            price_at_booking=service_data.get('price_at_booking', service_price.price)
+                        )
+
+                    # Handle guide services
+                    for guide_service_data in day_data['guide_services']:
                         guide_service = GuideService.objects.get(id=guide_service_data['name'])
                         TourDayGuideService.objects.create(
                             tour_day=tour_day,
                             guide_service=guide_service,
                             price_at_booking=guide_service_data.get('price_at_booking', guide_service.price)
                         )
-                    except GuideService.DoesNotExist:
-                        return JsonResponse({'status': 'error', 'message': 'Guide Service not found'}, status=400)
 
-            # Handle hotel costs
-            package.hotel_costs = data.get('hotelCosts', [])
+                package.discounts = data.get('discounts', [])
 
-            package.discounts = data.get('discounts', [])
+            # Update hotel costs for all users
+            package.hotel_costs = data['hotelCosts']
+
             # Calculate totals
-            service_grand_total, hotel_grand_total, grand_total_cost, total_discount = calculate_totals(package)
+            if is_superuser:
+                service_grand_total = Decimal(data['total_cost']['serviceGrandTotal'])
+                hotel_grand_total = Decimal(data['total_cost']['hotelGrandTotal'])
+                grand_total_cost = Decimal(data['total_cost']['grandTotal'])
+                total_discount = sum(Decimal(discount['amount']) for discount in package.discounts)
+            else:
+                service_grand_total, hotel_grand_total, grand_total_cost, total_discount = calculate_totals(package)
 
             # Save grand totals
             package.service_grand_total = service_grand_total
             package.hotel_grand_total = hotel_grand_total
-            total_discount = sum(Decimal(discount['amount']) for discount in package.discounts)
             package.grand_total_cost = grand_total_cost - total_discount
 
             # Calculate commission amount
@@ -273,7 +270,7 @@ def tour_package_edit(request, pk):
         'customer_name': package.customer_name,
         'remark': package.remark,
         'tour_pack_type': package.tour_pack_type_id,
-        'commission_rate': float(package.commission_rate), 
+        'commission_rate': float(package.commission_rate),
         'days': [
             {
                 'date': day.date.isoformat(),

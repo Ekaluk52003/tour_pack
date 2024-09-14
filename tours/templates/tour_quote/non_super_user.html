@@ -1,0 +1,30 @@
+<p>Regular User</p>
+{% for day in package.tour_days.all %}
+<div class="mb-6 p-4 border border-gray-300 rounded">
+    <h2 class="text-xl font-semibold mb-2">Day {{ forloop.counter }} - {{ day.date|date:"Y-m-d" }}</h2>
+    <p><strong>City:</strong> {{ day.city.name }}</p>
+    <p><strong>Hotel:</strong> {{ day.hotel.name }}</p>
+
+    <h3 class="text-lg font-semibold mt-2 mb-1">Services:</h3>
+    <ul class="list-disc pl-5">
+        {% for service in day.services.all %}
+        <li>{{ service.service.name }} ({{ service.service.service_type.name }}) -
+            {{ service.price_at_booking|floatformat:2 }} USD
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Only show Guide Services if there are any -->
+    {% if day.guide_services.all %}
+    <h3 class="text-lg font-semibold mt-2 mb-1">Guide Services:</h3>
+    <ul class="list-disc pl-5">
+        {% for guide_service in day.guide_services.all %}
+        <li>{{ guide_service.guide_service.name }} -
+            {{ guide_service.price_at_booking|floatformat:2 }} USD
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+</div>
+{% endfor %}

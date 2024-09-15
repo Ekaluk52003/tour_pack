@@ -318,7 +318,7 @@ def tour_package_edit(request, pk):
         'cities': cities,
         'guide_services_json': json.dumps(guide_services, cls=DjangoJSONEncoder),
         'package_json': json.dumps(package_data, cls=DjangoJSONEncoder),
-          'predefined_quotes': predefined_quotes,
+        'predefined_quotes': predefined_quotes,
         'tour_pack_types': tour_pack_types,
     }
 

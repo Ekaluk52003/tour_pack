@@ -1,732 +1,683 @@
-window.tourPackage = function(isSuperUser) {
-    function sanitizeDays(days) {
-        return days.map(day => ({
-            date: day.date || '',
-            city: day.city || '',
-            hotel: day.hotel || '',
-            services: Array.isArray(day.services) ? day.services.map(service => ({
-                type: service.type || '',
-                name: service.name || '',
-                price: parseFloat(service.price) || 0,
-                quantity: parseInt(service.quantity) || 1
-            })) : [],
-            guideServices: Array.isArray(day.guideServices) ? day.guideServices.map(gs => ({
-                name: gs.name || '',
-                price: parseFloat(gs.price) || 0
-            })) : [],
-            cityServices: day.cityServices || { hotels: [], service_types: [] }
-        }));
-    }
-
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
+window.tourPackage = function () {
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
         }
-        return cookieValue;
+      }
     }
+    return cookieValue;
+  }
 
-    return {
-        errors: {},
-        name: '',
-        customerName: '',
-        remark: '',
-        remark2: '',
-        tourPackType: '',
-        selectedPredefinedQuote: '',
-        commission_rate_hotel: 0,
-        commission_rate_services: 0,
-        watch: {
-            days: {
-                handler(newDays) {
-                    this.days = sanitizeDays(newDays);
-                },
-                deep: true
-            }
-        },
-        days: [{
-            date: '',
-            city: '',
-            hotel: '',
-            hotelCosts: [],
-            services: [],
-            guideServices: [],
-            cityServices: {
-                hotels: [],
-                service_types: []
-            }
-        }],
-        guideServices: [],
+  return {
+    errors: {},
+    name: "",
+    customerName: "",
+    remark: "",
+    remark2: "",
+    tourPackType: "",
+    selectedPredefinedQuote: "",
+    commission_rate_hotel: 0,
+    commission_rate_services: 0,
+    days: [
+      {
+        date: "",
+        city: "",
+        hotel: "",
         hotelCosts: [],
-        discounts: [],
-        packageId: null,
-        draggingIndex: null,
-        isSuperUser: false,
-
-        initEditForm(existingData, isSuperUser) {
-            this.isSuperUser = isSuperUser;
-            if (existingData) {
-                this.packageId = existingData.id;
-                this.name = existingData.name;
-                this.customerName = existingData.customer_name;
-                this.remark = existingData.remark || '';
-                this.remark2 = existingData.remark2 || '';
-                this.tourPackType = existingData.tour_pack_type;
-                this.commission_rate_hotel = existingData.commission_rate_hotel || 0;
-                this.commission_rate_services = existingData.commission_rate_services || 0;
-                this.days = existingData.days.map(day => ({
-                    date: day.date,
-                    city: day.city,
-                    hotel: day.hotel,
-                    services: day.services.map(service => ({
-                        type: service.type,
-                        name: service.name,
-                        price: parseFloat(service.price_at_booking) || 0,
-                        price_at_booking: parseFloat(service.price_at_booking) || 0
-                    })),
-                    guideServices: day.guideServices.map(gs => ({
-                        name: gs.name,
-                        price: parseFloat(gs.price_at_booking) || 0,
-                        price_at_booking: parseFloat(gs.price_at_booking) || 0
-                    })),
-                    cityServices: {
-                        hotels: [],
-                        service_types: []
-                    }
-                }));
-                this.hotelCosts = existingData.hotelCosts || [];
-                this.discounts = existingData.discounts || [];
-
-                // Initialize city services for each day
-                this.days.forEach((day, index) => {
-                    this.updateCityServices(index);
-                });
-            }
+        services: [],
+        guideServices: [],
+        cityServices: {
+          hotels: [],
+          service_types: [],
         },
-        initializeCityServices(index) {
-            if (!this.days[index]) {
-                this.days[index] = {};
-            }
-            if (!this.days[index].cityServices) {
-                this.days[index].cityServices = { hotels: [], service_types: [] };
-            }
+      },
+    ],
+    guideServices: [],
+    hotelCosts: [],
+    discounts: [],
+    packageId: null,
+    draggingIndex: null,
+    isSuperUser: false,
+
+    initEditForm(existingData, isSuperUser) {
+      this.isSuperUser = isSuperUser;
+      if (existingData) {
+        this.packageId = existingData.id;
+        this.name = existingData.name;
+        this.customerName = existingData.customer_name;
+        this.remark = existingData.remark || "";
+        this.remark2 = existingData.remark2 || "";
+        this.tourPackType = existingData.tour_pack_type;
+        this.commission_rate_hotel = existingData.commission_rate_hotel || 0;
+        this.commission_rate_services =
+          existingData.commission_rate_services || 0;
+        this.days = existingData.days.map((day) => ({
+          date: day.date,
+          city: day.city.toString(), // Ensure city is a string
+          hotel: day.hotel.toString(), // Ensure hotel is a string
+          services: day.services.map((service) => ({
+            type: service.type || "",
+            name: (service.name || "").toString(),
+            price: parseFloat(service.price_at_booking) || 0,
+            price_at_booking: parseFloat(service.price_at_booking) || 0,
+          })),
+          guideServices: day.guideServices.map((gs) => ({
+            name: gs.name.toString(), // Ensure guide service name is a string
+            price: parseFloat(gs.price_at_booking) || 0,
+            price_at_booking: parseFloat(gs.price_at_booking) || 0,
+          })),
+          cityServices: {
+            hotels: [],
+            service_types: [],
+          },
+        }));
+        this.hotelCosts = existingData.hotelCosts || [];
+        this.discounts = existingData.discounts || [];
+
+        this.initializeCityServicesForAllDays();
+      }
+    },
+
+    initializeCityServicesForAllDays() {
+      const promises = this.days.map((day, index) =>
+        this.updateCityServices(day)
+      );
+      Promise.all(promises).then(() => {
+        this.days.forEach((day) => this.selectCorrectOptions(day));
+      });
+    },
+
+    init() {
+      // Initialize with one day
+      if (this.days.length === 0) {
+        this.addDay();
+      }
+      this.guideServices = window.guideServicesData;
+      // Fetch guide services if they're not already available
+    },
+
+    addDay() {
+      this.days.push({
+        date: "",
+        city: "",
+        hotel: "",
+        services: [],
+        guideServices: [],
+        cityServices: { hotels: [], service_types: [] },
+      });
+    },
+
+    removeDay(index) {
+      this.days.splice(index, 1);
+    },
+
+    addService(day) {
+      if (!day || !Array.isArray(day.services)) {
+        console.log("Invalid day object or services array");
+        return;
+      }
+      day.services.push({ type: "", name: "", price: 0 });
+    },
+
+    removeService(day, serviceIndex) {
+      if (!day || !Array.isArray(day.services)) {
+        console.log("Invalid day object or services array");
+        return;
+      }
+      day.services.splice(serviceIndex, 1);
+    },
+
+    addGuideService(day) {
+      if (this.guideServices.length > 0) {
+        const firstGuideService = this.guideServices[0];
+        day.guideServices.push({
+          name: firstGuideService.id,
+          price: parseFloat(firstGuideService.price) || 0,
+        });
+        this.updateGuideService(
+          day,
+          day.guideServices[day.guideServices.length - 1]
+        );
+      }
+    },
+
+    removeGuideService(day, guideIndex) {
+      day.guideServices.splice(guideIndex, 1);
+    },
+
+    insertDayBelow(index) {
+      const newDay = {
+        date: "",
+        city: "",
+        hotel: "",
+        services: [],
+        guideServices: [],
+        cityServices: {
+          hotels: [],
+          service_types: [],
         },
+      };
+      this.days.splice(index + 1, 0, newDay);
+    },
 
+    updateServicesForPackageType() {
+      if (this.tourPackType) {
+        this.days.forEach((day) => {
+          if (day.city) {
+            this.updateCityServices(day);
+          }
+        });
+      } else {
+        this.days.forEach((day) => {
+          day.services = [];
+          day.cityServices = { hotels: [], service_types: [] };
+        });
+      }
+    },
 
-        applyPredefinedQuote() {
-            if (!this.selectedPredefinedQuote) {
-                alert('Please select a predefined quote first.');
-                return;
-            }
+    updateCityServices(day) {
+      return new Promise((resolve, reject) => {
+        if (day.city && this.tourPackType) {
+          fetch(
+            `/get-city-services/${
+              day.city
+            }/?tour_pack_type=${encodeURIComponent(this.tourPackType)}`
+          )
+            .then((response) => response.json())
+            .then((data) => {
+              day.cityServices = {
+                hotels: data.hotels || [],
+                service_types: data.service_types || [],
+              };
+              resolve();
+            })
+            .catch((error) => {
+              console.error("Error fetching city services:", error);
+              day.cityServices = { hotels: [], service_types: [] };
+              reject(error);
+            });
+        } else {
+          day.cityServices = { hotels: [], service_types: [] };
+          resolve();
+        }
+      });
+    },
 
-            fetch(`/get-predefined-tour-quote/${this.selectedPredefinedQuote}/`)
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Received predefined quote data:', data);
+    selectCorrectOptions(day) {
+      console.log("Selecting correct options for day:", day);
 
-                    if (!this.tourPackType) {
-                        this.tourPackType = data.tour_pack_type;
-                    }
+      // Select the correct hotel
+      if (day.hotel) {
+        const selectedHotel = day.cityServices.hotels.find(
+          (h) => h.id.toString() === day.hotel
+        );
+        if (selectedHotel) {
+          console.log("Selected hotel:", selectedHotel);
+          day.hotel = selectedHotel.id.toString();
+        } else {
+          console.log("Hotel not found:", day.hotel);
+        }
+      }
 
-                    const today = new Date().toISOString().split('T')[0];
-                    const newDays = data.days.map(day => ({
-                        date: today,
-                        city: Number(day.city),
-                        hotel: Number(day.hotel),
-                        services: Array.isArray(day.services) ? day.services.map(service => ({
-                            type: service.type.toLowerCase(),
-                            name: Number(service.id),
-                            price: parseFloat(service.price) || 0,
-                            quantity: service.quantity || 1
-                        })) : [],
-                        guideServices: Array.isArray(day.guideServices) ? day.guideServices.map(gs => ({
-                            name: Number(gs.id),
-                            price: parseFloat(gs.price) || 0
-                        })) : [],
-                        cityServices: { hotels: [], service_types: [] }
-                    }));
+      // Select the correct services
+      // Select the correct services
+      day.services.forEach((service) => {
+        console.log("Processing service for selection:", service);
+        const serviceType = day.cityServices.service_types.find(
+          (st) => st.type.toLowerCase() === service.type.toLowerCase()
+        );
+        if (serviceType) {
+          console.log("Found service type:", serviceType);
+          const selectedService = serviceType.services.find(
+            (s) => s.id.toString() === service.name
+          );
+          if (selectedService) {
+            console.log("Selected service:", selectedService);
+            service.name = selectedService.id.toString();
+            service.price = parseFloat(selectedService.price) || 0;
+          } else {
+            console.log("Service not found:", service.name);
+          }
+        } else {
+          console.log("Service type not found:", service.type);
+        }
+      });
 
-                    console.log('Processed new days:', newDays);
+      // Select the correct guide services
+      day.guideServices.forEach((guideService) => {
+        console.log("Processing guide service for selection:", guideService);
+        const selectedGuideService = this.guideServices.find(
+          (gs) => gs.id.toString() === guideService.name
+        );
+        if (selectedGuideService) {
+          console.log("Selected guide service:", selectedGuideService);
+          guideService.name = selectedGuideService.id.toString();
+          guideService.price = parseFloat(selectedGuideService.price) || 0;
+        } else {
+          console.log("Guide service not found:", guideService.name);
+        }
+      });
+    },
+    getServiceNames(day, serviceType) {
+        if (!day || !serviceType) {
+            console.log("No day or service type provided.");
+            return [];
+        }
 
-                    // Append new days to the existing days array
-                    this.days = [...this.days, ...newDays];
+        const serviceTypeObj = day.cityServices.service_types.find(st => st.type.toLowerCase() === serviceType.toLowerCase());
+        if (serviceTypeObj && Array.isArray(serviceTypeObj.services)) {
+            console.log("Found services for type:", serviceType, serviceTypeObj.services);
+            return serviceTypeObj.services;
+        }
 
-                    // Update city services and select hotels and services for each new day
-                    const startIndex = this.days.length - newDays.length;
-                    const updatePromises = newDays.map((_, index) => {
-                        const dayIndex = startIndex + index;
-                        return this.updateCityServices(dayIndex).then(() => {
-                            this.selectHotelAndServices(dayIndex);
-                        });
+        console.log("No services found for type:", serviceType);
+        return [];
+    },
+    updateService(day, service) {
+        const serviceNames = this.getServiceNames(day, service.type);
+        const selectedService = serviceNames.find(s => s.id.toString() === service.name);
+        if (selectedService) {
+            service.price = parseFloat(selectedService.price) || 0;
+        } else {
+            service.price = 0;
+        }
+    },
+    updateGuideService(guideService) {
+      const selectedGuideService = this.guideServices.find(
+        (gs) => gs.id === guideService.name
+      );
+      if (selectedGuideService) {
+        guideService.price = parseFloat(selectedGuideService.price) || 0;
+      } else {
+        guideService.price = 0;
+      }
+    },
+
+    updateCityServices(day) {
+        return new Promise((resolve, reject) => {
+            if (day.city && this.tourPackType) {
+                fetch(`/get-city-services/${day.city}/?tour_pack_type=${encodeURIComponent(this.tourPackType)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        day.cityServices = {
+                            hotels: data.hotels || [],
+                            service_types: data.service_types || []
+                        };
+                        resolve();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching city services:', error);
+                        day.cityServices = { hotels: [], service_types: [] };
+                        reject(error);
                     });
+            } else {
+                day.cityServices = { hotels: [], service_types: [] };
+                resolve();
+            }
+        });
+    },
 
-                    Promise.all(updatePromises).then(() => {
-                        this.days = sanitizeDays(this.days);
-                        console.log('Final days after applying predefined quote:', this.days);
-                        alert('Predefined tour quote applied successfully!');
-                    });
-                })
-                .catch(error => {
-                    console.error('Error applying predefined quote:', error);
-                    alert('Error applying predefined quote. Please try again.');
-                });
-        },
 
-        // Add this new function to validate the days structure
-        validateDaysStructure() {
-            this.days = this.days.map(day => ({
-                ...day,
-                services: Array.isArray(day.services) ? day.services : [],
-                guideServices: Array.isArray(day.guideServices) ? day.guideServices : [],
-                cityServices: day.cityServices || { hotels: [], service_types: [] }
-            }));
-            console.log('Validated days structure:', this.days);
-        },
+    applyPredefinedQuote() {
+      if (!this.selectedPredefinedQuote) {
+        alert("Please select a predefined quote first.");
+        return;
+      }
 
-        addHotelCost() {
-            this.hotelCosts.push({ name: '', type: '', room: 1, nights: 1, price: 0, extraBedPrice: '' });
-        },
+      fetch(`/get-predefined-tour-quote/${this.selectedPredefinedQuote}/`)
+        .then((response) => response.json())
+        .then((data) => {
+          this.tourPackType = data.tour_pack_type || this.tourPackType;
+          const today = new Date().toISOString().split("T")[0];
+          const newDays = data.days.map((day) => ({
+            date: today,
+            city: day.city.toString(),
+            hotel: day.hotel.toString(),
+            services: day.services.map((service) => ({
+              type: service.type.toLowerCase(),
+              name: service.id.toString(),
+              price: parseFloat(service.price) || 0,
+              quantity: service.quantity || 1,
+            })),
+            guideServices: day.guideServices.map((gs) => ({
+              name: gs.id.toString(),
+              price: parseFloat(gs.price) || 0,
+            })),
+            cityServices: { hotels: [], service_types: [] },
+          }));
 
-        removeHotelCost(index) {
-            this.hotelCosts.splice(index, 1);
-        },
+          this.days = [...this.days, ...newDays];
 
-        addDiscount() {
-            this.discounts.push({ item: '', amount: 0 });
-        },
+          // Use Promise.all to wait for all updateCityServices calls to complete
+          return Promise.all(
+            this.days.map((day) => this.updateCityServices(day))
+          );
+        })
+        .then(() => {
+          console.log("All city services updated");
+        })
+        .catch((error) => {
+          console.error("Error applying predefined quote:", error);
+          alert("Error applying predefined quote. Please try again.");
+        });
+    },
 
-        removeDiscount(index) {
-            this.discounts.splice(index, 1);
-        },
+    updateAndSelectServices(day) {
+      if (day.city && this.tourPackType) {
+        fetch(
+          `/get-city-services/${day.city}/?tour_pack_type=${this.tourPackType}`
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            day.cityServices = {
+              hotels: data.hotels || [],
+              service_types: data.service_types || [],
+            };
 
-        validateForm() {
-            this.errors = {};
-
-            if (!this.name.trim()) {
-                this.errors.name = "Package name is required.";
+            // Select the correct hotel
+            if (day.hotel) {
+              const selectedHotel = day.cityServices.hotels.find(
+                (h) => h.id === day.hotel
+              );
+              if (selectedHotel) {
+                day.hotel = selectedHotel.id;
+              }
             }
 
-            if (!this.customerName.trim()) {
-                this.errors.customerName = "Customer name is required.";
-            }
-            if (!this.tourPackType) this.errors.tourPackType = "Tour package type is required.";
-
-            if (this.days.length === 0) {
-                this.errors.days = "At least one day is required.";
-            }
-
-            this.days.forEach((day, index) => {
-                if (!day.date) {
-                    this.errors[`day${index + 1}_date`] = `Date is required for Day ${index + 1}.`;
+            // Select the correct services
+            day.services.forEach((service) => {
+              const serviceType = day.cityServices.service_types.find(
+                (st) => st.type.toLowerCase() === service.type.toLowerCase()
+              );
+              if (serviceType) {
+                const selectedService = serviceType.services.find(
+                  (s) => s.id === service.name
+                );
+                if (selectedService) {
+                  service.name = selectedService.id;
+                  service.price = parseFloat(selectedService.price) || 0;
                 }
-                if (!day.city) {
-                    this.errors[`day${index + 1}_city`] = `City is required for Day ${index + 1}.`;
-                }
-                if (!day.hotel) {
-                    this.errors[`day${index + 1}_hotel`] = `Hotel is required for Day ${index + 1}.`;
-                }
+              }
             });
 
-            return Object.keys(this.errors).length === 0;
+            // Select the correct guide services
+            day.guideServices.forEach((guideService) => {
+              const selectedGuideService = this.guideServices.find(
+                (gs) => gs.id === guideService.name
+              );
+              if (selectedGuideService) {
+                guideService.name = selectedGuideService.id;
+                guideService.price =
+                  parseFloat(selectedGuideService.price) || 0;
+              }
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching city services:", error);
+            day.cityServices = { hotels: [], service_types: [] };
+          });
+      } else {
+        day.cityServices = { hotels: [], service_types: [] };
+      }
+    },
+
+    dragStart(event, index) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", index);
+    },
+    dragEnter(event) {
+      if (!event.target.classList.contains("border-dashed")) {
+        event.target.classList.add("border-dashed", "border-blue-500");
+      }
+    },
+    dragLeave(event) {
+      if (
+        !event.relatedTarget ||
+        !event.currentTarget.contains(event.relatedTarget)
+      ) {
+        event.target.classList.remove("border-dashed", "border-blue-500");
+      }
+    },
+
+    drop(event, toIndex) {
+      event.preventDefault();
+      const fromIndex = parseInt(event.dataTransfer.getData("text/plain"));
+
+      if (fromIndex !== toIndex) {
+        const movedDay = this.days.splice(fromIndex, 1)[0];
+        this.days.splice(toIndex, 0, movedDay);
+      }
+
+      this.isDragging = false;
+      this.draggedIndex = null;
+      event.target.classList.remove("border-dashed", "border-blue-500");
+    },
+
+    //#############################################this is for submit create#####################################################################
+
+    validateForm() {
+      this.errors = {};
+
+      if (!this.name.trim()) {
+        this.errors.name = "Package name is required.";
+      }
+
+      if (!this.customerName.trim()) {
+        this.errors.customerName = "Customer name is required.";
+      }
+      if (!this.tourPackType)
+        this.errors.tourPackType = "Tour package type is required.";
+
+      if (this.days.length === 0) {
+        this.errors.days = "At least one day is required.";
+      }
+
+      this.days.forEach((day, index) => {
+        if (!day.date) {
+          this.errors[`day${index + 1}_date`] = `Date is required for Day ${
+            index + 1
+          }.`;
+        }
+        if (!day.city) {
+          this.errors[`day${index + 1}_city`] = `City is required for Day ${
+            index + 1
+          }.`;
+        }
+        if (!day.hotel) {
+          this.errors[`day${index + 1}_hotel`] = `Hotel is required for Day ${
+            index + 1
+          }.`;
+        }
+      });
+
+      return Object.keys(this.errors).length === 0;
+    },
+
+    saveTourPackage() {
+      if (!this.validateForm()) {
+        console.log("Form validation failed", this.errors);
+        alert("Please correct the errors before submitting.");
+        return;
+      }
+
+      data = {
+        id: this.packageId, // Include the package ID for existing packages
+        hotelCosts: this.hotelCosts,
+        name: this.name,
+        customer_name: this.customerName,
+        remark: this.remark,
+        remark2: this.remark2,
+        tour_pack_type: this.tourPackType,
+        commission_rate_hotel: this.commission_rate_hotel,
+        commission_rate_services: this.commission_rate_services,
+        days: this.days.map((day) => ({
+          date: day.date,
+          city: day.city,
+          hotel: day.hotel,
+          services: day.services.map((service) => ({
+            name: service.name,
+            price_at_booking: service.price_at_booking,
+          })),
+          guide_services: day.guideServices.map((gs) => ({
+            name: gs.name,
+            price_at_booking: gs.price_at_booking,
+          })),
+        })),
+        // hotelCosts: this.hotelCosts,
+        discounts: this.discounts,
+        total_cost: this.calculateGrandTotal(),
+      };
+
+      fetch("/save-tour-package/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
         },
+        body: JSON.stringify(data),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "success") {
+            alert("Tour package saved successfully!");
+            console.log("success", data);
+            console.log(data.package_id);
+            window.location.href = `/${data.package_id}/`;
+          } else {
+            alert("Error saving tour package");
+          }
+        });
+    },
+    //  #########################cal
 
-        calculateHotelCostTotal() {
-            return this.hotelCosts.reduce((total, cost) => {
-                const roomCost = (parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0);
-                const extraBedCost = (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0);
-                return total + roomCost + extraBedCost;
-            }, 0).toFixed(2);
-        },
+    addHotelCost() {
+      this.hotelCosts.push({
+        name: "",
+        type: "",
+        room: 1,
+        nights: 1,
+        price: 0,
+        extraBedPrice: "",
+      });
+    },
 
-        calculateTotalDiscounts() {
-            return this.discounts.reduce((total, discount) => {
-                return total + (parseFloat(discount.amount) || 0);
-            }, 0).toFixed(2);
-        },
+    removeHotelCost(index) {
+      this.hotelCosts.splice(index, 1);
+    },
 
-        updateGuideService(dayIndex, guideIndex) {
-            const guideService = this.days[dayIndex].guideServices[guideIndex];
-            const selectedGuideService = this.guideServices.find(gs => String(gs.id) === String(guideService.name));
+    addDiscount() {
+      this.discounts.push({ item: "", amount: 0 });
+    },
 
-            if (selectedGuideService) {
-                guideService.price = parseFloat(selectedGuideService.price);
-                console.log('Updated guide service:', guideService);
-            } else {
-                guideService.price = 0;
-            }
-        },
+    removeDiscount(index) {
+      this.discounts.splice(index, 1);
+    },
 
-        updateService(dayIndex, serviceIndex) {
-            const service = this.days[dayIndex].services[serviceIndex];
-            const serviceOptions = this.getServiceNames(dayIndex, service.type);
-            const selectedService = serviceOptions.find(option => String(option.id) === service.name);
+    calculateHotelCostTotal() {
+      return this.hotelCosts
+        .reduce((total, cost) => {
+          const roomCost =
+            (parseFloat(cost.room) || 0) *
+            (parseFloat(cost.nights) || 0) *
+            (parseFloat(cost.price) || 0);
+          const extraBedCost =
+            (parseFloat(cost.nights) || 0) *
+            (parseFloat(cost.extraBedPrice) || 0);
+          return total + roomCost + extraBedCost;
+        }, 0)
+        .toFixed(2);
+    },
 
-            if (selectedService) {
-                service.price = parseFloat(selectedService.price) || 0;
-            } else {
-                service.price = 0;
-            }
-        },
+    calculateTotalDiscounts() {
+      return this.discounts
+        .reduce((total, discount) => {
+          return total + (parseFloat(discount.amount) || 0);
+        }, 0)
+        .toFixed(2);
+    },
 
-        getServiceNames(dayIndex, serviceType) {
-            this.initializeCityServices(dayIndex);
-            const cityServices = this.days[dayIndex].cityServices.service_types || [];
-            if (!serviceType) {
-                return [];
-            }
-
-            const serviceTypeObj = cityServices.find(st => st.type.toLowerCase() === serviceType.toLowerCase());
-            if (serviceTypeObj && serviceTypeObj.services) {
-                return serviceTypeObj.services.map(service => ({
-                    id: service.id,
-                    name: service.name,
-                    price: parseFloat(service.price) || 0
-                }));
-            }
-
-            return [];
-        },
-
-        calculateGrandTotal() {
-    let serviceTotal = 0;
-    let guideServiceTotal = 0;
-    let hotelTotal = 0;
-
-    this.days = sanitizeDays(this.days);
-
-
-
-
-    this.days.forEach((day, index) => {
-        day.services.forEach(service => {
-            const price = parseFloat(service.price) || 0;
-            const quantity = parseInt(service.quantity) || 1;
-            serviceTotal += price * quantity;
-            console.log(`Day ${index + 1} service: ${service.name}, Price: ${price}, Quantity: ${quantity}, Total: ${price * quantity}`);
+    calculateGrandTotal() {
+      let serviceTotal = 0;
+      let guideServiceTotal = 0;
+      let hotelTotal = 0;
+      this.days.forEach((day, index) => {
+        day.services.forEach((service) => {
+          const price = parseFloat(service.price) || 0;
+          const quantity = parseInt(service.quantity) || 1;
+          serviceTotal += price * quantity;
+          console.log(
+            `Day ${index + 1} service: ${
+              service.name
+            }, Price: ${price}, Quantity: ${quantity}, Total: ${
+              price * quantity
+            }`
+          );
         });
 
-        day.guideServices.forEach(guideService => {
-            const price = parseFloat(guideService.price) || 0;
-            guideServiceTotal += price;
-            console.log(`Day ${index + 1} guide service: ${guideService.name}, Price: ${price}`);
+        day.guideServices.forEach((guideService) => {
+          const price = parseFloat(guideService.price) || 0;
+          guideServiceTotal += price;
+          console.log(
+            `Day ${index + 1} guide service: ${
+              guideService.name
+            }, Price: ${price}`
+          );
         });
-    });
+      });
 
-
-
-    hotelTotal = this.hotelCosts.reduce((total, cost) => {
-        const roomCost = (parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0);
-        const extraBedCost = (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0);
-        console.log(`Hotel: ${cost.name}, Room Cost: ${roomCost}, Extra Bed Cost: ${extraBedCost}`);
+      hotelTotal = this.hotelCosts.reduce((total, cost) => {
+        const roomCost =
+          (parseFloat(cost.room) || 0) *
+          (parseFloat(cost.nights) || 0) *
+          (parseFloat(cost.price) || 0);
+        const extraBedCost =
+          (parseFloat(cost.nights) || 0) *
+          (parseFloat(cost.extraBedPrice) || 0);
+        console.log(
+          `Hotel: ${cost.name}, Room Cost: ${roomCost}, Extra Bed Cost: ${extraBedCost}`
+        );
         return total + roomCost + extraBedCost;
-    }, 0);
+      }, 0);
 
-    const serviceGrandTotal = serviceTotal + guideServiceTotal;
-    const hotelGrandTotal = hotelTotal;
-    const grandTotal = serviceGrandTotal + hotelGrandTotal;
+      const serviceGrandTotal = serviceTotal + guideServiceTotal;
+      const hotelGrandTotal = hotelTotal;
+      const grandTotal = serviceGrandTotal + hotelGrandTotal;
 
-    const totalRoomNights = this.hotelCosts.reduce((total, cost) => {
-        return total + (parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0);
-    }, 0);
+      const totalRoomNights = this.hotelCosts.reduce((total, cost) => {
+        return (
+          total + (parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0)
+        );
+      }, 0);
 
-    const commission_amount_hotel = (parseFloat(this.commission_rate_hotel) * totalRoomNights).toFixed(2);
-    const commission_amount_services = (parseFloat(this.commission_rate_services) * serviceGrandTotal / 100).toFixed(2);
+      const commission_amount_hotel = (
+        parseFloat(this.commission_rate_hotel) * totalRoomNights
+      ).toFixed(2);
+      const commission_amount_services = (
+        (parseFloat(this.commission_rate_services) * serviceGrandTotal) /
+        100
+      ).toFixed(2);
 
-    const totalDiscounts = this.discounts.reduce((total, discount) => {
+      const totalDiscounts = this.discounts.reduce((total, discount) => {
         return total + (parseFloat(discount.amount) || 0);
-    }, 0);
+      }, 0);
 
-    const finalGrandTotal = grandTotal - totalDiscounts;
+      const finalGrandTotal = grandTotal - totalDiscounts;
 
-
-    return {
+      return {
         serviceGrandTotal: serviceGrandTotal.toFixed(2),
         hotelGrandTotal: hotelGrandTotal.toFixed(2),
         grandTotal: grandTotal.toFixed(2),
         finalGrandTotal: finalGrandTotal.toFixed(2),
         commission_amount_hotel: commission_amount_hotel,
         commission_amount_services: commission_amount_services,
-        totalDiscounts: totalDiscounts.toFixed(2)
-    };
-},
-        insertDayAbove(index) {
-            const newDay = {
-                date: '',
-                city: '',
-                hotel: '',
-                services: [],
-                guideServices: [],
-                cityServices: {
-                    hotels: [],
-                    service_types: []
-                }
-            };
-            this.days.splice(index, 0, newDay);
-        },
-
-        insertDayBelow(index) {
-            const newDay = {
-                date: '',
-                city: '',
-                hotel: '',
-                services: [],
-                guideServices: [],
-                cityServices: {
-                    hotels: [],
-                    service_types: []
-                }
-            };
-            this.days.splice(index + 1, 0, newDay);
-        },
-
-        removeDay(index) {
-            this.days.splice(index, 1);
-            // this.days = sanitizeDays(this.days);
-            // Re-initialize cityServices for all days after removal
-            for (let i = index; i < this.days.length; i++) {
-                this.initializeCityServices(i);
-            }
-        },
-
-        addService(dayIndex) {
-            this.days[dayIndex].services.push({ type: '', name: '', price: 0 });
-        },
-
-        addGuideService(dayIndex) {
-            if (this.guideServices.length > 0) {
-                const firstGuideService = this.guideServices[0];
-                this.days[dayIndex].guideServices.push({
-                    name: String(firstGuideService.id),
-                    price: parseFloat(firstGuideService.price) || 0,
-                    price_at_booking: parseFloat(firstGuideService.price) || 0
-                });
-                this.updateGuideService(dayIndex, this.days[dayIndex].guideServices.length - 1);
-            }
-        },
-
-        removeService(dayIndex, serviceIndex) {
-            this.days[dayIndex].services.splice(serviceIndex, 1);
-        },
-
-        removeGuideService(dayIndex, guideIndex) {
-            this.days[dayIndex].guideServices.splice(guideIndex, 1);
-        },
-
-        updateServicesForPackageType() {
-            if (this.tourPackType) {
-                this.days.forEach((day, index) => {
-                    if (day.city) {
-                        this.updateCityServices(index);
-                    }
-                });
-            } else {
-                this.days.forEach(day => {
-                    day.services = [];
-                    day.cityServices = { hotels: [], service_types: [] };
-                });
-            }
-        },
-
-        updateCityServices(index) {
-            return new Promise((resolve, reject) => {
-                this.initializeCityServices(index);
-                const cityId = this.days[index].city;
-
-
-                if (cityId && this.tourPackType) {
-                    fetch(`/get-city-services/${cityId}/?tour_pack_type=${this.tourPackType}`)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP error! status: ${response.status}`);
-                            }
-                            return response.text(); // Get the raw response text
-                        })
-                        .then(text => {
-
-                            try {
-                                return JSON.parse(text); // Try to parse it as JSON
-                            } catch (e) {
-                                console.error('Failed to parse JSON:', e);
-                                throw new Error('Invalid JSON response from server');
-                            }
-                        })
-                        .then(data => {
-                            console.log(`Received city services data for day ${index}:`, data);
-
-                            if (data.error) {
-                                console.error(`Error from server for day ${index}:`, data.error);
-                                throw new Error(data.error);
-                            }
-
-                            if (data.hotels && Array.isArray(data.hotels)) {
-                                this.days[index].cityServices.hotels = data.hotels;
-                            } else {
-                                console.warn(`No hotels data received for day ${index}`);
-                                this.days[index].cityServices.hotels = [];
-                            }
-
-                            if (data.service_types && Array.isArray(data.service_types)) {
-                                this.days[index].cityServices.service_types = data.service_types;
-                            } else {
-                                console.warn(`No service types data received for day ${index}`);
-                                this.days[index].cityServices.service_types = [];
-                            }
-
-                            console.log(`Updated cityServices for day ${index}:`, this.days[index].cityServices);
-
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error(`Error fetching city services for day ${index}:`, error);
-                            this.initializeCityServices(index);
-                            reject(error);
-                        });
-                } else {
-                    console.log(`No city ID or tour pack type for day ${index}, initializing empty city services`);
-                    this.initializeCityServices(index);
-                    resolve();
-                }
-            });
-        },
-        selectHotelAndServices(index) {
-            const day = this.days[index];
-            console.log(`Debugging selectHotelAndServices for day ${index}:`, day);
-
-            // Select hotel
-            if (day.hotel && day.cityServices.hotels && day.cityServices.hotels.length > 0) {
-                console.log('Available hotels:', day.cityServices.hotels);
-                console.log('Trying to select hotel with id:', day.hotel);
-
-                // Convert both IDs to numbers for comparison
-                const selectedHotel = day.cityServices.hotels.find(h => Number(h.id) === Number(day.hotel));
-
-                console.log('Selected hotel:', selectedHotel);
-                if (selectedHotel) {
-                    day.hotel = selectedHotel.id;
-                    console.log('Hotel selected:', day.hotel);
-                } else {
-                    console.log('No matching hotel found, keeping the original value:', day.hotel);
-                }
-            } else {
-                console.log('No hotel data or cityServices.hotels available');
-            }
-
-            // Select services
-            if (day.services && day.services.length > 0) {
-                console.log('Selecting services for day:', index);
-                day.services.forEach((service, serviceIndex) => {
-                    const serviceType = day.cityServices.service_types.find(st =>
-                        st.type.toLowerCase() === service.type.toLowerCase()
-                    );
-                    if (serviceType) {
-                        const selectedService = serviceType.services.find(s => Number(s.id) === Number(service.name));
-                        if (selectedService) {
-                            service.name = selectedService.id;
-                            service.price = selectedService.price;
-                            console.log(`Service selected for day ${index}, service ${serviceIndex}:`, selectedService);
-                        } else {
-                            console.log(`No matching service found for day ${index}, service ${serviceIndex}. Keeping original:`, service);
-                        }
-                    } else {
-                        console.log(`No matching service type found for day ${index}, service ${serviceIndex}.`);
-                    }
-                });
-            } else {
-                console.log(`No services to select for day ${index}`);
-            }
-
-            // Select guide services
-            if (day.guideServices && day.guideServices.length > 0) {
-                console.log('Selecting guide services for day:', index);
-                day.guideServices.forEach((guideService, guideIndex) => {
-                    const selectedGuideService = this.guideServices.find(gs => Number(gs.id) === Number(guideService.name));
-                    if (selectedGuideService) {
-                        guideService.name = selectedGuideService.id;
-                        guideService.price = selectedGuideService.price;
-                        console.log(`Guide service selected for day ${index}, guide service ${guideIndex}:`, selectedGuideService);
-                    } else {
-                        console.log(`No matching guide service found for day ${index}, guide service ${guideIndex}. Keeping original:`, guideService);
-                    }
-                });
-            } else {
-                console.log(`No guide services to select for day ${index}`);
-            }
-
-            console.log(`Final day ${index} data after selection:`, day);
-        },
-        dragStart(event, index) {
-            this.draggingIndex = index;
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/plain', index);
-
-            let dragGhost = event.target.cloneNode(true);
-            dragGhost.classList.add('drag-ghost');
-            dragGhost.style.position = 'absolute';
-            dragGhost.style.top = '-1000px';
-            document.body.appendChild(dragGhost);
-            event.dataTransfer.setDragImage(dragGhost, 20, 20);
-
-            setTimeout(() => {
-                document.body.removeChild(dragGhost);
-            }, 0);
-        },
-
-        dragEnd(event) {
-            this.draggingIndex = null;
-            document.querySelectorAll('.day-container').forEach(el => {
-                el.classList.remove('drop-zone-active');
-            });
-        },
-
-
-
-
-
-        drop(event, index) {
-            event.preventDefault();
-            const fromIndex = parseInt(event.dataTransfer.getData('text/plain'));
-            const toIndex = index;
-
-            if (fromIndex !== toIndex) {
-                const movedDay = this.days.splice(fromIndex, 1)[0];
-                this.days.splice(toIndex, 0, movedDay);
-                this.updateDayNumbers();
-            }
-
-            this.draggingIndex = null;
-
-
-            document.querySelectorAll('.day-container').forEach(el => {
-                el.classList.remove('drop-zone-active');
-            });
-
-        },
-
-        dragOver(event) {
-            event.preventDefault();
-          },
-        // Save the tour package data to the backend
-        saveTourPackage() {
-            if (!this.validateForm()) {
-                console.log('Form validation failed', this.errors);
-                alert("Please correct the errors before submitting.");
-                return;
-            }
-            this.days = sanitizeDays(this.days);
-            const totals = this.calculateGrandTotal();
-
-                data = {
-                    id: this.packageId,  // Include the package ID for existing packages
-                    hotelCosts: this.hotelCosts,
-                    name: this.name,
-                    customer_name: this.customerName,
-                    remark: this.remark,
-                    remark2: this.remark2,
-                    tour_pack_type: this.tourPackType,
-                    commission_rate_hotel: this.commission_rate_hotel,
-                    commission_rate_services: this.commission_rate_services,
-                    days: this.days.map(day => ({
-                        date: day.date,
-                        city: day.city,
-                        hotel: day.hotel,
-                        services: day.services.map(service => ({
-                            name: service.name,
-                            price_at_booking: service.price_at_booking
-                        })),
-                        guide_services: day.guideServices.map(gs => ({
-                            name: gs.name,
-                            price_at_booking: gs.price_at_booking
-                        }))
-                    })),
-                    // hotelCosts: this.hotelCosts,
-                    discounts: this.discounts,
-                    total_cost: this.calculateGrandTotal()
-                };
-
-
-
-
-
-            fetch('/save-tour-package/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert('Tour package saved successfully!');
-                    window.location.href = `/${data.package_id}/`;
-                } else {
-                    alert('Error saving tour package');
-                }
-            });
-        },
-
-        addDay() {
-            this.days.push({
-                date: '',
-                city: '',
-                hotel: '',
-                services: [],
-                guideServices: [],
-                cityServices: { hotels: [], service_types: [] } // Initialize with empty arrays
-            });
-        },
-        applyPredefinedPackage(packageId) {
-            if (!packageId) return;
-
-            fetch(`/get-predefined-package/${packageId}/`, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                const today = new Date().toISOString().slice(0, 10);
-                // Append the predefined days to the current days array
-                const newDays = data.days.map(day => ({
-                    date: today,
-                    city: day.city,
-                    hotel: String(day.hotel),
-                    services: day.services.map(service => ({
-                        type: 'tour',
-                        name: String(service.name),
-                        price: service.price
-                    })),
-                    guideServices: day.guideServices.map(guideService => ({
-                        name: String(guideService.name),
-                        price: guideService.price
-                    })),
-                    cityServices: { hotels: [], service_types: [] }
-                }));
-
-                // Append new predefined days to the existing days array
-                this.days.push(...newDays);
-
-                // Trigger city services update for the new days
-                const startIndex = this.days.length - newDays.length;
-                for (let i = startIndex; i < this.days.length; i++) {
-                    this.updateCityServices(i);
-                }
-            })
-            .catch(error => {
-                console.error('Error applying predefined package:', error);
-            });
-        },
-
-
-    };
-  }
+        totalDiscounts: totalDiscounts.toFixed(2),
+      };
+    },
+  };
+};

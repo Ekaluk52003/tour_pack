@@ -65,10 +65,7 @@ x-init="
     <label for="remark" class="block text-sm font-medium text-gray-700">Remark</label>
     <textarea id="remark" x-model="remark"  :disabled="!isSuperUser" class="w-full border rounded px-3 py-2"></textarea>
 </div>
-<div class="mb-4">
-  <label for="remark" class="block text-sm font-medium text-gray-700">Remark 2</label>
-  <textarea id="remark2" x-model="remark2" class="w-full border rounded px-3 py-2"></textarea>
-</div>
+
 
 <div class="mb-4" x-show="isSuperUser">
   <label for="tourPackType" class="block text-sm font-medium text-gray-700">Tour Package Type</label>
@@ -195,7 +192,7 @@ x-init="
                   </template>
                 </select>
 
-                <span class="ml-2" x-text="`Booked: ${guideService.price_at_booking.toFixed(2)} USD`"></span>
+                <span class="ml-2" x-text="`Booked: ${guideService.price_at_booking} USD`"></span>
                 <!-- <span class="ml-2" x-text="`Current: ${guideService.price.toFixed(2)} USD`"></span> -->
 
                 <button @click="removeGuideService(dayIndex, guideIndex)"  class="ml-2 text-red-600">Remove</button>
@@ -310,12 +307,19 @@ x-init="
   </div>
 </div>
 
+
+
 <!-- Grand Total Section -->
 <div class="mb-4 mt-8">
+  <div class="mb-4">
+    <label for="remark" class="block text-sm font-medium text-gray-700">Remark 2</label>
+    <textarea id="remark2" x-model="remark2" class="w-full border rounded px-3 py-2"></textarea>
+  </div>
   <h3 class="text-lg font-semibold">Grand Total Cost:
     <span x-text="(parseFloat(calculateGrandTotal().grandTotal) - calculateTotalDiscounts()).toFixed(2) + ' USD'"></span>
   </h3>
 </div>
+
 
 <!-- Add this inside your form, where appropriate -->
 <div class="mt-8 bg-gray-100 p-4 rounded-lg" x-show="isSuperUser">

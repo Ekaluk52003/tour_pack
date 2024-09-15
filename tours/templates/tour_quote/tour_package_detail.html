@@ -17,7 +17,7 @@
                 <p><strong>Customer:</strong> {{ package.customer_name }}</p>
                 <p><strong>Created:</strong> {{ package.created_at|date:"Y-m-d H:i" }}</p>
                 <p><strong>Remark:</strong> {{ package.remark }}</p>
-                <p><strong>Remark2:</strong> {{ package.remark2 }}</p>
+
             </div>
         </div>
 
@@ -57,7 +57,7 @@
 
         <!-- Cost Breakdown Section -->
         <div class="p-6 border-b">
-        
+
 
             <!-- Service Costs -->
             <div class="mb-6">
@@ -119,8 +119,11 @@
                 </table>
             </div>
 
+            <p><strong>Remark2:</strong> {{ package.remark2 }}</p>
+
             <!-- Grand Total -->
             <div class="mt-6 bg-blue-100 p-4 rounded-lg">
+
                 <h3 class="text-2xl font-bold text-blue-800">Grand Total Cost: {{ package.grand_total_cost }} USD</h3>
             </div>
         </div>

@@ -1,4 +1,22 @@
 window.tourPackage = function(isSuperUser) {
+    function sanitizeDays(days) {
+        return days.map(day => ({
+            date: day.date || '',
+            city: day.city || '',
+            hotel: day.hotel || '',
+            services: Array.isArray(day.services) ? day.services.map(service => ({
+                type: service.type || '',
+                name: service.name || '',
+                price: parseFloat(service.price) || 0,
+                quantity: parseInt(service.quantity) || 1
+            })) : [],
+            guideServices: Array.isArray(day.guideServices) ? day.guideServices.map(gs => ({
+                name: gs.name || '',
+                price: parseFloat(gs.price) || 0
+            })) : [],
+            cityServices: day.cityServices || { hotels: [], service_types: [] }
+        }));
+    }
 
     function getCookie(name) {
         let cookieValue = null;
@@ -25,6 +43,14 @@ window.tourPackage = function(isSuperUser) {
         selectedPredefinedQuote: '',
         commission_rate_hotel: 0,
         commission_rate_services: 0,
+        watch: {
+            days: {
+                handler(newDays) {
+                    this.days = sanitizeDays(newDays);
+                },
+                deep: true
+            }
+        },
         days: [{
             date: '',
             city: '',
@@ -92,6 +118,8 @@ window.tourPackage = function(isSuperUser) {
                 this.days[index].cityServices = { hotels: [], service_types: [] };
             }
         },
+
+
         applyPredefinedQuote() {
             if (!this.selectedPredefinedQuote) {
                 alert('Please select a predefined quote first.');
@@ -111,17 +139,17 @@ window.tourPackage = function(isSuperUser) {
                     const newDays = data.days.map(day => ({
                         date: today,
                         city: Number(day.city),
-                        hotel: Number(day.hotel), // Ensure hotel is stored as a number
-                        services: day.services.map(service => ({
+                        hotel: Number(day.hotel),
+                        services: Array.isArray(day.services) ? day.services.map(service => ({
                             type: service.type.toLowerCase(),
                             name: Number(service.id),
-                            price: service.price,
-                            quantity: service.quantity
-                        })),
-                        guideServices: day.guideServices.map(gs => ({
+                            price: parseFloat(service.price) || 0,
+                            quantity: service.quantity || 1
+                        })) : [],
+                        guideServices: Array.isArray(day.guideServices) ? day.guideServices.map(gs => ({
                             name: Number(gs.id),
-                            price: gs.price
-                        })),
+                            price: parseFloat(gs.price) || 0
+                        })) : [],
                         cityServices: { hotels: [], service_types: [] }
                     }));
 
@@ -140,6 +168,7 @@ window.tourPackage = function(isSuperUser) {
                     });
 
                     Promise.all(updatePromises).then(() => {
+                        this.days = sanitizeDays(this.days);
                         console.log('Final days after applying predefined quote:', this.days);
                         alert('Predefined tour quote applied successfully!');
                     });
@@ -149,6 +178,18 @@ window.tourPackage = function(isSuperUser) {
                     alert('Error applying predefined quote. Please try again.');
                 });
         },
+
+        // Add this new function to validate the days structure
+        validateDaysStructure() {
+            this.days = this.days.map(day => ({
+                ...day,
+                services: Array.isArray(day.services) ? day.services : [],
+                guideServices: Array.isArray(day.guideServices) ? day.guideServices : [],
+                cityServices: day.cityServices || { hotels: [], service_types: [] }
+            }));
+            console.log('Validated days structure:', this.days);
+        },
+
         addHotelCost() {
             this.hotelCosts.push({ name: '', type: '', room: 1, nights: 1, price: 0, extraBedPrice: '' });
         },
@@ -254,68 +295,67 @@ window.tourPackage = function(isSuperUser) {
         },
 
         calculateGrandTotal() {
+    let serviceTotal = 0;
+    let guideServiceTotal = 0;
+    let hotelTotal = 0;
 
-            let serviceTotal = 0;
-            let guideServiceTotal = 0;
-            let hotelTotal = 0;
-
-            if (!this.days || !Array.isArray(this.days)) {
-                console.error('this.days is not an array:', this.days);
-                return {
-                    serviceGrandTotal: '0.00',
-                    hotelGrandTotal: '0.00',
-                    grandTotal: '0.00',
-                    commission_amount_hotel: '0.00',
-                    commission_amount_services: '0.00'
-                };
-            }
-
-            this.days.forEach((day, index) => {
+    this.days = sanitizeDays(this.days);
 
 
-                if (day.services && Array.isArray(day.services)) {
-                    day.services.forEach(service => {
-                        console.log('Regular service:', service);
-                        serviceTotal += parseFloat(service.price) || 0; // Changed from price_at_booking to price
-                    });
-                } else {
-                    console.warn(`Day ${index + 1} services is not an array:`, day.services);
-                }
-
-                if (day.guideServices && Array.isArray(day.guideServices)) {
-                    day.guideServices.forEach(guideService => {
-                        console.log('Guide service:', guideService);
-                        guideServiceTotal += parseFloat(guideService.price) || 0; // Changed from price_at_booking to price
-                    });
-                } else {
-                    console.warn(`Day ${index + 1} guideServices is not an array:`, day.guideServices);
-                }
-            });
 
 
-            hotelTotal = parseFloat(this.calculateHotelCostTotal());
+    this.days.forEach((day, index) => {
+        day.services.forEach(service => {
+            const price = parseFloat(service.price) || 0;
+            const quantity = parseInt(service.quantity) || 1;
+            serviceTotal += price * quantity;
+            console.log(`Day ${index + 1} service: ${service.name}, Price: ${price}, Quantity: ${quantity}, Total: ${price * quantity}`);
+        });
 
-            const serviceGrandTotal = serviceTotal + guideServiceTotal;
-            const hotelGrandTotal = hotelTotal;
-            const grandTotal = serviceGrandTotal + hotelGrandTotal;
-
-            const totalRoomNights = this.hotelCosts.reduce((total, cost) => {
-                return total + (parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0);
-            }, 0);
-
-            const commission_amount_hotel = (parseFloat(this.commission_rate_hotel) * totalRoomNights).toFixed(2);
-            const commission_amount_services = (parseFloat(this.commission_rate_services) * serviceGrandTotal / 100).toFixed(2);
+        day.guideServices.forEach(guideService => {
+            const price = parseFloat(guideService.price) || 0;
+            guideServiceTotal += price;
+            console.log(`Day ${index + 1} guide service: ${guideService.name}, Price: ${price}`);
+        });
+    });
 
 
-            return {
-                serviceGrandTotal: serviceGrandTotal.toFixed(2),
-                hotelGrandTotal: hotelGrandTotal.toFixed(2),
-                grandTotal: grandTotal.toFixed(2),
-                commission_amount_hotel: commission_amount_hotel,
-                commission_amount_services: commission_amount_services
-            };
-        },
 
+    hotelTotal = this.hotelCosts.reduce((total, cost) => {
+        const roomCost = (parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0);
+        const extraBedCost = (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0);
+        console.log(`Hotel: ${cost.name}, Room Cost: ${roomCost}, Extra Bed Cost: ${extraBedCost}`);
+        return total + roomCost + extraBedCost;
+    }, 0);
+
+    const serviceGrandTotal = serviceTotal + guideServiceTotal;
+    const hotelGrandTotal = hotelTotal;
+    const grandTotal = serviceGrandTotal + hotelGrandTotal;
+
+    const totalRoomNights = this.hotelCosts.reduce((total, cost) => {
+        return total + (parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0);
+    }, 0);
+
+    const commission_amount_hotel = (parseFloat(this.commission_rate_hotel) * totalRoomNights).toFixed(2);
+    const commission_amount_services = (parseFloat(this.commission_rate_services) * serviceGrandTotal / 100).toFixed(2);
+
+    const totalDiscounts = this.discounts.reduce((total, discount) => {
+        return total + (parseFloat(discount.amount) || 0);
+    }, 0);
+
+    const finalGrandTotal = grandTotal - totalDiscounts;
+
+
+    return {
+        serviceGrandTotal: serviceGrandTotal.toFixed(2),
+        hotelGrandTotal: hotelGrandTotal.toFixed(2),
+        grandTotal: grandTotal.toFixed(2),
+        finalGrandTotal: finalGrandTotal.toFixed(2),
+        commission_amount_hotel: commission_amount_hotel,
+        commission_amount_services: commission_amount_services,
+        totalDiscounts: totalDiscounts.toFixed(2)
+    };
+},
         insertDayAbove(index) {
             const newDay = {
                 date: '',
@@ -348,6 +388,7 @@ window.tourPackage = function(isSuperUser) {
 
         removeDay(index) {
             this.days.splice(index, 1);
+            // this.days = sanitizeDays(this.days);
             // Re-initialize cityServices for all days after removal
             for (let i = index; i < this.days.length; i++) {
                 this.initializeCityServices(i);
@@ -544,6 +585,10 @@ window.tourPackage = function(isSuperUser) {
             });
         },
 
+
+
+
+
         drop(event, index) {
             event.preventDefault();
             const fromIndex = parseInt(event.dataTransfer.getData('text/plain'));
@@ -556,20 +601,25 @@ window.tourPackage = function(isSuperUser) {
             }
 
             this.draggingIndex = null;
+
+
             document.querySelectorAll('.day-container').forEach(el => {
                 el.classList.remove('drop-zone-active');
             });
+
         },
 
-
+        dragOver(event) {
+            event.preventDefault();
+          },
         // Save the tour package data to the backend
         saveTourPackage() {
-            // if (!this.validateForm()) {
-            //     console.log('Form validation failed', this.errors);
-            //     alert("Please correct the errors before submitting.");
-            //     return;
-            // }
-
+            if (!this.validateForm()) {
+                console.log('Form validation failed', this.errors);
+                alert("Please correct the errors before submitting.");
+                return;
+            }
+            this.days = sanitizeDays(this.days);
             const totals = this.calculateGrandTotal();
 
                 data = {

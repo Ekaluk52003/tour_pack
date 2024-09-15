@@ -306,7 +306,7 @@
 <div class="mb-4 mt-8">
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700">Remark 2</label>
-    <textarea id="remark2" x-model="remark2" class="w-full border rounded px-3 py-2"></textarea>
+    <textarea id="remark2" x-model="remark2" :disabled="!isSuperUser" class="w-full border rounded px-3 py-2"></textarea>
   </div>
   <h3 class="text-lg font-semibold">Grand Total Cost:
     <span x-text="(parseFloat(calculateGrandTotal().grandTotal) - calculateTotalDiscounts()).toFixed(2) + ' USD'"></span>

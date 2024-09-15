@@ -33,8 +33,8 @@
 </div>
 
 <div class="mb-4">
-  <label for="tourPackType" class="block text-sm font-medium text-gray-700">Tour Package Type</label>
-  <select id="tourPackType" x-model="tourPackType" @change="updateServicesForPackageType()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+  <label for="tourPackType"  class="block mb-2 text-sm font-medium text-gray-600 w-full">Tour Package Type</label>
+  <select id="tourPackType" x-model="tourPackType" @change="updateServicesForPackageType()" class="h-12 border border-gray-300 text-gray-600 text-base rounded-lg block w-full py-2.5 px-4 focus:outline-none">
       <option value="">Select Tour Package Type</option>
       {% for pack_type in tour_pack_types %}
           <option value="{{ pack_type.id }}">{{ pack_type.name }}</option>
@@ -42,13 +42,17 @@
   </select>
 </div>
 
-<select x-model="selectedPredefinedQuote">
-  <option value="">Select a predefined quote</option>
-  {% for quote in predefined_quotes %}
-      <option value="{{ quote.id }}">{{ quote.name }}</option>
-  {% endfor %}
-</select>
-<button @click="applyPredefinedQuote()">Apply Predefined Quote</button>
+<div class="flex items-center mb-2">
+  <select x-model="selectedPredefinedQuote" class="h-12 border border-gray-300 text-gray-600 text-base rounded-lg block  py-2.5 px-4 focus:outline-none">
+    <option value="">Select a predefined quote</option>
+    {% for quote in predefined_quotes %}
+        <option value="{{ quote.id }}">{{ quote.name }}</option>
+    {% endfor %}
+  </select>
+  <button @click="applyPredefinedQuote()" class="ml-2 bg-indigo-500 text-white px-4 py-2 rounded">Apply Predefined Quote</button>
+
+</div>
+
 
 <div class="space-y-2">
   <template x-for="(day, index) in days" :key="index">

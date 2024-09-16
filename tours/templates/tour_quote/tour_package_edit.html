@@ -164,7 +164,7 @@
                 <option value="transfer">Transfer</option>
                 <option value="tour">Tour</option>
               </select>
-              <select x-model="service.name" @change="updateService(day, serviceIndex)" class="mr-2 p-2 border rounded">
+              <select x-model="service.name"  @change="updateService(day, service)" class="mr-2 p-2 border rounded">
                 <option value="">Select Service</option>
                 <template x-for="option in getServiceNames(day, service.type)" :key="option.id">
                   <option :value="option.id" x-text="`${option.name} (${option.price} USD)`" :selected="service.name == option.id"></option>
@@ -181,7 +181,7 @@
           <h3 class="text-lg font-semibold mb-2 mt-4">Guide Services</h3>
           <template x-for="(guideService, guideIndex) in day.guideServices" :key="guideIndex">
             <div class="flex items-center mb-2">
-              <select x-model="guideService.name" @change="updateGuideService(day, guideIndex)" class="w-3/4 border rounded px-3 py-2 mr-2">
+              <select x-model="guideService.name" @change="updateGuideService(guideService)" class="w-3/4 border rounded px-3 py-2 mr-2">
                 <option value="">Select Guide Service</option>
                 <template x-for="option in guideServices" :key="option.id">
                   <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="guideService.name == option.id"></option>

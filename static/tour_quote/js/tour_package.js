@@ -280,23 +280,29 @@ window.tourPackage = function () {
         return [];
     },
     updateService(day, service) {
-        const serviceNames = this.getServiceNames(day, service.type);
-        const selectedService = serviceNames.find(s => s.id.toString() === service.name);
-        if (selectedService) {
-            service.price = parseFloat(selectedService.price) || 0;
-        } else {
-            service.price = 0;
-        }
+      const serviceNames = this.getServiceNames(day, service.type);
+      const selectedService = serviceNames.find(s => s.id.toString() === service.name);
+      if (selectedService) {
+        service.price = parseFloat(selectedService.price) || 0;
+        service.price_at_booking = parseFloat(selectedService.price) || 0;
+      } else {
+        service.price = 0;
+        service.price_at_booking = 0;
+      }
     },
+
     updateGuideService(guideService) {
       const selectedGuideService = this.guideServices.find(
-        (gs) => gs.id === guideService.name
+        (gs) => gs.id.toString() === guideService.name
       );
       if (selectedGuideService) {
         guideService.price = parseFloat(selectedGuideService.price) || 0;
+        guideService.price_at_booking = parseFloat(selectedGuideService.price) || 0;
       } else {
         guideService.price = 0;
+        guideService.price_at_booking = 0;
       }
+      // No need for explicit recalculation, Alpine.js will handle it
     },
 
     updateCityServices(day) {

@@ -92,14 +92,14 @@
 
 
 
-<div class="flex items-center mb-2" x-show="isSuperUser">
+<div class="md:flex items-center mb-2" x-show="isSuperUser">
   <select x-model="selectedPredefinedQuote" class="h-12 border border-gray-300 text-gray-600 text-base rounded-lg block  py-2.5 px-4 focus:outline-none">
     <option value="">Select a predefined quote</option>
     {% for quote in predefined_quotes %}
         <option value="{{ quote.id }}">{{ quote.name }}</option>
     {% endfor %}
   </select>
-  <button @click="applyPredefinedQuote()" class="ml-2 bg-indigo-500 text-white px-4 py-2 rounded">Apply Predefined Quote</button>
+  <button @click="applyPredefinedQuote()" class="mt-4 ml-2 bg-indigo-500 text-white px-4 py-2 rounded md:mt-0">Apply Predefined Quote</button>
 
 </div>
 
@@ -161,7 +161,7 @@
         <div class="mb-4">
           <h3 class="text-lg font-semibold mb-2">Services</h3>
           <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
-            <div class="flex items-center mb-2 bg-white p-2 rounded border service-item">
+            <div class="flex items-center mb-2 bg-white p-2 rounded border service-item overflow-x-auto">
               <select x-model="service.type" @change="service.name = ''" class="mr-2 p-2 border rounded">
                 <option value="">Select Service Type</option>
                 <option value="transfer">Transfer</option>

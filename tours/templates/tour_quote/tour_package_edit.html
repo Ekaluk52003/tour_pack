@@ -46,6 +46,18 @@
      ">
   <h1 class="text-3xl font-bold mb-6">Create Tour Package Quote</h1>
 
+  <div class="mb-4" x-show="errors.days">
+    <p class="text-red-500 text-sm" x-text="errors.days"></p>
+  </div>
+  <template x-for="(day, dayIndex) in days" :key="dayIndex">
+    <div class="mb-4">
+        <!-- ... (existing day fields) ... -->
+        <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_date`]" x-text="errors[`day${dayIndex + 1}_date`]"></p>
+        <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_city`]" x-text="errors[`day${dayIndex + 1}_city`]"></p>
+        <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_hotel`]" x-text="errors[`day${dayIndex + 1}_hotel`]"></p>
+    </div>
+  </template>
+
   <div class="mb-4" x-show="isSuperUser">
    Superuser Editing
 </div>
@@ -77,27 +89,18 @@
       {% endfor %}
   </select>
 </div>
-<div class="mb-4" x-show="errors.days">
-  <p class="text-red-500 text-sm" x-text="errors.days"></p>
-</div>
 
-<template x-for="(day, dayIndex) in days" :key="dayIndex">
-  <div class="mb-4">
-      <!-- ... (existing day fields) ... -->
-      <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_date`]" x-text="errors[`day${dayIndex + 1}_date`]"></p>
-      <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_city`]" x-text="errors[`day${dayIndex + 1}_city`]"></p>
-      <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_hotel`]" x-text="errors[`day${dayIndex + 1}_hotel`]"></p>
-  </div>
-</template>
 
-<div class="mb-4" x-show="isSuperUser" class="flex items-center mb-2">
-  <select x-model="selectedPredefinedQuote"  class="h-12 border border-gray-300 text-gray-600 text-base rounded-lg block  py-2.5 px-4 focus:outline-none">
+
+<div class="flex items-center mb-2" x-show="isSuperUser">
+  <select x-model="selectedPredefinedQuote" class="h-12 border border-gray-300 text-gray-600 text-base rounded-lg block  py-2.5 px-4 focus:outline-none">
     <option value="">Select a predefined quote</option>
     {% for quote in predefined_quotes %}
         <option value="{{ quote.id }}">{{ quote.name }}</option>
     {% endfor %}
   </select>
   <button @click="applyPredefinedQuote()" class="ml-2 bg-indigo-500 text-white px-4 py-2 rounded">Apply Predefined Quote</button>
+
 </div>
 
 

@@ -11,6 +11,18 @@
 {% block content %}
 <div x-data="tourPackage()" x-init="init()" class="max-w-4xl mx-auto bg-white p-8 rounded shadow-lg">
     <h1 class="text-3xl font-bold mb-6">Create Tour Package Quote</h1>
+    <div class="mb-4" x-show="errors.days">
+      <p class="text-red-500 text-sm" x-text="errors.days"></p>
+    </div>
+
+    <template x-for="(day, dayIndex) in days" :key="dayIndex">
+      <div class="mb-4">
+          <!-- ... (existing day fields) ... -->
+          <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_date`]" x-text="errors[`day${dayIndex + 1}_date`]"></p>
+          <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_city`]" x-text="errors[`day${dayIndex + 1}_city`]"></p>
+          <p class="text-red-500 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_hotel`]" x-text="errors[`day${dayIndex + 1}_hotel`]"></p>
+      </div>
+    </template>
 
     <div class="mb-4">
       <label for="package-name" class="block text-sm font-medium text-gray-700">Package Name</label>

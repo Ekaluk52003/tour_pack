@@ -176,7 +176,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 CSRF_COOKIE_SECURE = True  # Set to True if using HTTPS
-CSRF_COOKIE_DOMAIN = '.brighter.in.th'  # Include your domain here
+CSRF_COOKIE_DOMAIN = 'brighter.in.th'  # Include your domain here
 SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
 CSRF_TRUSTED_ORIGINS = ['https://www.brighter.in.th', 'https://brighter.in.th']

@@ -30,7 +30,7 @@ DEBUG = os.environ.get("DEBUG", "0") == "1"
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "localhost:8080", "0.0.0.0", "127.0.0.1", 'https://www.tour.smartflow.pw', 'www.tour.smartflow.pw', 'tour.smartflow.pw']
+ALLOWED_HOSTS = ["localhost", "localhost:8080", "0.0.0.0", "127.0.0.1", 'https://www.tour.brighter.in.th', 'www.tour.brighter.in.th', 'tour.brighter.in.th']
 
 
 # Application definition
@@ -179,7 +179,7 @@ CSRF_COOKIE_SECURE = True  # Set to True if using HTTPS
 CSRF_COOKIE_DOMAIN = '.smartflow.pw'  # Include your domain here
 SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
-CSRF_TRUSTED_ORIGINS = ['https://www.tour.smartflow.pw', 'https://tour.smartflow.pw']
+CSRF_TRUSTED_ORIGINS = ['https://www.tour.brighter.in.th', 'https://tour.brighter.in.th']
 
 
 TIME_ZONE = 'Asia/Bangkok'

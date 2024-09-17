@@ -1,5 +1,5 @@
 
-tour.brighter.in.th {
+brighter.in.th {
     reverse_proxy web:8000
     file_server /static/* {
         root /app/static

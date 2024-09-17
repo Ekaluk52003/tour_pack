@@ -124,13 +124,13 @@ class TourPackageQuoteAdmin(admin.ModelAdmin):
 
     readonly_fields = ('service_grand_total', 'hotel_grand_total', 'grand_total_cost', 'package_reference')
 
-@admin.register(TourDay)
-class TourDayAdmin(admin.ModelAdmin):
-    list_display = ('tour_package', 'date', 'city', 'hotel')
-    list_filter = ('tour_package', 'city')
-    search_fields = ('tour_package__name', 'city__name', 'hotel__name')
-    autocomplete_fields = ['tour_package', 'city', 'hotel']
-    inlines = [TourDayServiceInline, TourDayGuideServiceInline]
+# @admin.register(TourDay)
+# class TourDayAdmin(admin.ModelAdmin):
+#     list_display = ('tour_package', 'date', 'city', 'hotel')
+#     list_filter = ('tour_package', 'city')
+#     search_fields = ('tour_package__name', 'city__name', 'hotel__name')
+#     autocomplete_fields = ['tour_package', 'city', 'hotel']
+#     inlines = [TourDayServiceInline, TourDayGuideServiceInline]
 
 # Optionally, you can register the inline models if you want to manage them directly
 # admin.site.register(PredefinedTourDayService)

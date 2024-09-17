@@ -423,7 +423,7 @@ def tour_packages(request):
 @login_required
 @require_http_methods(["GET"])
 def get_predefined_tour_quote(request, quote_id):
-    quote = get_object_or_404(PredefinedTourQuote.objects.select_related('tour_pack_type'), id=quote_id)
+    quote = get_object_or_404(PredefinedTourQuote.objects, id=quote_id)
     days = []
 
     for day in quote.days.all().select_related('city', 'hotel'):
@@ -438,7 +438,6 @@ def get_predefined_tour_quote(request, quote_id):
             service = day_service.service
             service_prices = ServicePrice.objects.filter(
                 service=service,
-                tour_pack_type=quote.tour_pack_type,
                 city=day.city
             )
 
@@ -465,7 +464,6 @@ def get_predefined_tour_quote(request, quote_id):
         'id': quote.id,
         'name': quote.name,
         'description': quote.description,
-        'tour_pack_type': quote.tour_pack_type_id,
         'days': days
     }
 

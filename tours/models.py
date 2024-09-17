@@ -143,7 +143,7 @@ class TourDayGuideService(models.Model):
 class PredefinedTourQuote(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
-    tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.CASCADE)
+    # tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

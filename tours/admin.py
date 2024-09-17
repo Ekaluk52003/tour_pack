@@ -67,15 +67,14 @@ class PredefinedTourDayInline(admin.StackedInline):
 
 @admin.register(PredefinedTourQuote)
 class PredefinedTourQuoteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'tour_pack_type', 'created_at', 'updated_at')
-    list_filter = ('tour_pack_type', 'created_at')
+    list_display = ('name', 'created_at', 'updated_at')
     search_fields = ('name', 'description')
-    autocomplete_fields = ['tour_pack_type']
-    inlines = [PredefinedTourDayInline]
+
+    # inlines = [PredefinedTourDayInline]
 
     fieldsets = (
         (None, {
-            'fields': ('name', 'description', 'tour_pack_type')
+            'fields': ('name', 'description')
         }),
     )
 
@@ -134,10 +133,10 @@ class TourDayAdmin(admin.ModelAdmin):
     inlines = [TourDayServiceInline, TourDayGuideServiceInline]
 
 # Optionally, you can register the inline models if you want to manage them directly
-admin.site.register(PredefinedTourDayService)
-admin.site.register(PredefinedTourDayGuideService)
-admin.site.register(TourDayService)
-admin.site.register(TourDayGuideService)
+# admin.site.register(PredefinedTourDayService)
+# admin.site.register(PredefinedTourDayGuideService)
+# admin.site.register(TourDayService)
+# admin.site.register(TourDayGuideService)
 
 ####Service Price
 class ServicePriceResource(resources.ModelResource):

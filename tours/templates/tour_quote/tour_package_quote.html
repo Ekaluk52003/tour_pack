@@ -128,7 +128,7 @@
                 <option :value="option.id" x-text="`${option.name} (${option.price} USD)`" :selected="service.name == option.id"></option>
               </template>
             </select>
-            <span class="ml-2" x-text="`Booked: ${service.price_at_booking || service.price} USD`"></span>
+
             <button @click="removeService(day, serviceIndex)" class="ml-2 text-red-600">Remove</button>
           </div>
         </template>
@@ -144,7 +144,7 @@
                 <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="guideService.name == option.id"></option>
               </template>
             </select>
-            <span class="ml-2" x-text="`Booked: ${guideService.price_at_booking.toFixed(2)} USD`"></span>
+
             <button @click="removeGuideService(day, guideIndex)"  class="ml-2 text-red-600">Remove</button>
           </div>
         </template>
@@ -153,7 +153,7 @@
 
      <!-- Plus button to add day between (except after the last day) -->
      <template x-if="index < days.length - 1">
-      <button @click="insertDayBelow(day)"
+      <button @click="insertDayBelow(index)"
               class="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-4 rounded-full flex items-center justify-center mb-2"
               title="Insert day here">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

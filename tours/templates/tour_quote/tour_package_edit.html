@@ -199,7 +199,7 @@
 
          <!-- Plus button to add day between (except after the last day) -->
          <template x-if="index < days.length - 1">
-          <button @click="insertDayBelow(day)"
+          <button @click="insertDayBelow(index)"
                   class="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-4 rounded-full flex items-center justify-center mb-2"
                   title="Insert day here">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

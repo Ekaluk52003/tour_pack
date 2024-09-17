@@ -151,6 +151,7 @@ window.tourPackage = function () {
       day.guideServices.splice(guideIndex, 1);
     },
 
+  
     insertDayBelow(index) {
       const newDay = {
         date: "",

@@ -70,7 +70,7 @@ class PredefinedTourQuoteAdmin(admin.ModelAdmin):
     list_display = ('name', 'created_at', 'updated_at')
     search_fields = ('name', 'description')
 
-    # inlines = [PredefinedTourDayInline]
+    inlines = [PredefinedTourDayInline]
 
     fieldsets = (
         (None, {
@@ -124,19 +124,19 @@ class TourPackageQuoteAdmin(admin.ModelAdmin):
 
     readonly_fields = ('service_grand_total', 'hotel_grand_total', 'grand_total_cost', 'package_reference')
 
-# @admin.register(TourDay)
-# class TourDayAdmin(admin.ModelAdmin):
-#     list_display = ('tour_package', 'date', 'city', 'hotel')
-#     list_filter = ('tour_package', 'city')
-#     search_fields = ('tour_package__name', 'city__name', 'hotel__name')
-#     autocomplete_fields = ['tour_package', 'city', 'hotel']
-#     inlines = [TourDayServiceInline, TourDayGuideServiceInline]
+@admin.register(TourDay)
+class TourDayAdmin(admin.ModelAdmin):
+    list_display = ('tour_package', 'date', 'city', 'hotel')
+    list_filter = ('tour_package', 'city')
+    search_fields = ('tour_package__name', 'city__name', 'hotel__name')
+    autocomplete_fields = ['tour_package', 'city', 'hotel']
+    inlines = [TourDayServiceInline, TourDayGuideServiceInline]
 
 # Optionally, you can register the inline models if you want to manage them directly
-# admin.site.register(PredefinedTourDayService)
-# admin.site.register(PredefinedTourDayGuideService)
-# admin.site.register(TourDayService)
-# admin.site.register(TourDayGuideService)
+admin.site.register(PredefinedTourDayService)
+admin.site.register(PredefinedTourDayGuideService)
+admin.site.register(TourDayService)
+admin.site.register(TourDayGuideService)
 
 ####Service Price
 class ServicePriceResource(resources.ModelResource):

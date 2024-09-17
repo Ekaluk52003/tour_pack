@@ -1,6 +1,18 @@
 
 
-tour.smartflow.pw {
+# tour.smartflow.pw {
+#     reverse_proxy web:8000
+#     file_server /static/* {
+#         root /app/static
+#     }
+#     file_server /media/* {
+#         root /app/media
+#     }
+# }
+
+
+
+tour.brighter.in.th {
     reverse_proxy web:8000
     file_server /static/* {
         root /app/static

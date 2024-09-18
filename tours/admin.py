@@ -18,12 +18,27 @@ class CityAdmin(admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
 
+
+class HotelResource(resources.ModelResource):
+    city = fields.Field(
+        column_name='city',
+        attribute='city',
+        widget=ForeignKeyWidget(City, 'name')
+    )
+
+    class Meta:
+        model = Hotel
+        fields = ('id', 'name', 'city')
+        import_id_fields = ('name', 'city')
+        
 @admin.register(Hotel)
-class HotelAdmin(admin.ModelAdmin):
+class HotelAdmin(ImportExportModelAdmin):
+    resource_class = HotelResource
     list_display = ('name', 'city')
     list_filter = ('city',)
     search_fields = ('name', 'city__name')
     autocomplete_fields = ['city']
+
 
 @admin.register(ServiceType)
 class ServiceTypeAdmin(admin.ModelAdmin):

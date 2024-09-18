@@ -207,7 +207,7 @@ def tour_package_pdf(request, pk):
     response['Content-Disposition'] = f'inline; filename="tour_package_{package.id}.pdf"'
 
     # WeasyPrint to generate the PDF
-    HTML(string=html_string).write_pdf(response, stylesheets=[CSS(string='''
+    HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf(response, stylesheets=[CSS(string='''
     @page {
         size: A4;
         margin: 2cm;

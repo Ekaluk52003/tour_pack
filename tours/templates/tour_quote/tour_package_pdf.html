@@ -209,7 +209,13 @@
             color: #2980B9;
         }
 
-
+        .company-logo {
+            width: 75px;
+            height: 75px;
+            background-image: url('https://brighter.in.th/static/image/animo.jpg');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
 
 
 
@@ -219,7 +225,7 @@
 <div class="content">
     <div class="header-container">
         <div class="company-header">
-            <img src="https://brighter.in.th/static/image/animo.jpg" alt="Company Logo">
+            <div class="company-logo"></div>
             <h1>Aniomo Tour</h1>
         </div>
         <div class="package-info">
@@ -350,6 +356,7 @@
     </div>
 
     <p><strong>Remark2:</strong> {{ package.remark2 }}</p>
+
 </div>
 
 </body>

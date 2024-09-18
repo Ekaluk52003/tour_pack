@@ -20,6 +20,7 @@ import traceback
 from decimal import Decimal, InvalidOperation
 import json
 import logging
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -184,10 +185,20 @@ def tour_package_pdf(request, pk):
 
         hotel_costs_with_total.append(cost_with_total)
 
+    discounts = package.discounts
+    total_discount = sum(float(discount['amount']) for discount in discounts)
+
     # Render the template to HTML
     html_string = render_to_string('tour_quote/tour_package_pdf.html', {
         'package': package,
+        'tour_pack_type': package.tour_pack_type,
         'hotel_costs_with_total': hotel_costs_with_total,
+        'base_url': request.build_absolute_uri('/'),
+         'discounts' : discounts,
+        'total_discount' :total_discount,
+        'static_url': settings.STATIC_URL,
+        'discounts': discounts,
+        'total_discount': total_discount,
 
     })
 

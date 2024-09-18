@@ -102,7 +102,7 @@
                         {% for discount in discounts %}
                         <tr>
                             <td class="p-2 border-b">{{ discount.item }}</td>
-                            <td class="p-2 border-b text-right">${{ discount.amount }}</td>
+                            <td class="p-2 border-b text-right">{{ discount.amount }}</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -110,12 +110,14 @@
                         </tr>
                         {% endfor %}
                     </tbody>
+                    {% if discounts %}
                     <tfoot class="font-bold">
                         <tr>
                             <td class="p-2">Total Discount</td>
                             <td class="p-2 text-right">${{ total_discount }}</td>
                         </tr>
                     </tfoot>
+                    {% endif %}
                 </table>
             </div>
 

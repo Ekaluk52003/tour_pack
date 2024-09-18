@@ -528,3 +528,6 @@ def get_city_services(request, city_id):
         print("Error in get_city_services:", str(e))
         print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
+
+
+

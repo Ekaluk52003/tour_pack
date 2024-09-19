@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.humanize', 
+    'django.contrib.humanize',
     'tours',
     'import_export',
     'django.contrib.sites',
@@ -184,3 +184,16 @@ CSRF_TRUSTED_ORIGINS = ['https://www.brighter.in.th', 'https://brighter.in.th']
 
 TIME_ZONE = 'Asia/Bangkok'
 USE_TZ = True
+
+
+
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
+USE_SES_V2 = True
+
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", default="local")
+if EMAIL_BACKEND == "ses":
+        EMAIL_BACKEND = 'django_ses.SESBackend'
+        AWS_SES_REGION_NAME = os.environ.get('AWS_SES_REGION_NAME')
+        AWS_SES_REGION_ENDPOINT = os.environ.get('AWS_SES_REGION_ENDPOINT')
+        AWS_SES_ACCESS_KEY_ID = os.environ.get('AWS_SES_ACCESS_KEY_ID')
+        AWS_SES_SECRET_ACCESS_KEY = os.environ.get('AWS_SES_SECRET_ACCESS_KEY')

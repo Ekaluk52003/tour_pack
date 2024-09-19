@@ -14,7 +14,10 @@ window.tourPackage = function () {
     return cookieValue;
   }
 
+
   return {
+
+
     errors: {},
     name: "",
     customerName: "",
@@ -93,6 +96,8 @@ window.tourPackage = function () {
       });
     },
 
+
+
     init() {
       // Initialize with one day
       if (this.days.length === 0) {
@@ -151,7 +156,7 @@ window.tourPackage = function () {
       day.guideServices.splice(guideIndex, 1);
     },
 
-  
+
     insertDayBelow(index) {
       const newDay = {
         date: "",
@@ -686,5 +691,7 @@ window.tourPackage = function () {
         totalDiscounts: totalDiscounts.toFixed(2),
       };
     },
+
+
   };
 };

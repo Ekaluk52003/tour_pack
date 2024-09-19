@@ -21,6 +21,9 @@ from decimal import Decimal, InvalidOperation
 import json
 import logging
 from django.conf import settings
+from django.core.mail import EmailMessage
+from io import BytesIO
+from django.contrib import messages
 
 logger = logging.getLogger(__name__)
 
@@ -226,6 +229,90 @@ def tour_package_pdf(request, pk):
 
 
     return response
+
+
+@login_required
+@require_http_methods(["POST"])
+def send_tour_package_email(request, pk):
+    try:
+        package = get_object_or_404(TourPackageQuote, pk=pk)
+        cc_email = request.POST.get('cc_email')
+
+        logger.info(f"Attempting to send email for package {pk}")
+        logger.info(f"CC Email: {cc_email}")
+
+        # Calculate totals (replicating logic from tour_package_pdf)
+        hotel_costs_with_total = []
+        for cost in package.hotel_costs:
+            room_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
+            extra_bed_price = cost.get('extraBedPrice', '')
+            extra_bed_cost = float(extra_bed_price) * float(cost['nights']) if extra_bed_price and extra_bed_price.strip() else 0
+            total_cost = room_cost + extra_bed_cost
+
+            cost_with_total = cost.copy()
+            cost_with_total['room_cost'] = room_cost
+            cost_with_total['extra_bed_cost'] = extra_bed_cost
+            cost_with_total['total'] = total_cost
+
+            hotel_costs_with_total.append(cost_with_total)
+
+        discounts = package.discounts
+        total_discount = sum(float(discount['amount']) for discount in discounts)
+
+        remark2 = package.remark2.replace('\n', '<br>')
+
+        # Render the template to HTML
+        html_string = render_to_string('tour_quote/tour_package_pdf.html', {
+            'package': package,
+            'tour_pack_type': package.tour_pack_type,
+            'hotel_costs_with_total': hotel_costs_with_total,
+            'base_url': request.build_absolute_uri('/'),
+            'discounts': discounts,
+            'total_discount': total_discount,
+            'static_url': settings.STATIC_URL,
+            'remark2': remark2,
+        })
+
+        # Generate PDF
+        pdf_file = BytesIO()
+        HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf(pdf_file, stylesheets=[CSS(string='''
+            @page {
+                size: A4;
+                margin: 2cm;
+                @bottom-right {
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 10px;
+                    color: #666;
+                }
+            }
+            body {
+                font-family: sans-serif;
+            }
+        ''')])
+        pdf_file.seek(0)
+
+        # Prepare email
+        subject = f'Tour Package {package.package_reference}: {package.name}'
+        message = f'Please find attached the tour package quote for {package.customer_name}.'
+        from_email = settings.DEFAULT_FROM_EMAIL
+        to_email = ['jimforanimo@gmail.com']  # You might want to change this to use the customer's email
+        if cc_email:
+            to_email.append(cc_email)
+
+        logger.info(f"Sending email to: {to_email}")
+
+        # Send email
+        email = EmailMessage(subject, message, from_email, to_email)
+        email.attach(f'tour_package_{package.id}.pdf', pdf_file.getvalue(), 'application/pdf')
+
+        email.send(fail_silently=False)
+        logger.info("Email sent successfully")
+        messages.success(request, 'Email sent successfully')
+    except Exception as e:
+        logger.error(f"Error in send_tour_package_email: {str(e)}")
+        messages.error(request, f'Failed to send email: {str(e)}')
+
+    return redirect('tour_package_detail', pk=pk)
 
 @login_required
 def tour_package_list(request):

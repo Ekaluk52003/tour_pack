@@ -165,14 +165,21 @@
         }
         .grand-section h2 {
             color: #023e8a;
-            padding-bottom: 3px;
             display: flex;
             justify-content: space-between;
             align-items: baseline;
             font-size: 14px;
+            margin-bottom: 2px;
 
         }
 
+        .subject-service {
+
+            color: #2980B9;
+            padding-left: 4px;
+            margin-bottom: 4px;
+            text-align: center;
+        }
 
         .grand-section .total-cost{
             font-size: 16px;
@@ -331,7 +338,7 @@
                     <th>Rooms</th>
                     <th>Nights</th>
                     <th>Price/room/night (THB)</th>
-                    <th>Extra bed (THB)</th>
+                    <th>Extra bed/night (THB)</th>
                     <th>Total (THB)</th>
                 </tr>
             </thead>
@@ -407,6 +414,8 @@
             {% endif %}</span>
         </h2>
     </div>
+
+    <div class="subject-service"><strong>***This quotation is subject to availability of all mentioned services.</strong></div>
 
     <div class="remark2"><h3>Remark2:</h3></div>
     <div style="white-space: pre-wrap;"><div class="remark2-items">{{ remark2|safe }}</div></div>

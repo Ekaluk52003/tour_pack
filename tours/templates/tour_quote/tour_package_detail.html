@@ -121,7 +121,9 @@
                 </table>
             </div>
 
-            <p><strong>Remark2:</strong> {{ package.remark2 }}</p>
+            <p><strong>Remark2:</strong></p>
+
+            <div style="white-space: pre-wrap;">{{ remark2|safe }}</div>
 
             <!-- Grand Total -->
             <div class="mt-6 bg-blue-100 p-4 rounded-lg">

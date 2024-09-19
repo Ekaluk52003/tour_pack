@@ -1,4 +1,5 @@
 {% load static %}
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,7 +81,6 @@
 
         }
         .day-header h2 {
-            color: #2980B9;
             margin: 0;
             font-size: 12px;
         }
@@ -96,6 +96,12 @@
             font-size: 12px;
         }
 
+        .remark2 h3 {
+            color: #2980B9;
+            font-size: 12px;
+            margin-bottom: 1px;
+        }
+
         .services h3 {
             margin-top: 5px; /* Added a small top margin */
             margin-bottom: 5px; /* Reduced bottom margin */
@@ -106,6 +112,12 @@
             line-height: 0.25rem;
             justify-content: space-between;
             align-items: baseline;
+        }
+
+        .remark2-items {
+            padding-left: 2px;
+            line-height: 0.9rem;
+
         }
         .service-name {
             flex-grow: 1;
@@ -209,7 +221,12 @@
             color: #2980B9;
         }
 
-
+        .quotation-header {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            color: #333;
+        }
 
 
 
@@ -220,12 +237,14 @@
     <div class="header-container">
         <div class="company-header">
             <img src="https://i.ibb.co/M8cDH9F/animo.jpg" alt="Company Logo">
-            <h1>Aniomo Tour</h1>
+            <h1>Aniomo Tours</h1>
         </div>
+
+        <div class="quotation-header">QUOTATION</div>
         <div class="package-info">
             <div class="package-info-row">
                 <div class="package-info-item">
-                    <span class="package-info-label"><strong>Refernce:</strong></span>
+                    <span class="package-info-label"><strong>Mo no.:</strong></span>
                     <span class="package-info-value"> {{ package.package_reference }}</span>
                 </div>
                 <div class="package-info-item">
@@ -262,7 +281,12 @@
                 {% for service in day.services.all %}
                 <li class="service-item">
                     <span class="service-name">{{ service.service.name }}</span>
-                    <span class="service-price">{{ service.price_at_booking|floatformat:2 }} THB</span>
+                    <span class="service-price">
+                        {% if service.price_at_booking == 0 %}
+                        {% else %}
+                            {{ service.price_at_booking|floatformat:2|intcomma }} THB
+                        {% endif %}
+                    </span>
                 </li>
                 {% endfor %}
 
@@ -270,7 +294,12 @@
                     {% for guide_service in day.guide_services.all %}
                     <li class="service-item">
                         <span class="service-name"><span class="guide">Guide</span> {{ guide_service.guide_service.name }}</span>
-                        <span class="service-price">{{ guide_service.guide_service.price }} THB</span>
+                        <span class="service-price">
+                            {% if guide_service.price_at_booking == 0 %}
+                            {% else %}
+                            {{ guide_service.price_at_booking|floatformat:2 |intcomma}} THB
+                            {% endif %}
+                        </span>
                     </li>
                     {% endfor %}
                 {% endif %}
@@ -282,7 +311,13 @@
     <div class="cost-section">
         <h2>
             Total Service Cost
-            <span class="total-cost">{{ package.service_grand_total }} THB</span>
+            <span class="total-cost">
+                {% if package.service_grand_total == 0 %}
+                    -
+                {% else %}
+                    {{ package.service_grand_total|intcomma }} THB
+                {% endif %}
+            </span>
         </h2>
     </div>
 
@@ -292,11 +327,11 @@
             <thead>
                 <tr>
                     <th>Hotel Name</th>
-                    <th>Type</th>
+                    <th>Room type including breakfast</th>
                     <th>Rooms</th>
                     <th>Nights</th>
-                    <th>Price per Night (THB)</th>
-                    <th>Extra Bed (THB)</th>
+                    <th>Price/room/night (THB)</th>
+                    <th>Extra bed (THB)</th>
                     <th>Total (THB)</th>
                 </tr>
             </thead>
@@ -306,10 +341,22 @@
                     <td>{{ hotel_cost.name }}</td>
                     <td>{{ hotel_cost.type }}</td>
                     <td>{{ hotel_cost.room }}</td>
-                    <td>{{ hotel_cost.nights }}</td>
-                    <td>{{ hotel_cost.price }}</td>
-                    <td>{{ hotel_cost.extraBedPrice|default:"-" }}</td>
-                    <td>{{ hotel_cost.total|floatformat:"2" }}</td>
+                    <td> {{hotel_cost.nights}}</td>
+                    <td>  {% if hotel_cost.price|default_if_none:0|floatformat:2 == '0.00' %}
+                        -
+                    {% else %}
+                        {{ hotel_cost.price|default_if_none:0|floatformat:2|intcomma }}
+                    {% endif %}</td>
+                    <td>  {% if hotel_cost.extraBedPrice|default_if_none:0|floatformat:2 == '0.00' %}
+                        -
+                    {% else %}
+                        {{ hotel_cost.extraBedPrice|default_if_none:0|floatformat:2|intcomma }}
+                    {% endif %}</td>
+                    <td> {% if hotel_cost.total|default_if_none:0|floatformat:2 == '0.00' %}
+                        -
+                    {% else %}
+                        {{ hotel_cost.total|default_if_none:0|floatformat:2|intcomma }}
+                    {% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -319,7 +366,11 @@
     <div class="cost-section">
         <h2>
             Total Hotel Cost
-            <span class="total-cost">{{ package.hotel_grand_total }} THB</span>
+            <span class="total-cost">{% if package.hotel_grand_total == 0 %}
+                -
+            {% else %}
+                {{ package.hotel_grand_total|intcomma }} THB
+            {% endif %}</span>
         </h2>
     </div>
 
@@ -334,7 +385,11 @@
             {% for discount in discounts %}
             <li class="discount-item">
                 <span class="discount-name">{{ discount.item }}</span>
-                <span class="discount-price">{{ discount.amount |floatformat:2 }} THB</span>
+                <span class="discount-price">  {% if discount.amount == 0 %}
+                    -
+                {% else %}
+                    {{ discount.amount|floatformat:2|intcomma }} THB
+                {% endif %}</span>
             </li>
             {% endfor %}
         </ul>
@@ -345,11 +400,17 @@
     <div class="grand-section">
         <h2>
             Grand Total Cost
-            <span class="total-cost">{{ package.grand_total_cost }} THB</span>
+            <span class="total-cost">{% if package.grand_total_cost == 0 %}
+                -
+            {% else %}
+                {{ package.grand_total_cost|intcomma }} THB
+            {% endif %}</span>
         </h2>
     </div>
 
-    <p><strong>Remark2:</strong> {{ package.remark2 }}</p>
+    <div class="remark2"><h3>Remark2:</h3></div>
+    <div style="white-space: pre-wrap;"><div class="remark2-items">{{ remark2|safe }}</div></div>
+
 </div>
 
 </body>

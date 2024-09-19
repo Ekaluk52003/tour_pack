@@ -188,6 +188,7 @@ def tour_package_pdf(request, pk):
     discounts = package.discounts
     total_discount = sum(float(discount['amount']) for discount in discounts)
 
+    remark2 = package.remark2.replace('\n', '<br>')
     # Render the template to HTML
     html_string = render_to_string('tour_quote/tour_package_pdf.html', {
         'package': package,
@@ -199,6 +200,7 @@ def tour_package_pdf(request, pk):
         'static_url': settings.STATIC_URL,
         'discounts': discounts,
         'total_discount': total_discount,
+        'remark2': remark2,
 
     })
 
@@ -256,12 +258,15 @@ def tour_package_detail(request, pk):
     discounts = package.discounts
     total_discount = sum(float(discount['amount']) for discount in discounts)
 
+    remark2 = package.remark2.replace('\n', '<br>')
+
     context = {
         'package': package,
         'hotel_costs_with_total': hotel_costs_with_total,  # Pass hotel costs with total calculation
         'tour_pack_type': package.tour_pack_type,  # Add this line
         'discounts': discounts,
         'total_discount': total_discount,
+        'remark2':remark2
     }
 
     return render(request, 'tour_quote/tour_package_detail.html', context)

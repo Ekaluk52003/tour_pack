@@ -154,14 +154,14 @@
         <a href="{% url 'tour_package_pdf' package.id %}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition duration-300">Print PDF</a>
      </div> -->
 
-     <div class="mt-8 flex space-x-4">
+     <div class="mt-8 md:flex space-x-4">
         <a href="{% url 'tour_package_edit' package.id %}" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition duration-300">
           Edit Package
         </a>
         <a href="{% url 'tour_package_pdf' package.id %}" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition duration-300" target="_blank">
           Print PDF
         </a>
-        <form action="{% url 'send_tour_package_email' package.id %}" method="post" class="flex items-center space-x-2">
+        <form action="{% url 'send_tour_package_email' package.id %}" method="post" class="flex items-center space-x-2 pt-8 md:pt-0">
           {% csrf_token %}
           <input type="email" name="cc_email" placeholder="CC Email (optional)" class="border rounded px-3 py-2">
           <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-semibold transition duration-300">

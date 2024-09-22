@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -27,13 +28,11 @@ DEBUG = os.environ.get("DEBUG", "0") == "1"
 # SECURITY WARNING: keep the secret key used in production secret!
 
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "localhost:8080", "0.0.0.0", "127.0.0.1", 'https://www.brighter.in.th', 'www.brighter.in.th', 'brighter.in.th']
-
-
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 # Application definition
+
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -176,10 +175,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 CSRF_COOKIE_SECURE = True  # Set to True if using HTTPS
-CSRF_COOKIE_DOMAIN = 'brighter.in.th'  # Include your domain here
+
+CSRF_COOKIE_DOMAIN=os.environ.get('CSRF_COOKIE_DOMAIN')
 SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
-CSRF_TRUSTED_ORIGINS = ['https://www.brighter.in.th', 'https://brighter.in.th']
+
+csrf_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins.split(',') if origin.strip()]
 
 
 TIME_ZONE = 'Asia/Bangkok'
@@ -197,3 +199,6 @@ if EMAIL_BACKEND == "ses":
         AWS_SES_REGION_ENDPOINT = os.environ.get('AWS_SES_REGION_ENDPOINT')
         AWS_SES_ACCESS_KEY_ID = os.environ.get('AWS_SES_ACCESS_KEY_ID')
         AWS_SES_SECRET_ACCESS_KEY = os.environ.get('AWS_SES_SECRET_ACCESS_KEY')
+
+
+

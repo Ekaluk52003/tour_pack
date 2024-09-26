@@ -30,6 +30,7 @@
     {% block extra_head %}{% endblock %}
     <script src="{% static 'tour_quote/js/tour_package.js' %}" defer></script>
 
+    <script defer src="https://cdn.jsdelivr.net/npm/@imacrayon/alpine-ajax@0.9.0/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
 
@@ -41,7 +42,7 @@
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
                     <a href="{% url 'tour_packages' %}" class="text-xl font-bold">Jimmy Tour Package System</a>
-                   
+
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-4">
@@ -89,9 +90,15 @@
         </div>
     </nav>
 
-    <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Alpine Ajax Notification -->
+    <div x-sync id="notification_list" x-merge="prepend" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+    </div>
+
+    <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8" id="page">
         {% block content %}{% endblock %}
     </main>
+
+
 
     <footer class="bg-gray-800 text-white py-4">
         <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center">

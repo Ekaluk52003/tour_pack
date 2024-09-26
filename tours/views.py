@@ -299,20 +299,24 @@ def send_tour_package_email(request, pk):
         if cc_email:
             to_email.append(cc_email)
 
-        logger.info(f"Sending email to: {to_email}")
-
         # Send email
-        email = EmailMessage(subject, message, from_email, to_email)
-        email.attach(f'tour_package_{package.id}.pdf', pdf_file.getvalue(), 'application/pdf')
+        # email = EmailMessage(subject, message, from_email, to_email)
+        # email.attach(f'tour_package_{package.id}.pdf', pdf_file.getvalue(), 'application/pdf')
 
-        email.send(fail_silently=False)
-        logger.info("Email sent successfully")
-        messages.success(request, 'Email sent successfully')
+        # email.send(fail_silently=False)
+
+        context = {
+            'message': f'Email sent successfully to {", ".join(to_email)}',
+            'class': 'text-green-600'
+        }
+        return render(request, 'tour_quote/notification.html', context)
     except Exception as e:
         logger.error(f"Error in send_tour_package_email: {str(e)}")
-        messages.error(request, f'Failed to send email: {str(e)}')
-
-    return redirect('tour_package_detail', pk=pk)
+        context = {
+            'message': f'Failed to send email: {str(e)}',
+            'class': 'text-red-600'
+        }
+        return render(request, 'tour_quote/notification.html', context)
 
 @login_required
 def tour_package_list(request):
@@ -620,6 +624,4 @@ def get_city_services(request, city_id):
         print("Error in get_city_services:", str(e))
         print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
-
-
 

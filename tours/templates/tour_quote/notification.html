@@ -1,0 +1,23 @@
+<div x-sync id="notification_list" x-merge="prepend" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+  <div x-data="{
+      show: false,
+      init() {
+        this.$nextTick(() => this.show = true)
+        setTimeout(() => this.dismiss(), 6000)
+      },
+      dismiss() {
+        this.show = false
+        setTimeout(() => this.$root.remove(), 500)
+      }
+    }"
+    x-show="show"
+    x-transition.duration.500ms
+    class="bg-gray-800 text-white px-4 py-2 rounded shadow-lg flex items-center justify-between mb-2 max-w-sm w-full"
+  >
+    <div class="{{ class }}">{{ message }}</div>
+    <button @click="dismiss" type="button" aria-label="Dismiss" class="ml-2 text-gray-300 hover:text-white">&times;</button>
+  </div>
+</div>
+
+
+<div id="email_sent" class="mt-2 text-green-600" ></div

@@ -34,8 +34,10 @@ def safe_decimal(value, default=Decimal('0')):
     try:
         return Decimal(str(value))
     except (ValueError, TypeError, InvalidOperation):
-        logger.warning(f"Failed to convert {value} to Decimal. Using default value {default}")
+        logger.warning(
+            f"Failed to convert {value} to Decimal. Using default value {default}")
         return default
+
 
 def calculate_totals(package):
     service_total = sum(
@@ -45,7 +47,6 @@ def calculate_totals(package):
     guide_service_total = sum(
         guide_service.price_at_booking for day in package.tour_days.all() for guide_service in day.guide_services.all()
     )
-
 
     hotel_total = sum(
         (Decimal(cost['price']) * int(cost['room']) * int(cost['nights'])) +
@@ -61,7 +62,8 @@ def calculate_totals(package):
 
     service_grand_total = Decimal(service_total) + guide_service_total
     hotel_grand_total = Decimal(hotel_total)
-    total_discount = sum(Decimal(discount['amount']) for discount in package.discounts)
+    total_discount = sum(Decimal(discount['amount'])
+                         for discount in package.discounts)
     grand_total = Decimal(service_total) + guide_service_total + hotel_total
 
     return service_grand_total, hotel_grand_total, grand_total, total_discount
@@ -91,8 +93,10 @@ def save_tour_package(request):
                 package.remark = data.get('remark', '')
                 package.remark2 = data.get('remark2', '')
                 package.tour_pack_type_id = data['tour_pack_type']
-                package.commission_rate_hotel = data.get('commission_rate_hotel', 0)
-                package.commission_rate_services = data.get('commission_rate_services', 0)
+                package.commission_rate_hotel = data.get(
+                    'commission_rate_hotel', 0)
+                package.commission_rate_services = data.get(
+                    'commission_rate_services', 0)
                 package.discounts = data.get('discounts', [])
 
             # Both superusers and non-superusers can edit hotel costs
@@ -125,36 +129,45 @@ def save_tour_package(request):
                         TourDayService.objects.create(
                             tour_day=tour_day,
                             service=service_price.service,
-                            price_at_booking=service_data.get('price_at_booking', service_price.price)
+                            price_at_booking=service_data.get(
+                                'price_at_booking', service_price.price)
                         )
 
                     # Create guide services for the day
                     for guide_service_data in day_data.get('guide_services', []):
-                        guide_service = GuideService.objects.get(id=guide_service_data['name'])
+                        guide_service = GuideService.objects.get(
+                            id=guide_service_data['name'])
                         TourDayGuideService.objects.create(
                             tour_day=tour_day,
                             guide_service=guide_service,
-                            price_at_booking=guide_service_data.get('price_at_booking', guide_service.price)
+                            price_at_booking=guide_service_data.get(
+                                'price_at_booking', guide_service.price)
                         )
 
             # Recalculate totals
-            service_grand_total, hotel_grand_total, grand_total, total_discount = calculate_totals(package)
+            service_grand_total, hotel_grand_total, grand_total, total_discount = calculate_totals(
+                package)
 
             package.service_grand_total = service_grand_total
             package.hotel_grand_total = hotel_grand_total
-            package.grand_total_cost = grand_total - total_discount  # Apply discount to grand total
+            package.grand_total_cost = grand_total - \
+                total_discount  # Apply discount to grand total
 
             # Recalculate commission amounts
             total_room_nights = sum(
-                safe_decimal(hotel.get('room')) * safe_decimal(hotel.get('nights'))
+                safe_decimal(hotel.get('room')) *
+                safe_decimal(hotel.get('nights'))
                 for hotel in package.hotel_costs
             )
 
-            package.commission_rate_hotel = safe_decimal(package.commission_rate_hotel)
-            package.commission_rate_services = safe_decimal(package.commission_rate_services)
+            package.commission_rate_hotel = safe_decimal(
+                package.commission_rate_hotel)
+            package.commission_rate_services = safe_decimal(
+                package.commission_rate_services)
 
             package.commission_amount_hotel = package.commission_rate_hotel * total_room_nights
-            package.commission_amount_services = package.commission_rate_services * package.service_grand_total / Decimal('100')
+            package.commission_amount_services = package.commission_rate_services * \
+                package.service_grand_total / Decimal('100')
 
             package.save()  # Save the package with all updates
 
@@ -169,6 +182,7 @@ def save_tour_package(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+
 @login_required
 def tour_package_pdf(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
@@ -176,9 +190,11 @@ def tour_package_pdf(request, pk):
     # Prepare hotel costs with total calculation
     hotel_costs_with_total = []
     for cost in package.hotel_costs:
-        room_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
+        room_cost = float(cost['room']) * \
+            float(cost['nights']) * float(cost['price'])
         extra_bed_price = cost.get('extraBedPrice', '')
-        extra_bed_cost = float(extra_bed_price) * float(cost['nights']) if extra_bed_price and extra_bed_price.strip() else 0
+        extra_bed_cost = float(extra_bed_price) * float(
+            cost['nights']) if extra_bed_price and extra_bed_price.strip() else 0
         total_cost = room_cost + extra_bed_cost
 
         cost_with_total = cost.copy()  # Create a copy to avoid modifying the original
@@ -191,15 +207,18 @@ def tour_package_pdf(request, pk):
     discounts = package.discounts
     total_discount = sum(float(discount['amount']) for discount in discounts)
 
-    remark2 = package.remark2.replace('\n', '<br>')
+    # Handle the case where remark2 might be None
+    remark2 = package.remark2.replace(
+        '\n', '<br>') if package.remark2 is not None else ''
+
     # Render the template to HTML
     html_string = render_to_string('tour_quote/tour_package_pdf.html', {
         'package': package,
         'tour_pack_type': package.tour_pack_type,
         'hotel_costs_with_total': hotel_costs_with_total,
         'base_url': request.build_absolute_uri('/'),
-         'discounts' : discounts,
-        'total_discount' :total_discount,
+        'discounts': discounts,
+        'total_discount': total_discount,
         'static_url': settings.STATIC_URL,
         'discounts': discounts,
         'total_discount': total_discount,
@@ -227,7 +246,6 @@ def tour_package_pdf(request, pk):
     }
 ''')])
 
-
     return response
 
 
@@ -244,9 +262,11 @@ def send_tour_package_email(request, pk):
         # Calculate totals (replicating logic from tour_package_pdf)
         hotel_costs_with_total = []
         for cost in package.hotel_costs:
-            room_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
+            room_cost = float(cost['room']) * \
+                float(cost['nights']) * float(cost['price'])
             extra_bed_price = cost.get('extraBedPrice', '')
-            extra_bed_cost = float(extra_bed_price) * float(cost['nights']) if extra_bed_price and extra_bed_price.strip() else 0
+            extra_bed_cost = float(extra_bed_price) * float(
+                cost['nights']) if extra_bed_price and extra_bed_price.strip() else 0
             total_cost = room_cost + extra_bed_cost
 
             cost_with_total = cost.copy()
@@ -257,7 +277,8 @@ def send_tour_package_email(request, pk):
             hotel_costs_with_total.append(cost_with_total)
 
         discounts = package.discounts
-        total_discount = sum(float(discount['amount']) for discount in discounts)
+        total_discount = sum(float(discount['amount'])
+                             for discount in discounts)
 
         remark2 = package.remark2.replace('\n', '<br>')
 
@@ -295,7 +316,8 @@ def send_tour_package_email(request, pk):
         subject = f'Tour Package {package.package_reference}: {package.name}'
         message = f'Please find attached the tour package quote for {package.customer_name}.'
         from_email = settings.DEFAULT_FROM_EMAIL
-        to_email = ['jimforanimo@gmail.com']  # You might want to change this to use the customer's email
+        # You might want to change this to use the customer's email
+        to_email = ['jimforanimo@gmail.com']
         if cc_email:
             to_email.append(cc_email)
 
@@ -318,10 +340,12 @@ def send_tour_package_email(request, pk):
         }
         return render(request, 'tour_quote/notification.html', context)
 
+
 @login_required
 def tour_package_list(request):
     packages = TourPackageQuote.objects.all().order_by('-created_at')
     return render(request, 'tour_quote/tour_package_list.html', {'packages': packages})
+
 
 @login_required
 def tour_package_detail(request, pk):
@@ -330,10 +354,12 @@ def tour_package_detail(request, pk):
     # Calculate total costs for hotels
     hotel_costs_with_total = []
     for cost in package.hotel_costs:
-        room_cost = float(cost['room']) * float(cost['nights']) * float(cost['price'])
+        room_cost = float(cost['room']) * \
+            float(cost['nights']) * float(cost['price'])
 
         extra_bed_price = cost.get('extraBedPrice', '')
-        extra_bed_cost = float(extra_bed_price) * float(cost['nights']) if extra_bed_price and extra_bed_price.strip() else 0
+        extra_bed_cost = float(extra_bed_price) * float(
+            cost['nights']) if extra_bed_price and extra_bed_price.strip() else 0
 
         total_cost = room_cost + extra_bed_cost
 
@@ -349,18 +375,21 @@ def tour_package_detail(request, pk):
     discounts = package.discounts
     total_discount = sum(float(discount['amount']) for discount in discounts)
 
-    remark2 = package.remark2.replace('\n', '<br>')
-
+    remark2 = package.remark2.replace(
+        '\n', '<br>') if package.remark2 is not None else ''
+    # remark2 = package.remark2.replace('\n', '<br>')
     context = {
         'package': package,
-        'hotel_costs_with_total': hotel_costs_with_total,  # Pass hotel costs with total calculation
+        # Pass hotel costs with total calculation
+        'hotel_costs_with_total': hotel_costs_with_total,
         'tour_pack_type': package.tour_pack_type,  # Add this line
         'discounts': discounts,
         'total_discount': total_discount,
-        'remark2':remark2
+        'remark2': remark2
     }
 
     return render(request, 'tour_quote/tour_package_detail.html', context)
+
 
 @login_required
 def tour_package_edit(request, pk):
@@ -380,7 +409,8 @@ def tour_package_edit(request, pk):
         'remark': package.remark,
         'remark2': package.remark2,
         'tour_pack_type': package.tour_pack_type_id,
-        'commission_rate_hotel': float(package.commission_rate_hotel),  # Add hotel commission rate
+        # Add hotel commission rate
+        'commission_rate_hotel': float(package.commission_rate_hotel),
         'commission_rate_services': float(package.commission_rate_services),
         'days': [
             {
@@ -410,13 +440,13 @@ def tour_package_edit(request, pk):
             for day in package.tour_days.all()
         ],
         'discounts': [
-        {
-            'item': discount['item'],
-            'amount': float(discount['amount'])
-        }
-        for discount in package.discounts
-    ],
-         'hotelCosts': package.hotel_costs
+            {
+                'item': discount['item'],
+                'amount': float(discount['amount'])
+            }
+            for discount in package.discounts
+        ],
+        'hotelCosts': package.hotel_costs
 
     }
 
@@ -430,6 +460,7 @@ def tour_package_edit(request, pk):
     }
 
     return render(request, 'tour_quote/tour_package_edit.html', context)
+
 
 @login_required
 def tour_package_quote(request):
@@ -455,6 +486,7 @@ def tour_package_quote(request):
     }
 
     return render(request, 'tour_quote/tour_package_quote.html', context)
+
 
 @login_required
 @require_http_methods(["GET"])
@@ -483,7 +515,8 @@ def get_city_services(request, city_id):
                 'price': float(sp.price)
             })
 
-        guide_services = list(GuideService.objects.all().values('id', 'name', 'price'))
+        guide_services = list(
+            GuideService.objects.all().values('id', 'name', 'price'))
         for gs in guide_services:
             gs['price'] = float(gs['price'])
 
@@ -495,7 +528,6 @@ def get_city_services(request, city_id):
             ],
             'guide_services': guide_services
         }
-
 
         return JsonResponse(response_data, safe=False, content_type='application/json')
     except Exception as e:
@@ -509,7 +541,8 @@ def tour_packages(request):
 
     # Filter packages based on search query
     if query:
-        packages = TourPackageQuote.objects.filter(name__icontains=query) | TourPackageQuote.objects.filter(customer_name__icontains=query) | TourPackageQuote.objects.filter(package_reference__icontains=query)
+        packages = TourPackageQuote.objects.filter(name__icontains=query) | TourPackageQuote.objects.filter(
+            customer_name__icontains=query) | TourPackageQuote.objects.filter(package_reference__icontains=query)
     else:
         packages = TourPackageQuote.objects.all()
 
@@ -526,6 +559,7 @@ def tour_packages(request):
         'query': query,
     }
     return render(request, 'tour_quote/tour_packages.html', context)
+
 
 @login_required
 @require_http_methods(["GET"])
@@ -574,9 +608,11 @@ def get_predefined_tour_quote(request, quote_id):
         'days': days
     }
 
-    print("Predefined tour quote response data:", response_data)  # Add this line for debugging
+    print("Predefined tour quote response data:",
+          response_data)  # Add this line for debugging
 
     return JsonResponse(response_data)
+
 
 @login_required
 @require_http_methods(["GET"])
@@ -605,7 +641,8 @@ def get_city_services(request, city_id):
                 'price': float(sp.price)
             })
 
-        guide_services = list(GuideService.objects.all().values('id', 'name', 'price'))
+        guide_services = list(
+            GuideService.objects.all().values('id', 'name', 'price'))
         for gs in guide_services:
             gs['price'] = float(gs['price'])
 
@@ -624,4 +661,3 @@ def get_city_services(request, city_id):
         print("Error in get_city_services:", str(e))
         print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
-

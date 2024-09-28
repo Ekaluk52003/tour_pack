@@ -518,9 +518,23 @@ window.tourPackage = function () {
         return;
       }
 
+       // Helper function to ensure numeric values are properly formatted
+  const formatNumber = (value) => {
+    if (typeof value === 'number') {
+      return value.toFixed(2);
+    }
+    return value ? parseFloat(value).toFixed(2) : '0.00';
+  };
+
       data = {
         id: this.packageId, // Include the package ID for existing packages
-        hotelCosts: this.hotelCosts,
+        hotelCosts: this.hotelCosts.map(cost => ({
+          ...cost,
+          room: parseInt(cost.room) || 0,
+          nights: parseInt(cost.nights) || 0,
+          price: formatNumber(cost.price),
+          extraBedPrice: formatNumber(cost.extraBedPrice),
+        })),
         name: this.name,
         customer_name: this.customerName,
         remark: this.remark,
@@ -542,7 +556,11 @@ window.tourPackage = function () {
           })),
         })),
         // hotelCosts: this.hotelCosts,
-        discounts: this.discounts,
+      
+        discounts: this.discounts.map(discount => ({
+          ...discount,
+          amount: formatNumber(discount.amount),
+        })),
         total_cost: this.calculateGrandTotal(),
       };
 

@@ -21,6 +21,7 @@
           <p class="text-red-500 dark:text-red-400 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_date`]" x-text="errors[`day${dayIndex + 1}_date`]"></p>
           <p class="text-red-500 dark:text-red-400 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_city`]" x-text="errors[`day${dayIndex + 1}_city`]"></p>
           <p class="text-red-500 dark:text-red-400 text-sm mt-1" x-show="errors[`day${dayIndex + 1}_hotel`]" x-text="errors[`day${dayIndex + 1}_hotel`]"></p>
+          <button @click="removeDay(dayIndex)" class="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white px-3 py-1 rounded transition duration-150 ease-in-out">Remove Day</button>
       </div>
     </template>
 
@@ -82,7 +83,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
           </span>
-          <button @click="removeDay(day)" class="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white px-3 py-1 rounded transition duration-150 ease-in-out">Remove Day</button>
+          <button @click="removeDay(index)" class="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white px-3 py-1 rounded transition duration-150 ease-in-out">Remove Day</button>
         </div>
          </div>
 

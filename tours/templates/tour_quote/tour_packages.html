@@ -2,21 +2,21 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-6">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">Tour Packages</h1>
+    <h1 class="text-3xl font-bold text-gray-800 mb-6 dark:text-gray-200">Tour Packages</h1>
 
     <!-- Search Bar -->
     <div class="mb-6">
         <form method="GET" class="flex items-center space-x-4">
-            <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by package name or customer..." class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500">
+            <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by package name or customer..." class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 dark:bg-gray-800 dark:text-gray-200">
             <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Search</button>
         </form>
     </div>
 
     <!-- Packages Table -->
     <div class="overflow-x-auto">
-        <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+        <table class="min-w-full shadow-md rounded-lg overflow-hidden border">
             <thead>
-                <tr class="bg-blue-500 text-white">
+                <tr class="border">
                     <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Reference</th>
                     <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Name</th>
                     <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Customer</th>
@@ -24,7 +24,7 @@
                     <th class="px-6 py-3 text-left text-sm font-medium uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="divide-y divide-gray-200 border-neutral-300 bg-neutral-50 text-neutral-600 ">
                 {% for package in packages %}
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap">{{ package.package_reference }}</td>
@@ -47,23 +47,25 @@
 
     <!-- Pagination -->
     <div class="mt-6">
-        <nav class="flex justify-between items-center">
-            <div>
-                <p class="text-sm text-gray-600">Showing {{ packages.start_index }} to {{ packages.end_index }} of {{ packages.paginator.count }} results</p>
+        <nav class="flex flex-col sm:flex-row justify-between items-center">
+            <div class="mb-4 sm:mb-0">
+                <p class="text-sm text-gray-600 dark:text-gray-400">Showing {{ packages.start_index }} to {{ packages.end_index }} of {{ packages.paginator.count }} results</p>
             </div>
-            <div class="space-x-2">
+            <div class="flex flex-wrap justify-center sm:justify-end gap-2">
                 {% if packages.has_previous %}
-                <a href="?q={{ request.GET.q }}&page={{ packages.previous_page_number }}" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">Previous</a>
+                <a href="?q={{ request.GET.q }}&page={{ packages.previous_page_number }}" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-3 py-1 rounded text-gray-800 dark:text-gray-200">Previous</a>
                 {% endif %}
                 {% for num in packages.paginator.page_range %}
                     {% if packages.number == num %}
                     <span class="px-3 py-1 bg-blue-500 text-white rounded">{{ num }}</span>
-                    {% else %}
-                    <a href="?q={{ request.GET.q }}&page={{ num }}" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">{{ num }}</a>
+                    {% elif num == 1 or num == packages.paginator.num_pages or num == packages.number|add:"-1" or num == packages.number|add:"1" %}
+                    <a href="?q={{ request.GET.q }}&page={{ num }}" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-3 py-1 rounded text-gray-800 dark:text-gray-200">{{ num }}</a>
+                    {% elif num == packages.number|add:"-2" or num == packages.number|add:"2" %}
+                    <span class="px-3 py-1">...</span>
                     {% endif %}
                 {% endfor %}
                 {% if packages.has_next %}
-                <a href="?q={{ request.GET.q }}&page={{ packages.next_page_number }}" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">Next</a>
+                <a href="?q={{ request.GET.q }}&page={{ packages.next_page_number }}" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-3 py-1 rounded text-gray-800 dark:text-gray-200">Next</a>
                 {% endif %}
             </div>
         </nav>

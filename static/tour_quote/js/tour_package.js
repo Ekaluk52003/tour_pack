@@ -103,7 +103,20 @@ window.tourPackage = function () {
       if (this.days.length === 0) {
         this.addDay();
       }
-      this.guideServices = window.guideServicesData;
+
+      console.log("Window Guide Services Data:", window.guideServicesData);
+
+      // Initialize guide services
+      this.guideServices = window.guideServicesData || [];
+
+      console.log("This Guide Services:", this.guideServices);
+
+      if (this.guideServices.length === 0) {
+        console.warn('No guide services available');
+      } else {
+        console.log('Guide services loaded:', this.guideServices);
+      }
+
       // Fetch guide services if they're not already available
     },
 
@@ -139,16 +152,18 @@ window.tourPackage = function () {
     },
 
     addGuideService(day) {
-      if (this.guideServices.length > 0) {
+      if (!day.guideServices) {
+        day.guideServices = [];
+      }
+      if (this.guideServices && this.guideServices.length > 0) {
         const firstGuideService = this.guideServices[0];
         day.guideServices.push({
-          name: firstGuideService.id,
+          name: firstGuideService.id.toString(),
           price: parseFloat(firstGuideService.price) || 0,
         });
-        this.updateGuideService(
-          day,
-          day.guideServices[day.guideServices.length - 1]
-        );
+        this.updateGuideService(day.guideServices[day.guideServices.length - 1]);
+      } else {
+        console.log("No guide services available");
       }
     },
 
@@ -556,7 +571,7 @@ window.tourPackage = function () {
           })),
         })),
         // hotelCosts: this.hotelCosts,
-      
+
         discounts: this.discounts.map(discount => ({
           ...discount,
           amount: formatNumber(discount.amount),

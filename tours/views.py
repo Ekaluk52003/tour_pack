@@ -477,6 +477,8 @@ def tour_package_quote(request):
     for guide_service in guide_services:
         guide_service['price'] = float(guide_service['price'])
 
+    print("Guide Services:", guide_services)
+    
     context = {
         'cities': cities,
         'service_types': service_types,

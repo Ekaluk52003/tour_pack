@@ -1,34 +1,54 @@
 {% extends "base.html" %}
 
+{% load widget_tweaks %}
+
+
 {% block content %}
 
 
-<div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+<div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden md:max-w-2xl">
     <div class="p-8">
-        <div class="uppercase tracking-wide text-sm text-indigo-500 font-semibold mb-1">Account Access</div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">Log In</h2>
+        <div class="uppercase tracking-wide text-sm text-indigo-500 dark:text-indigo-400 font-semibold mb-1">Account Access</div>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Log In</h2>
+
+        {% if form.errors %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <strong class="font-bold">Error:</strong>
+            <span class="block sm:inline">Please enter a correct username and password. Note that both fields may be case-sensitive.</span>
+        </div>
+        {% endif %}
+
         <form method="post" class="space-y-4">
             {% csrf_token %}
             {% for field in form %}
-                <div>
-                    {{ field.label_tag }}
-                    {{ field }}
-                    {% if field.help_text %}
-                        <p class="text-gray-600 text-xs italic">{{ field.help_text|safe }}</p>
-                    {% endif %}
-                    {% for error in field.errors %}
-                        <p class="text-red-500 text-xs italic">{{ error }}</p>
-                    {% endfor %}
-                </div>
+                {% if field.name != 'remember' %}
+                    <div>
+                        {{ field.label_tag }}
+                        {% render_field field class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" %}
+                        {% if field.help_text %}
+                            <p class="text-gray-600 dark:text-gray-400 text-xs italic mt-1">{{ field.help_text|safe }}</p>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <p class="text-red-500 dark:text-red-400 text-xs italic mt-1">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="flex items-center">
+                        {% render_field field class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" %}
+                        <label for="{{ field.id_for_label }}" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+                            {{ field.label }}
+                        </label>
+                    </div>
+                {% endif %}
             {% endfor %}
             <div>
-                <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
                     Log In
                 </button>
             </div>
         </form>
         <div class="mt-4 text-center">
-            <a href="{% url 'account_reset_password' %}" class="text-blue-500 hover:text-blue-600">Forgot Password?</a>
+            <a href="{% url 'account_reset_password' %}" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500">Forgot Password?</a>
         </div>
     </div>
 </div>

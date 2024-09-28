@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 urlpatterns = [
@@ -14,5 +14,5 @@ urlpatterns = [
     path('tour-package/<int:pk>/send-email/', views.send_tour_package_email, name='send_tour_package_email'),
     # Update existing package with package_id
     path('save-tour-package/<int:package_id>/', views.save_tour_package, name='update_tour_package'),
-
+    path("__reload__/", include("django_browser_reload.urls")),
 ]

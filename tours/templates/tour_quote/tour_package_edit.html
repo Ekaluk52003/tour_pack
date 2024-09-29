@@ -82,12 +82,14 @@
 
 <div class="mb-4" x-show="isSuperUser">
   <label for="tourPackType" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tour Package Type</label>
-  <select id="tourPackType" x-model="tourPackType" @change="updateServicesForPackageType()"  class="h-12 border border-gray-300 text-gray-600 dark:text-gray-300 text-base rounded-lg block w-full py-2.5 px-4 focus:outline-none bg-white dark:bg-gray-700">
+  <select id="tourPackType" x-model="tourPackType" @change="updateServicesForPackageType()"  class="h-12 border border-gray-300 text-gray-600 dark:text-gray-300 text-base rounded-lg block w-full py-2.5 px-4 focus:outline-none bg-white dark:bg-gray-700"
+          :class="{'border-red-500': !tourPackType}">
       <option value="">Select Tour Package Type</option>
       {% for pack_type in tour_pack_types %}
           <option value="{{ pack_type.id }}">{{ pack_type.name }}</option>
       {% endfor %}
   </select>
+  <p class="text-red-500 text-sm mt-1" x-show="!tourPackType">Please select a Tour Package Type.</p>
 </div>
 
 
@@ -133,55 +135,88 @@
 
         <div class="mb-2">
           <label class="block mb-2 text-gray-900 dark:text-white">Date</label>
-          <input type="date" x-model="day.date" class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <input type="date" x-model="day.date"
+                 class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                 :class="{'border-red-500': !day.date}">
+          <p class="text-red-500 text-sm mt-1" x-show="!day.date">Please select a date.</p>
         </div>
 
 
 
         <div class="mb-2">
           <label class="block mb-2 text-gray-900 dark:text-white">City</label>
-          <select x-model="day.city" @change="updateCityServices(day)" class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <select x-model="day.city"
+                  @change="updateCityServices(day); day.hotel = '';"
+                  class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  :class="{'border-red-500': !day.city}">
             <option value="">Select City</option>
             {% for city in cities %}
               <option value="{{ city.id }}">{{ city.name }}</option>
             {% endfor %}
           </select>
+          <p class="text-red-500 text-sm mt-1" x-show="!day.city">Please select a city.</p>
         </div>
 
         <div class="mb-2">
           <label class="block mb-2 text-gray-900 dark:text-white">Hotel</label>
-          <select x-model="day.hotel" class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <select x-model="day.hotel"
+                  class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  :class="{'border-red-500': !day.hotel}">
             <option value="">Select Hotel</option>
             <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
-              <option :value="String(hotel.id)" x-text="hotel.name" :selected="day.hotel == hotel.id"></option>
+              <option :value="hotel.id" x-text="hotel.name" :selected="day.hotel == hotel.id"></option>
             </template>
           </select>
+          <p class="text-red-500 text-sm mt-1" x-show="!day.hotel">Please select a hotel.</p>
         </div>
 
         <div class="mb-4">
           <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Services</h3>
           <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
-            <div class="flex items-center mb-2 bg-white dark:bg-gray-600 p-2 rounded border service-item overflow-x-auto">
-              <select x-model="service.type" @change="service.name = ''" class="mr-2 p-2 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                <option value="">Select Service Type</option>
-                <option value="transfer">Transfer</option>
-                <option value="tour">Tour</option>
-              </select>
-              <select x-model="service.name"  @change="updateService(day, service)" class="mr-2 p-2 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                <option value="">Select Service</option>
-                <template x-for="option in getServiceNames(day, service.type)" :key="option.id">
-                  <option :value="option.id" x-text="`${option.name} (${option.price} USD)`" :selected="service.name == option.id"></option>
+            <div class="flex flex-col mb-2 bg-white dark:bg-gray-600 p-2 rounded border service-item overflow-x-auto">
+              <div class="flex items-center">
+                <select
+                  x-model="service.type"
+                  @change="service.name = ''"
+                  class="mr-2 p-2 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  :class="{'border-red-500': !service.type}"
+                >
+                  <option value="">Select Service Type</option>
+                  <option value="transfer">Transfer</option>
+                  <option value="tour">Tour</option>
+                </select>
+                <select
+                  x-model="service.name"
+                  @change="updateService(day, service)"
+                  class="mr-2 p-2 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  :class="{'border-red-500': service.type && !service.name}"
+                >
+                  <option value="">Select Service</option>
+                  <template x-for="option in getServiceNames(day, service.type)" :key="option.id">
+                    <option :value="option.id" x-text="`${option.name} (${option.price} USD)`" :selected="service.name == option.id"></option>
+                  </template>
+                </select>
+                <span class="ml-2 text-gray-900 dark:text-white" x-text="`Booked: ${service.price_at_booking || service.price} USD`"></span>
+                <button @click="removeService(day, serviceIndex)" class="ml-2 text-red-600 dark:text-red-400">Remove</button>
+              </div>
+              <div class="mt-2">
+                <template x-if="!service.type">
+                  <span class="text-red-500 mr-2">Please select a service type.</span>
                 </template>
-              </select>
-              <span class="ml-2 text-gray-900 dark:text-white" x-text="`Booked: ${service.price_at_booking || service.price} USD`"></span>
-              <button @click="removeService(day, serviceIndex)" class="ml-2 text-red-600 dark:text-red-400">Remove</button>
+                <template x-if="service.type && !service.name">
+                  <span class="text-red-500 mr-2">Please select a service name.</span>
+                </template>
+                <template x-if="service.type && getServiceNames(day, service.type).length === 0">
+                  <span class="text-red-500 mr-2">No services available for this type. Please select a different service type or remove this service.</span>
+                </template>
+              </div>
             </div>
           </template>
           <button @click="addService(day)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Service</button>
         </div>
 
         <div class="mb-4">
-          <h3 class="text-lg font-semibold mb-2 mt-4 text-gray-900 dark:text-white">Guide Services</h3>
+          <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Guide Services</h3>
           <template x-for="(guideService, guideIndex) in day.guideServices" :key="guideIndex">
             <div class="flex items-center mb-2">
               <select x-model="guideService.name" @change="updateGuideService(guideService)" class="w-3/4 border rounded px-3 py-2 mr-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">

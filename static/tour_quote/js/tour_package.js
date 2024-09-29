@@ -189,15 +189,33 @@ window.tourPackage = function () {
 
     updateServicesForPackageType() {
       if (this.tourPackType) {
-        this.days.forEach((day) => {
+        const promises = this.days.map((day) => {
           if (day.city) {
-            this.updateCityServices(day);
+            return this.updateCityServices(day);
           }
+          return Promise.resolve();
+        });
+
+        Promise.all(promises).then(() => {
+          this.days.forEach((day) => {
+            this.selectCorrectOptions(day);
+            day.services.forEach((service) => this.updateService(day, service));
+            day.guideServices.forEach((guideService) => this.updateGuideService(guideService));
+          });
+          // Trigger a recalculation of all costs
+          this.$nextTick(() => {
+            this.calculateGrandTotal();
+          });
         });
       } else {
         this.days.forEach((day) => {
           day.services = [];
+          day.guideServices = [];
           day.cityServices = { hotels: [], service_types: [] };
+        });
+        // Trigger a recalculation of all costs
+        this.$nextTick(() => {
+          this.calculateGrandTotal();
         });
       }
     },
@@ -216,6 +234,8 @@ window.tourPackage = function () {
                 hotels: data.hotels || [],
                 service_types: data.service_types || [],
               };
+              // Update hotel costs when city services are updated
+              this.updateHotelCosts(day);
               resolve();
             })
             .catch((error) => {
@@ -228,6 +248,25 @@ window.tourPackage = function () {
           resolve();
         }
       });
+    },
+
+    updateHotelCosts(day) {
+      const selectedHotel = day.cityServices.hotels.find(h => h.id.toString() === day.hotel);
+      if (selectedHotel) {
+        const existingCost = this.hotelCosts.find(cost => cost.name === selectedHotel.name);
+        if (existingCost) {
+          existingCost.price = parseFloat(selectedHotel.price) || 0;
+        } else {
+          this.hotelCosts.push({
+            name: selectedHotel.name,
+            type: selectedHotel.type || '',
+            room: 1,
+            nights: 1,
+            price: parseFloat(selectedHotel.price) || 0,
+            extraBedPrice: 0,
+          });
+        }
+      }
     },
 
     selectCorrectOptions(day) {

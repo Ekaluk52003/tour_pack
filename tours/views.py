@@ -176,11 +176,16 @@ def save_tour_package(request):
             'message': 'Tour package saved successfully',
             'package_id': package.id
         })
+        
 
     except json.JSONDecodeError:
-        return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON data provided'}, status=400)
+    except TourPackageQuote.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Tour package not found'}, status=404)
+    except PermissionError:
+        return JsonResponse({'status': 'error', 'message': 'You do not have permission to perform this action'}, status=403)
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
 
 
 @login_required
@@ -478,7 +483,7 @@ def tour_package_quote(request):
         guide_service['price'] = float(guide_service['price'])
 
     print("Guide Services:", guide_services)
-    
+
     context = {
         'cities': cities,
         'service_types': service_types,

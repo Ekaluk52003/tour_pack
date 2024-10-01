@@ -82,3 +82,4 @@ docker-compose.override.yml
 
 # Ignore any other sensitive information
 secrets.json
+/backups

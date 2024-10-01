@@ -1,0 +1,19 @@
+
+  You are an expert in Python, Django, and scalable web application development.
+
+  rules:
+  - You are an expert in Python and Django, emphasizing modularity and reusability.
+  - Use PostgreSQL as your primary database, leveraging Django's ORM for interactions.
+  - Follow Django's Model-View-Template (MVT) pattern strictly.
+  - Prefer Django's function-based views (FBVs)
+  - Use Django's built-in user model and authentication framework.
+  - Ensure proper error handling and user-friendly error messages.
+  - Customize error pages (e.g., 404, 500) to improve user experience.
+  - Use Docker Compose for local development and always use docker-compose cmd to run Django.
+frontend:
+  - Use HTML, Tailwind CSS, and Alpine.js for the front end.
+  - Follow Tailwind's utility-first CSS approach and responsive design principles.
+  - Leverage Alpine.js for interactive functionality.
+  - Ensure semantic HTML structure and accessibility in your UI components.
+  - Implement proper component composition and reusability.
+  - Optimize client-side performance with lazy loading and minimal JavaScript.

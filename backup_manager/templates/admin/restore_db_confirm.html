@@ -1,0 +1,50 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .confirm-buttons {
+        margin-top: 20px;
+    }
+    .button {
+        display: inline-block;
+        padding: 10px 15px;
+        margin-right: 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 400;
+        text-align: center;
+    }
+    .confirm-button {
+        background-color: #79aec8;
+        color: #fff;
+    }
+    .confirm-button:hover {
+        background-color: #609ab6;
+    }
+    .cancel-button {
+        background-color: #ba2121;
+        color: #fff;
+    }
+    .cancel-button:hover {
+        background-color: #a41515;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+  <h1>Confirm Database Restore</h1>
+  <p>Are you sure you want to restore the database from the backup file: <strong>{{ filename }}</strong>?</p>
+  <p>This action will overwrite the current database. Make sure you have a recent backup before proceeding.</p>
+  <div class="confirm-buttons">
+    <form method="post" action="{% url 'admin:backup_manager_backupmanagement_confirm_restore_db' filename=filename %}" style="display: inline;">
+      {% csrf_token %}
+      <input type="submit" value="Confirm Restore" class="button confirm-button">
+    </form>
+    <a href="{% url 'admin:backup_manager_backupmanagement_changelist' %}" class="button cancel-button">Cancel</a>
+  </div>
+{% endblock %}

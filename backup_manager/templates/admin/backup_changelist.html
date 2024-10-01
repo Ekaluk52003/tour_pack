@@ -1,0 +1,59 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .backup-list {
+        list-style-type: none;
+        padding: 0;
+    }
+    .backup-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    .restore-button {
+        background-color: #79aec8;
+        color: #fff !important;
+        padding: 5px 10px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 12px;
+        transition: background-color 0.3s;
+    }
+    .restore-button:hover {
+        background-color: #417690;
+    }
+</style>
+{% endblock %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    <li>
+        <a href="{% url 'admin:backup_manager_backupmanagement_create_backup' %}" class="addlink">
+            {% trans "Create Backup" %}
+        </a>
+    </li>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <div class="module">
+        <h2>Available Backups</h2>
+        <ul class="backup-list">
+            {% for backup in backups %}
+                <li class="backup-item">
+                    <span>{{ backup }}</span>
+                    <a href="{% url 'admin:backup_manager_backupmanagement_restore_db' filename=backup %}" class="restore-button">
+                        Restore
+                    </a>
+                </li>
+            {% empty %}
+                <li>No backups available.</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

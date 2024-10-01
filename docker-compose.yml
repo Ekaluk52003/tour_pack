@@ -1,30 +1,37 @@
-version: '3'
+version: '3.8'
 
 services:
   web:
-    image: my_django_app:prod # Your built image
-    ports:
-      - "8000:8000"  # Map container port 8000 to host port 8000
-    env_file:
-      - .env.prod
+    build: .
+    command: >
+      sh -c "service cron start &&
+             python manage.py crontab add &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:${DJANGO_PORT}"
     volumes:
-      - ./static:/code/static  # Optional, adjust based on your setup
+      - .:/app
+    ports:
+      - "${DJANGO_PORT}:${DJANGO_PORT}"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    env_file:
+      - .env
     depends_on:
-      - db  # If you are using a database service
-    networks:
-      - app_network
+      - db
 
   db:
-    image: postgres:14-alpine  # Example database service (optional)
-    env_file:
-      - .env.prod.db
+    image: postgres:13-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app_network
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5435"
+    command: -p 5435
+    env_file:
+      - .env
 
 volumes:
   postgres_data:
-
-networks:
-  app_network:

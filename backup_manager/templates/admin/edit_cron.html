@@ -1,0 +1,14 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Edit Cron Jobs</h1>
+<form method="post">
+    {% csrf_token %}
+    {% for job in cron_jobs %}
+    <div>
+        <input type="text" name="cron_{{ forloop.counter }}" value="{{ job.0 }} {{ job.1 }} {{ job.2|join:' ' }}">
+    </div>
+    {% endfor %}
+    <input type="submit" value="Save">
+</form>
+{% endblock %}

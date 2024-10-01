@@ -1,0 +1,10 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Restore Database</h1>
+<form method="post">
+    {% csrf_token %}
+    <p>Are you sure you want to restore the database from the most recent backup?</p>
+    <input type="submit" value="Restore">
+</form>
+{% endblock %}

@@ -24,6 +24,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path("__reload__/", include("django_browser_reload.urls")),
+    path('backup_manager/', include('backup_manager.urls')),
 ]
 
 if settings.DEBUG:

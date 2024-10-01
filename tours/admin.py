@@ -9,7 +9,7 @@ from .models import (
     City, Hotel, Service, GuideService, ServiceType, TourPackType,
     PredefinedTourQuote, PredefinedTourDay, PredefinedTourDayService,
     PredefinedTourDayGuideService, TourPackageQuote, TourDay,
-    TourDayService, TourDayGuideService, ServicePrice
+    TourDayService, TourDayGuideService, ServicePrice, ReferenceID
 )
 from import_export.formats import base_formats
 
@@ -30,7 +30,7 @@ class HotelResource(resources.ModelResource):
         model = Hotel
         fields = ('id', 'name', 'city')
         import_id_fields = ('name', 'city')
-        
+
 @admin.register(Hotel)
 class HotelAdmin(ImportExportModelAdmin):
     resource_class = HotelResource
@@ -221,3 +221,8 @@ class ServicePriceAdmin(ImportExportModelAdmin):
 
 
 ####Service Price end
+@admin.register(ReferenceID)
+class ReferenceIDAdmin(admin.ModelAdmin):
+    list_display = ('id', 'year', 'last_number')
+    list_filter = ('year',)
+    search_fields = ('year',)

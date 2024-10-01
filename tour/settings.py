@@ -13,7 +13,7 @@ from django.utils import timezone
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-
+import dj_database_url
 
 load_dotenv()
 
@@ -28,10 +28,8 @@ DEBUG = os.environ.get("DEBUG", "0") == "1"
 # SECURITY WARNING: keep the secret key used in production secret!
 
 
-
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 # Application definition
-
 
 
 INSTALLED_APPS = [
@@ -49,7 +47,10 @@ INSTALLED_APPS = [
     'allauth.account',
     'admin_auto_filters',
     "django_browser_reload",
-    "widget_tweaks",  # Changed from "widget-tweaks" to "widget_tweaks"
+    "widget_tweaks",
+    "dbbackup",
+    "django_crontab",
+    'backup_manager'
 ]
 
 MIDDLEWARE = [
@@ -75,7 +76,8 @@ AUTHENTICATION_BACKENDS = [
 SITE_ID = 1
 
 LOGIN_REDIRECT_URL = '/'  # Or wherever you want users to go after login
-ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'  # Or wherever you want users to go after logout
+# Or wherever you want users to go after logout
+ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Allauth settings
 ACCOUNT_EMAIL_REQUIRED = False
@@ -84,11 +86,10 @@ ACCOUNT_AUTHENTICATION_METHOD = 'username'
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-         'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -107,24 +108,26 @@ WSGI_APPLICATION = 'tour.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600
+    )
+}
+
 
 # For Docker/PostgreSQL usage uncomment this and comment the DATABASES config above
-DATABASES = {
-    "default": {
-        "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
-        "USER": os.environ.get("SQL_USER", "user"),
-        "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
-        "HOST": os.environ.get("SQL_HOST", "localhost"),
-        "PORT": os.environ.get("SQL_PORT", "5432"),
-    }
-}
+# DATABASES = {
+#     "default": {
+#         "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
+#         "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
+#         "USER": os.environ.get("SQL_USER", "user"),
+#         "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
+#         "HOST": os.environ.get("SQL_HOST", "localhost"),
+#         "PORT": os.environ.get("SQL_PORT", "5432"),
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -180,17 +183,17 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 CSRF_COOKIE_SECURE = True  # Set to True if using HTTPS
 
-CSRF_COOKIE_DOMAIN=os.environ.get('CSRF_COOKIE_DOMAIN')
+CSRF_COOKIE_DOMAIN = os.environ.get('CSRF_COOKIE_DOMAIN')
 SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
 
 csrf_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins.split(',') if origin.strip()]
+CSRF_TRUSTED_ORIGINS = [origin.strip()
+                        for origin in csrf_origins.split(',') if origin.strip()]
 
 
 TIME_ZONE = 'Asia/Bangkok'
 USE_TZ = True
-
 
 
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
@@ -198,9 +201,34 @@ USE_SES_V2 = True
 
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", default="local")
 if EMAIL_BACKEND == "ses":
-        EMAIL_BACKEND = 'django_ses.SESBackend'
-        AWS_SES_REGION_NAME = os.environ.get('AWS_SES_REGION_NAME')
-        AWS_SES_REGION_ENDPOINT = os.environ.get('AWS_SES_REGION_ENDPOINT')
-        AWS_SES_ACCESS_KEY_ID = os.environ.get('AWS_SES_ACCESS_KEY_ID')
-        AWS_SES_SECRET_ACCESS_KEY = os.environ.get('AWS_SES_SECRET_ACCESS_KEY')
+    EMAIL_BACKEND = 'django_ses.SESBackend'
+    AWS_SES_REGION_NAME = os.environ.get('AWS_SES_REGION_NAME')
+    AWS_SES_REGION_ENDPOINT = os.environ.get('AWS_SES_REGION_ENDPOINT')
+    AWS_SES_ACCESS_KEY_ID = os.environ.get('AWS_SES_ACCESS_KEY_ID')
+    AWS_SES_SECRET_ACCESS_KEY = os.environ.get('AWS_SES_SECRET_ACCESS_KEY')
 
+
+# Configure django-dbbackup
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {'location': os.path.join(BASE_DIR, 'backups')}
+
+# Add this near your other dbbackup settings
+DBBACKUP_BACKUP_DIRECTORY = os.path.join(BASE_DIR, 'backups')
+DBBACKUP_FILENAME_TEMPLATE = '{datetime}.{extension}'
+DBBACKUP_CLEANUP_KEEP = 3
+DBBACKUP_CLEANUP_KEEP_MEDIA = 3
+
+# Enable console output for dbbackup
+DBBACKUP_CONNECTORS = {
+    'default': {
+        'CONNECTOR': 'dbbackup.db.postgresql.PgDumpConnector',
+        'DUMP_CMD': 'pg_dump',
+        'RESTORE_CMD': 'psql',
+    }
+}
+
+# Configure django-crontab jobs
+# CRONJOBS = [
+#     ('*/2 * * * *', 'django.core.management.call_command', ['dbbackup']),
+#     ('*/2 * * * *', 'django.core.management.call_command', ['cleanup_backups']),
+# ]

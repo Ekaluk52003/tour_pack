@@ -50,18 +50,20 @@ class BackupManagementAdmin(admin.ModelAdmin):
     def create_backup_view(self, request):
         backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']
         os.makedirs(backup_dir, exist_ok=True)
-        initial_count = len([f for f in os.listdir(backup_dir) if f.endswith('.psql')])
+        initial_files = set(os.listdir(backup_dir))
 
         try:
             output = StringIO()
-            call_command('dbbackup', stdout=output)
+            call_command('dbbackup', '--clean', '--noinput', stdout=output, stderr=output)
             output_str = output.getvalue()
 
-            new_count = len([f for f in os.listdir(backup_dir) if f.endswith('.psql')])
-            if new_count > initial_count:
-                messages.success(request, 'Database backup created successfully.')
+            new_files = set(os.listdir(backup_dir))
+            created_files = new_files - initial_files
+
+            if created_files:
+                messages.success(request, f'Database backup created successfully. New files: {", ".join(created_files)}')
             else:
-                messages.warning(request, 'Backup command executed, but no new backup file was found. Output: ' + output_str)
+                messages.warning(request, f'Backup command executed, but no new backup file was found. Output: {output_str}')
         except Exception as e:
             messages.error(request, f'Error creating backup: {str(e)}')
         return redirect('..')

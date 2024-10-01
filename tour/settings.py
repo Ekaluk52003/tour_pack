@@ -211,12 +211,13 @@ if EMAIL_BACKEND == "ses":
 # Configure django-dbbackup
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 DBBACKUP_STORAGE_OPTIONS = {'location': os.path.join(BASE_DIR, 'backups')}
+DBBACKUP_CLEANUP_KEEP = 5  # Adjust this number as needed
+DBBACKUP_CLEANUP_KEEP_MEDIA = 5  # Adjust this number as needed
 
 # Add this near your other dbbackup settings
 DBBACKUP_BACKUP_DIRECTORY = os.path.join(BASE_DIR, 'backups')
-DBBACKUP_FILENAME_TEMPLATE = '{datetime}.{extension}'
-DBBACKUP_CLEANUP_KEEP = 3
-DBBACKUP_CLEANUP_KEEP_MEDIA = 3
+# DBBACKUP_FILENAME_TEMPLATE = '{datetime}.{extension}'
+
 
 # Enable console output for dbbackup
 DBBACKUP_CONNECTORS = {
@@ -226,9 +227,7 @@ DBBACKUP_CONNECTORS = {
         'RESTORE_CMD': 'psql',
     }
 }
-
 # Configure django-crontab jobs
-# CRONJOBS = [
-#     ('*/2 * * * *', 'django.core.management.call_command', ['dbbackup']),
-#     ('*/2 * * * *', 'django.core.management.call_command', ['cleanup_backups']),
-# ]
+CRONJOBS = [
+    ('*/2 * * * *', 'django.core.management.call_command', ['dbbackup', '--clean', '--noinput']),
+]

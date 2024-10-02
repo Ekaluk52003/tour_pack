@@ -19,6 +19,14 @@ python manage.py collectstatic --noinput
 echo "Applying database migrations..."
 python manage.py migrate
 
+# Start cron service
+echo "Starting cron service..."
+service cron start
+
+# Add crontab jobs
+echo "Adding crontab jobs..."
+python manage.py crontab add
+
 # Start Gunicorn
 echo "Starting Gunicorn..."
 exec gunicorn tour.wsgi:application --bind 0.0.0.0:8000

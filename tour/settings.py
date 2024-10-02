@@ -30,7 +30,7 @@ DEBUG = os.environ.get("DEBUG", "0") == "1"
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 # Application definition
-ALLOWED_HOSTS = ['brighter.in.th', 'localhost', '127.0.0.1']
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -117,17 +117,6 @@ DATABASES = {
 }
 
 
-# For Docker/PostgreSQL usage uncomment this and comment the DATABASES config above
-# DATABASES = {
-#     "default": {
-#         "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
-#         "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
-#         "USER": os.environ.get("SQL_USER", "user"),
-#         "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
-#         "HOST": os.environ.get("SQL_HOST", "localhost"),
-#         "PORT": os.environ.get("SQL_PORT", "5432"),
-#     }
-# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -229,5 +218,8 @@ DBBACKUP_CONNECTORS = {
 }
 # Configure django-crontab jobs
 CRONJOBS = [
-    ('*/2 * * * *', 'django.core.management.call_command', ['dbbackup', '--clean', '--noinput']),
+
+     ('0 * * * *', 'django.core.management.call_command', ['dbbackup', '--clean'])
+
+    # ('*/2 * * * *', 'django.core.management.call_command', ['cleanup_backups']),
 ]

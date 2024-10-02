@@ -49,7 +49,7 @@ node_modules/
 
 # Ignore build scripts
 build/
-dist/
+# dist/
 *.egg-info/
 .installed.cfg
 

@@ -176,7 +176,7 @@ def save_tour_package(request):
             'message': 'Tour package saved successfully',
             'package_id': package.id
         })
-        
+
 
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'Invalid JSON data provided'}, status=400)
@@ -327,10 +327,10 @@ def send_tour_package_email(request, pk):
             to_email.append(cc_email)
 
         # Send email
-        # email = EmailMessage(subject, message, from_email, to_email)
-        # email.attach(f'tour_package_{package.id}.pdf', pdf_file.getvalue(), 'application/pdf')
+        email = EmailMessage(subject, message, from_email, to_email)
+        email.attach(f'tour_package_{package.id}.pdf', pdf_file.getvalue(), 'application/pdf')
 
-        # email.send(fail_silently=False)
+        email.send(fail_silently=False)
 
         context = {
             'message': f'Email sent successfully to {", ".join(to_email)}',

@@ -30,7 +30,7 @@ DEBUG = os.environ.get("DEBUG", "0") == "1"
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 # Application definition
-
+ALLOWED_HOSTS = ['brighter.in.th', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'django.contrib.admin',

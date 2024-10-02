@@ -223,6 +223,17 @@ class ServicePriceAdmin(ImportExportModelAdmin):
 ####Service Price end
 @admin.register(ReferenceID)
 class ReferenceIDAdmin(admin.ModelAdmin):
-    list_display = ('id', 'year', 'last_number')
-    list_filter = ('year',)
-    search_fields = ('year',)
+    list_display = ('formatted_reference', 'year', 'last_number')
+    readonly_fields = ('formatted_reference',)
+
+    def formatted_reference(self, obj):
+        return f"{str(obj.year % 100).zfill(2)}{str(obj.last_number).zfill(3)}"
+    formatted_reference.short_description = 'Reference'
+
+    def has_add_permission(self, request):
+        # Prevent manual creation of new references
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # Prevent deletion of references
+        return False

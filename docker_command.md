@@ -131,3 +131,5 @@ docker-compose run --rm web python manage.py check
 ```
 
 sudo docker-compose -f docker-compose.prod.yml up -d --build web
+
+sudo docker-compose -f docker-compose.prod.yml logs -f web

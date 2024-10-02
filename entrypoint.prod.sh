@@ -29,4 +29,4 @@ python manage.py crontab add
 
 # Start Gunicorn
 echo "Starting Gunicorn..."
-exec gunicorn tour.wsgi:application --bind 0.0.0.0:8000
+exec gunicorn ${DJANGO_PROJECT_NAME}.wsgi:application --bind 0.0.0.0:8000

@@ -40,6 +40,11 @@
                 class="px-3 py-2 text-sm font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'tour_package_quote' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %}"
                 >Create New</a
               >
+              <a
+                href="{% url 'admin:index' %}"
+                class="px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
+                >Admin</a
+              >
               {% endif %} {% if user.is_authenticated %}
               <span class="px-3 py-2 text-sm font-medium"
                 >Welcome, {{ user.username }}</span
@@ -135,15 +140,22 @@
         <div class="px-2 pt-2 pb-3 space-y-1 bg-blue-900 sm:px-3 dark:bg-gray-800">
           <a
             href="{% url 'tour_packages' %}"
-            class="block px-3 py-2 text-base font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
+            class="block px-3 py-2 text-base font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'tour_packages' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %} hover:bg-blue-800 dark:hover:bg-gray-700"
             >Packages</a
           >
           {% if user.is_superuser %}
           <a
             href="{% url 'tour_package_quote' %}"
-            class="block px-3 py-2 text-base font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
+            class="block px-3 py-2 text-base font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'tour_package_quote' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %} hover:bg-blue-800 dark:hover:bg-gray-700"
             >Create New</a
           >
+          <a
+            href="{% url 'admin:index' %}"
+            class="block px-3 py-2 text-base font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
+            >Admin</a
+          >
+
+
           {% endif %} {% if user.is_authenticated %}
           <span class="block px-3 py-2 text-base font-medium"
             >Welcome, {{ user.username }}</span

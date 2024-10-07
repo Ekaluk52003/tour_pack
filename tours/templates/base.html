@@ -11,20 +11,13 @@
         [x-cloak] { display: none !important; }
     </style>
   </head>
-  <body class=" dark:bg-gray-900 text-gray-900 dark:text-gray-100 bg-indigo-50">
-    <nav class="bg-blue-900 dark:bg-gray-800 text-white border-b dark:border-gray-700" x-data="{ isOpen: false }">
-      <div class="max-w-7xl mx-auto px-4 py-2 sm:px-6 lg:px-8">
+  <body class="text-gray-900 dark:bg-gray-900 dark:text-gray-100 bg-indigo-50">
+    <nav class="text-white bg-blue-900 border-b dark:bg-gray-800 dark:border-gray-700" x-data="{ isOpen: false }">
+      <div class="px-4 py-2 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <div class="flex items-center">
             <a href="{% url 'tour_packages' %}" class="flex items-center">
-              <!-- <svg class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="3" y="6" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
-                <path d="M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" stroke-width="2"/>
-                <path d="M12 11V15" stroke="currentColor" stroke-width="2"/>
-                <path d="M9 13H15" stroke="currentColor" stroke-width="2"/>
-              </svg> -->
-
-              <svg class="h-12 w-12 mr-2 bg-blue-500 p-2 rounded-full" viewBox="-2.5 0 19 19" xmlns="http://www.w3.org/2000/svg" fill="white">
+              <svg class="w-12 h-12 p-2 mr-2 bg-blue-500 rounded-full" viewBox="-2.5 0 19 19" xmlns="http://www.w3.org/2000/svg" fill="white">
                 <g id="SVGRepo_bgCarrier" stroke-width="2" stroke="white"></g>
                 <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
                 <g id="SVGRepo_iconCarrier">
@@ -35,66 +28,65 @@
             </a>
           </div>
           <div class="hidden md:block">
-            <div class="ml-10 flex items-center space-x-4">
-
+            <div class="flex items-center ml-10 space-x-4">
               <a
                 href="{% url 'tour_packages' %}"
-                class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 dark:hover:bg-gray-700 transition-colors duration-200"
+                class="px-3 py-2 text-sm font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'tour_packages' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %}"
                 >Packages</a
               >
               {% if user.is_superuser %}
               <a
                 href="{% url 'tour_package_quote' %}"
-                class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 dark:hover:bg-gray-700 transition-colors duration-200"
+                class="px-3 py-2 text-sm font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'tour_package_quote' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %}"
                 >Create New</a
               >
               {% endif %} {% if user.is_authenticated %}
-              <span class="px-3 py-2 rounded-md text-sm font-medium"
+              <span class="px-3 py-2 text-sm font-medium"
                 >Welcome, {{ user.username }}</span
               >
 
               <a
                 href="{% url 'account_logout' %}"
-                class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
+                class="px-3 py-2 text-sm font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
                 >Logout</a
               >
               <button
                 @click="darkMode = !darkMode"
-                class="p-2 rounded-md text-sm font-medium hover:bg-blue-800 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center"
+                class="flex items-center p-2 text-sm font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" x-show="!darkMode">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 20 20" fill="currentColor" x-show="!darkMode">
                   <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
                 </svg>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" x-show="darkMode" style="display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 20 20" fill="currentColor" x-show="darkMode" style="display: none;">
                   <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
                 </svg>
               </button>
               {% else %}
               <a
                 href="{% url 'account_login' %}"
-                class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
+                class="px-3 py-2 text-sm font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
                 >Login</a
               >
               <a
                 href="{% url 'account_signup' %}"
-                class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
+                class="px-3 py-2 text-sm font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
                 >Sign Up</a
               >
               {% endif %}
             </div>
 
           </div>
-          <div class="mr-2 flex md:hidden">
+          <div class="flex mr-2 md:hidden">
             <button
               @click="isOpen = !isOpen"
               type="button"
-              class="inline-flex items-center justify-center p-2 rounded-md text-white hover:bg-blue-800 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-900 dark:focus:ring-offset-gray-800 focus:ring-white transition-colors duration-200"
+              class="inline-flex items-center justify-center p-2 text-white transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-900 dark:focus:ring-offset-gray-800 focus:ring-white"
               aria-controls="mobile-menu"
               aria-expanded="false"
             >
               <span class="sr-only">Open main menu</span>
               <svg
-                class="block h-6 w-6"
+                class="block w-6 h-6"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -109,7 +101,7 @@
                 />
               </svg>
               <svg
-                class="hidden h-6 w-6"
+                class="hidden w-6 h-6"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -140,35 +132,35 @@
         x-transition:leave-end="opacity-0 transform scale-y-0 -translate-y-1/2"
         @click.away="isOpen = false"
       >
-        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-blue-900 dark:bg-gray-800">
+        <div class="px-2 pt-2 pb-3 space-y-1 bg-blue-900 sm:px-3 dark:bg-gray-800">
           <a
             href="{% url 'tour_packages' %}"
-            class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-800 dark:hover:bg-gray-700 transition-colors duration-200"
+            class="block px-3 py-2 text-base font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
             >Packages</a
           >
           {% if user.is_superuser %}
           <a
             href="{% url 'tour_package_quote' %}"
-            class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-800 dark:hover:bg-gray-700 transition-colors duration-200"
+            class="block px-3 py-2 text-base font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
             >Create New</a
           >
           {% endif %} {% if user.is_authenticated %}
-          <span class="block px-3 py-2 rounded-md text-base font-medium"
+          <span class="block px-3 py-2 text-base font-medium"
             >Welcome, {{ user.username }}</span
           >
           <a
             href="{% url 'account_logout' %}"
-            class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
+            class="block px-3 py-2 text-base font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
             >Logout</a
           >
           <button
             @click="darkMode = !darkMode"
-            class="flex items-center w-full px-3 py-2 rounded-md text-base font-medium hover:bg-blue-800 dark:hover:bg-gray-700 transition-colors duration-200"
+            class="flex items-center w-full px-3 py-2 text-base font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor" x-show="!darkMode">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" viewBox="0 0 20 20" fill="currentColor" x-show="!darkMode">
               <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
             </svg>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor" x-show="darkMode" style="display: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" viewBox="0 0 20 20" fill="currentColor" x-show="darkMode" style="display: none;">
               <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
             </svg>
             <span x-text="darkMode ? 'Light Mode' : 'Dark Mode'"></span>
@@ -176,12 +168,12 @@
           {% else %}
           <a
             href="{% url 'account_login' %}"
-            class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
+            class="block px-3 py-2 text-base font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
             >Login</a
           >
           <a
             href="{% url 'account_signup' %}"
-            class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
+            class="block px-3 py-2 text-base font-medium hover:bg-blue-800 dark:hover:bg-gray-700"
             >Sign Up</a
           >
           {% endif %}
@@ -194,18 +186,18 @@
       x-sync
       id="notification_list"
       x-merge="prepend"
-      class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50"
+      class="fixed z-50 transform -translate-x-1/2 top-4 left-1/2"
     ></div>
 
     <main
-      class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      class="flex-grow px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8"
       id="page"
     >
       {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-gray-800  text-white dark:bg-gray-800  border-b dark:border-gray-700 py-4">
-      <div class="max-w-8xl mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center">
+    <footer class="py-4 text-white bg-gray-800 border-b dark:bg-gray-800 dark:border-gray-700">
+      <div class="px-4 py-4 mx-auto text-center max-w-8xl sm:px-6 lg:px-8">
         <p>
           &copy; {% now "Y" %} Jimmy Tour Package System. All rights reserved.
         </p>

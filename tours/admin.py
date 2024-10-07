@@ -1,7 +1,7 @@
 # admin.py
 
 from django.contrib import admin
-from import_export import resources, fields
+from import_export import resources, fields, widgets
 from import_export.widgets import ForeignKeyWidget
 from import_export.admin import ImportExportModelAdmin
 from django.core.exceptions import ValidationError
@@ -12,33 +12,61 @@ from .models import (
     TourDayService, TourDayGuideService, ServicePrice, ReferenceID
 )
 from import_export.formats import base_formats
+from import_export.fields import Field
 
-@admin.register(City)
-class CityAdmin(admin.ModelAdmin):
-    list_display = ('name',)
-    search_fields = ('name',)
-
+class CityWidget(widgets.ForeignKeyWidget):
+    def clean(self, value, row=None, *args, **kwargs):
+        if value:
+            try:
+                city, created = City.objects.get_or_create(name=value)
+            except IntegrityError:
+                # If the city already exists, just get it
+                city = City.objects.get(name=value)
+            return city
+        return None
 
 class HotelResource(resources.ModelResource):
     city = fields.Field(
         column_name='city',
         attribute='city',
-        widget=ForeignKeyWidget(City, 'name')
+        widget=CityWidget(City, 'name')
     )
 
     class Meta:
         model = Hotel
         fields = ('id', 'name', 'city')
         import_id_fields = ('name', 'city')
+        skip_unchanged = True
+        report_skipped = True
+
+    def before_import(self, dataset, *args, **kwargs):
+        # Ensure all cities exist before processing hotels
+        city_names = set(dataset['city'])
+        for city_name in city_names:
+            City.objects.get_or_create(name=city_name)
+
+    def skip_row(self, instance, original, row, import_validation_errors=None):
+        try:
+            instance.full_clean()
+            return False
+        except ValidationError as e:
+            if import_validation_errors is not None:
+                import_validation_errors.append(ValidationError(f"Row {row}: {str(e)}"))
+            return True
+        
 
 @admin.register(Hotel)
 class HotelAdmin(ImportExportModelAdmin):
     resource_class = HotelResource
-    list_display = ('name', 'city')
+    list_display = ('name', 'city', 'id')
     list_filter = ('city',)
     search_fields = ('name', 'city__name')
-    autocomplete_fields = ['city']
+    ordering = ('city', 'name')
 
+@admin.register(City)
+class CityAdmin(admin.ModelAdmin):
+    list_display = ('name', 'id')
+    search_fields = ('name',)
 
 @admin.register(ServiceType)
 class ServiceTypeAdmin(admin.ModelAdmin):

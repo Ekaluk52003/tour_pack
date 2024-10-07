@@ -6,19 +6,37 @@ from django.db import transaction
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.db.utils import IntegrityError
+from django.core.exceptions import ValidationError
 
 class City(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name_plural = "cities"
 
 class Hotel(models.Model):
     name = models.CharField(max_length=100)
     city = models.ForeignKey(City, on_delete=models.CASCADE)
 
+
+    class Meta:
+        unique_together = ['name', 'city']
+
+
+    def clean(self):
+        existing_hotel = Hotel.objects.filter(name=self.name, city=self.city).exclude(pk=self.pk).first()
+        if existing_hotel:
+            raise ValidationError(f"A hotel named '{self.name}' already exists in {self.city.name}.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.name} - {self.city}"
+        return f"{self.name} in {self.city.name}"
 
 class ServiceType(models.Model):
     name = models.CharField(max_length=100)

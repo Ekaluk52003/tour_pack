@@ -9,30 +9,30 @@
 {% endblock %}
 
 {% block content %}
-<div x-data="tourPackage()" x-init="init()" class="mx-auto bg-white dark:bg-gray-800 p-8 rounded shadow-lg">
-    <h1 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Create Tour Package Quote</h1>
+<div x-data="tourPackage()" x-init="init()" class="p-8 mx-auto bg-white rounded shadow-lg dark:bg-gray-800">
+    <h1 class="mb-6 text-3xl font-bold text-gray-900 dark:text-white">Create Tour Package Quote</h1>
     <div class="mb-4" x-show="errors.days">
-      <p class="text-red-500 dark:text-red-400 text-sm" x-text="errors.days"></p>
+      <p class="text-sm text-red-500 dark:text-red-400" x-text="errors.days"></p>
     </div>
 
     <div class="mb-4">
       <label for="package-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Package Name</label>
-      <input type="text" id="package-name" x-model="name"  class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-      <p class="text-red-500 dark:text-red-400 text-sm mt-1" x-show="errors.name" x-text="errors.name"></p>
+      <input type="text" id="package-name" x-model="name"  class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
+      <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.name" x-text="errors.name"></p>
   </div>
 
   <div class="mb-4">
       <label for="customer-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Customer Name</label>
-      <input type="text" id="customer-name" x-model="customerName" class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-      <p class="text-red-500 dark:text-red-400 text-sm mt-1" x-show="errors.customerName" x-text="errors.customerName"></p>
+      <input type="text" id="customer-name" x-model="customerName" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
+      <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.customerName" x-text="errors.customerName"></p>
   </div>
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark</label>
-    <textarea id="remark" x-model="remark" class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+    <textarea id="remark" x-model="remark" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
 </div>
 <div class="mb-4">
   <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2</label>
-  <textarea id="remark2" x-model="remark2" class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+  <textarea id="remark2" x-model="remark2" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
 </div>
 
 
@@ -45,38 +45,38 @@
           <option value="{{ pack_type.id }}">{{ pack_type.name }}</option>
       {% endfor %}
   </select>
-  <p class="text-red-500 text-sm mt-1" x-show="!tourPackType">Please select a Tour Package Type.</p>
+  <p class="mt-1 text-sm text-red-500" x-show="!tourPackType">Please select a Tour Package Type.</p>
 </div>
 
-<div class="md:flex items-center mb-2">
+<div class="items-center mb-2 md:flex">
   <select x-model="selectedPredefinedQuote" class="h-12 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-base rounded-lg block py-2.5 px-4 focus:outline-none bg-white dark:bg-gray-700">
     <option value="">Select a predefined quote</option>
     {% for quote in predefined_quotes %}
         <option value="{{ quote.id }}">{{ quote.name }}</option>
     {% endfor %}
   </select>
-  <button @click="applyPredefinedQuote()" class="mt-4 ml-2 bg-indigo-500 dark:bg-indigo-600 text-white px-4 py-2 rounded md:mt-0 hover:bg-indigo-600 dark:hover:bg-indigo-700">Apply Predefined Quote</button>
+  <button @click="applyPredefinedQuote()" class="px-4 py-2 mt-4 ml-2 text-white bg-indigo-500 rounded dark:bg-indigo-600 md:mt-0 hover:bg-indigo-600 dark:hover:bg-indigo-700">Apply Predefined Quote</button>
 
 </div>
 
 
 <div class="space-y-2">
   <template x-for="(day, index) in days" :key="index">
-    <div class="mb-4 border rounded-lg p-4 bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+    <div class="p-4 mb-4 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600"
          draggable="true"
          @dragstart="dragStart($event, index)"
          @dragover.prevent
          @drop="drop($event, index)"
 
          >
-         <div class="flex justify-between items-center mb-2">
+         <div class="flex items-center justify-between mb-2">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white" x-text="`Day ${index + 1}`"></h2>  <div class="flex items-center">
           <span class="mr-2 text-gray-500 dark:text-gray-400">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
           </span>
-          <button @click="removeDay(index)" class="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white px-3 py-1 rounded transition duration-150 ease-in-out">Remove Day</button>
+          <button @click="removeDay(index)" class="px-3 py-1 text-white transition duration-150 ease-in-out bg-red-500 rounded hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700">Remove Day</button>
         </div>
          </div>
 
@@ -84,9 +84,9 @@
       <div class="mb-2">
         <label class="block mb-2 text-gray-700 dark:text-gray-300">Date</label>
         <input type="date" x-model="day.date"
-        class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
         :class="{'border-red-500': !day.date}">
-        <p class="text-red-500 text-sm mt-1" x-show="!day.date">Please select a date.</p>
+        <p class="mt-1 text-sm text-red-500" x-show="!day.date">Please select a date.</p>
       </div>
 
 
@@ -94,38 +94,38 @@
         <label class="block mb-2 text-gray-900 dark:text-white">City</label>
         <select x-model="day.city"
                 @change="updateCityServices(day); day.hotel = '';"
-                class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                 :class="{'border-red-500': !day.city}">
           <option value="">Select City</option>
           {% for city in cities %}
             <option value="{{ city.id }}">{{ city.name }}</option>
           {% endfor %}
         </select>
-        <p class="text-red-500 text-sm mt-1" x-show="!day.city">Please select a city.</p>
+        <p class="mt-1 text-sm text-red-500" x-show="!day.city">Please select a city.</p>
       </div>
 
       <div class="mb-2">
         <label class="block mb-2 text-gray-900 dark:text-white">Hotel</label>
         <select x-model="day.hotel"
-                class="w-full border rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                 :class="{'border-red-500': !day.hotel}">
           <option value="">Select Hotel</option>
           <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
             <option :value="hotel.id" x-text="hotel.name" :selected="day.hotel == hotel.id"></option>
           </template>
         </select>
-        <p class="text-red-500 text-sm mt-1" x-show="!day.hotel">Please select a hotel.</p>
+        <p class="mt-1 text-sm text-red-500" x-show="!day.hotel">Please select a hotel.</p>
       </div>
 
       <div class="mb-4">
-        <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Services</h3>
+        <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Services</h3>
         <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
-          <div class="flex flex-col mb-2 bg-white dark:bg-gray-600 p-2 rounded border service-item overflow-x-auto">
+          <div class="flex flex-col p-2 mb-2 overflow-x-auto bg-white border rounded dark:bg-gray-600 service-item">
             <div class="flex items-center">
               <select
                 x-model="service.type"
                 @change="service.name = ''"
-                class="mr-2 p-2 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="p-2 mr-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                 :class="{'border-red-500': !service.type}"
               >
                 <option value="">Select Service Type</option>
@@ -135,7 +135,7 @@
               <select
                 x-model="service.name"
                 @change="updateService(day, service)"
-                class="mr-2 p-2 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="p-2 mr-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                 :class="{'border-red-500': service.type && !service.name}"
               >
                 <option value="">Select Service</option>
@@ -148,28 +148,28 @@
             </div>
             <div class="mt-2">
               <template x-if="!service.type">
-                <span class="text-red-500 mr-2">Please select a service type.</span>
+                <span class="mr-2 text-red-500">Please select a service type.</span>
               </template>
               <template x-if="service.type && !service.name">
-                <span class="text-red-500 mr-2">Please select a service name.</span>
+                <span class="mr-2 text-red-500">Please select a service name.</span>
               </template>
               <template x-if="service.type && getServiceNames(day, service.type).length === 0">
-                <span class="text-red-500 mr-2">No services available for this type. Please select a different service type or remove this service.</span>
+                <span class="mr-2 text-red-500">No services available for this type. Please select a different service type or remove this service.</span>
               </template>
             </div>
           </div>
         </template>
-        <button @click="addService(day)" class="bg-blue-500 text-white px-3 py-2 rounded">Add Service</button>
+        <button @click="addService(day)" class="px-3 py-2 text-white bg-blue-500 rounded">Add Service</button>
       </div>
 
 
 
 
       <div class="mb-4">
-        <h3 class="text-lg font-semibold mb-2 mt-4 text-gray-900 dark:text-white">Guide Services</h3>
+        <h3 class="mt-4 mb-2 text-lg font-semibold text-gray-900 dark:text-white">Guide Services</h3>
         <template x-for="(guideService, guideIndex) in day.guideServices" :key="guideIndex">
           <div class="flex items-center mb-2">
-            <select x-model="guideService.name" @change="updateGuideService(guideService)" class="w-3/4 border rounded px-3 py-2 mr-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <select x-model="guideService.name" @change="updateGuideService(guideService)" class="w-3/4 px-3 py-2 mr-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
               <option value="">Select Guide Service</option>
               <template x-for="option in guideServices" :key="option.id">
                 <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="guideService.name == option.id"></option>
@@ -179,13 +179,13 @@
             <button @click="removeGuideService(day, guideIndex)"  class="ml-2 text-red-600 dark:text-red-400">Remove</button>
           </div>
         </template>
-        <button @click="addGuideService(day)" class="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-2 rounded">Add Guide Service</button>
+        <button @click="addGuideService(day)" class="px-3 py-2 text-white bg-blue-500 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">Add Guide Service</button>
       </div>
 
      <!-- Plus button to add day between (except after the last day) -->
      <template x-if="index < days.length - 1">
       <button @click="insertDayBelow(index)"
-              class="w-full bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700 text-blue-800 dark:text-blue-200 py-1 px-4 rounded-full flex items-center justify-center mb-2"
+              class="flex items-center justify-center w-full px-4 py-1 mb-2 text-blue-800 bg-blue-100 rounded-full hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-blue-200"
               title="Insert day here">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -202,7 +202,7 @@
 
 
   <button @click="insertDayBelow(days.length - 1)"
-  class="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center">
+  class="flex items-center justify-center w-full px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
 </svg>
@@ -217,7 +217,7 @@ Add Day
 
 
 <div class="mb-4">
-  <h2 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Hotel Costs</h2>
+  <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Hotel Costs</h2>
   <div class="overflow-x-auto">
     <table class="w-full table-auto">
       <thead>
@@ -235,30 +235,39 @@ Add Day
       <tbody>
         <template x-for="(cost, index) in hotelCosts" :key="index">
           <tr>
-              <td class="border px-2"><input x-model="cost.name" class="w-full p-1 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></td>
-              <td class="border px-2"><input x-model="cost.type" class="w-full p-1 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></td>
-              <td class="border px-2"><input type="number" x-model="cost.nights" class="w-full p-1 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></td>
-              <td class="border px-2"><input type="number" x-model="cost.room" class="w-full p-1 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></td>
-              <td class="border px-2"><input type="number" x-model="cost.price" class="w-full p-1 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></td>
-              <td class="border px-2"><input type="number" x-model="cost.extraBedPrice" class="w-full p-1 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></td>
-              <td class="border px-2 text-gray-900 dark:text-white" x-text="((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2) + ' USD'"></td>
+              <td class="px-2 border"><input x-model="cost.name" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
+              <td class="px-2 border"><input x-model="cost.type" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
+              <td class="px-2 border"><input type="number" x-model="cost.nights" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
+              <td class="px-2 border"><input type="number" x-model="cost.room" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
+              <td class="px-2 border"><input type="number" x-model="cost.price" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
+              <td class="px-2 border"><input type="number" x-model="cost.extraBedPrice" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
+              <td class="px-2 text-gray-900 border dark:text-white" x-text="((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2) + ' USD'"></td>
               <td class="px-4 py-2">
-                  <button @click="removeHotelCost(index)" class="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white px-2 py-1 rounded">Delete</button>
+                  <button @click="removeHotelCost(index)" class="px-2 py-1 text-white bg-red-500 rounded hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700">Delete</button>
               </td>
           </tr>
       </template>
       </tbody>
     </table>
   </div>
-  <button @click="addHotelCost" class="mt-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-2 rounded">Add Hotel Cost</button>
-  <div class="mt-2 text-right text-gray-900 dark:text-white">
-    <strong>Total Hotel Cost: </strong>
-    <span x-text="calculateHotelCostTotal() + ' USD'"></span>
+  <button @click="addHotelCost" class="px-3 py-2 mt-2 text-white bg-blue-500 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">Add Hotel Cost</button>
+  <div class="mt-2 text-gray-900 dark:text-white">
+
+
+    <div class="mb-4">
+      <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark of hotels</label>
+      <textarea id="remark_of_hotels" x-model="remark_of_hotels"  class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
+    </div>
+
+<div class="text-right">
+  <strong>Total Hotel Cost: </strong>
+  <span x-text="calculateHotelCostTotal() + ' USD'"></span>
+</div>
   </div>
 </div>
 <!-- Discounts Section -->
 <div class="mb-4">
-  <h2 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Discounts</h2>
+  <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Discounts</h2>
   <div class="overflow-x-auto">
     <table class="w-full table-auto">
       <thead>
@@ -271,21 +280,21 @@ Add Day
       <tbody>
         <template x-for="(discount, index) in discounts" :key="index">
           <tr>
-            <td class="border px-2">
-              <input type="text" x-model="discount.item" class="w-full p-1 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <td class="px-2 border">
+              <input type="text" x-model="discount.item" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
-            <td class="border px-2">
-              <input type="number" x-model.number="discount.amount" min="0" step="0.01" class="w-full p-1 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <td class="px-2 border">
+              <input type="number" x-model.number="discount.amount" min="0" step="0.01" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
-            <td class="border px-4 py-2">
-              <button @click="removeDiscount(index)" class="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white px-2 py-1 rounded">Delete</button>
+            <td class="px-4 py-2 border">
+              <button @click="removeDiscount(index)" class="px-2 py-1 text-white bg-red-500 rounded hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700">Delete</button>
             </td>
           </tr>
         </template>
       </tbody>
     </table>
   </div>
-  <button @click="addDiscount" class="mt-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-2 rounded">Add Discount</button>
+  <button @click="addDiscount" class="px-3 py-2 mt-2 text-white bg-blue-500 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">Add Discount</button>
   <div class="mt-2 text-right text-gray-900 dark:text-white">
     <strong>Total Discounts: </strong>
     <span x-text="calculateTotalDiscounts() + ' USD'"></span>
@@ -293,7 +302,7 @@ Add Day
 </div>
 
 <!-- Grand Total Section -->
-<div class="mb-4 mt-8">
+<div class="mt-8 mb-4">
 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Grand Total Cost:
 <span x-text="(parseFloat(calculateGrandTotal().grandTotal) - calculateTotalDiscounts()).toFixed(2) + ' USD'"></span>
 </h3>
@@ -302,17 +311,17 @@ Add Day
 
 
 
-<div class="mt-8 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-<h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Commission Summary</h2>
+<div class="p-4 mt-8 bg-gray-100 rounded-lg dark:bg-gray-700">
+<h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Commission Summary</h2>
 <div class="grid grid-cols-2 gap-4">
 <div class="mb-4">
   <label for="commission_rate_hotel" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Hotel Commission Rate</label>
-  <input type="number" id="commission_rate_hotel" x-model="commission_rate_hotel" step="1" min="0" max="100" class="mt-1 block p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+  <input type="number" id="commission_rate_hotel" x-model="commission_rate_hotel" step="1" min="0" max="100" class="block p-2 mt-1 text-gray-900 bg-white border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:text-white">
 </div>
 
 <div class="mb-4">
   <label for="commission_rate_services" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Services Commission Rate (%)</label>
-  <input type="number" id="commission_rate_services" x-model="commission_rate_services" step="1" min="0" max="100" class="mt-1 block p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+  <input type="number" id="commission_rate_services" x-model="commission_rate_services" step="1" min="0" max="100" class="block p-2 mt-1 text-gray-900 bg-white border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:text-white">
 </div>
 
 </div>
@@ -331,10 +340,10 @@ Add Day
 </div>
 <div class="mt-4">
   <p class="font-medium text-gray-900 dark:text-white">Total Commission:</p>
-  <p x-text="`$${(parseFloat(calculateGrandTotal().commission_amount_hotel) + parseFloat(calculateGrandTotal().commission_amount_services)).toFixed(2)}`" class="text-xl text-green-600 dark:text-green-400 font-bold"></p>
+  <p x-text="`$${(parseFloat(calculateGrandTotal().commission_amount_hotel) + parseFloat(calculateGrandTotal().commission_amount_services)).toFixed(2)}`" class="text-xl font-bold text-green-600 dark:text-green-400"></p>
 </div>
 </div>
-<button @click="saveTourPackage" class="mt-4 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white px-4 py-2 rounded">Create Quote</button>
+<button @click="saveTourPackage" class="px-4 py-2 mt-4 text-white bg-indigo-500 rounded hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700">Create Quote</button>
 </div>
 </div>
 {% endblock %}

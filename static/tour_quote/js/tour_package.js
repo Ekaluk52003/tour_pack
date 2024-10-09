@@ -23,6 +23,7 @@ window.tourPackage = function () {
     customerName: "",
     remark: "",
     remark2: "",
+    remark_of_hotels: "",
     tourPackType: "",
     selectedPredefinedQuote: "",
     commission_rate_hotel: 0,
@@ -56,6 +57,7 @@ window.tourPackage = function () {
         this.customerName = existingData.customer_name;
         this.remark = existingData.remark || "";
         this.remark2 = existingData.remark2 || "";
+        this.remark_of_hotels = existingData.remark_of_hotels || "";
         this.tourPackType = existingData.tour_pack_type;
         this.commission_rate_hotel = existingData.commission_rate_hotel || 0;
         this.commission_rate_services =
@@ -593,6 +595,7 @@ window.tourPackage = function () {
         customer_name: this.customerName,
         remark: this.remark,
         remark2: this.remark2,
+        remark_of_hotels: this.remark_of_hotels,
         tour_pack_type: this.tourPackType,
         commission_rate_hotel: this.commission_rate_hotel,
         commission_rate_services: this.commission_rate_services,

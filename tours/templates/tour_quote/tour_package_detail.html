@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+<div class="container px-4 py-8 mx-auto">
+    <div class="overflow-hidden bg-white rounded-lg shadow-lg dark:bg-gray-800">
         <!-- Header Section -->
-        <div class="bg-blue-600 dark:bg-blue-900 text-white p-6">
-            <h1 class="text-3xl font-bold mb-2">{{ package.name }}</h1>
+        <div class="p-6 text-white bg-blue-600 dark:bg-blue-900">
+            <h1 class="mb-2 text-3xl font-bold">{{ package.name }}</h1>
             <p class="text-lg"><strong>Reference ID:</strong> {{ package.package_reference }}</p>
             <p class="text-lg"><strong>Tour Pack:</strong> {{ tour_pack_type.name }}</p>
         </div>
 
         <!-- Customer Info Section -->
         <div class="p-6 border-b dark:border-gray-700">
-            <h2 class="text-2xl font-semibold mb-4 dark:text-gray-200">Customer Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 dark:text-gray-300">
+            <h2 class="mb-4 text-2xl font-semibold dark:text-gray-200">Customer Information</h2>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 dark:text-gray-300">
                 <p><strong>Customer:</strong> {{ package.customer_name }}</p>
                 <p><strong>Created:</strong> {{ package.created_at|date:"Y-m-d H:i" }}</p>
                 <p><strong>Remark:</strong> {{ package.remark }}</p>
@@ -22,17 +22,17 @@
 
         <!-- Itinerary Section -->
         <div class="p-6 border-b dark:border-gray-700">
-            <h2 class="text-2xl font-semibold mb-4 dark:text-gray-200">Itinerary</h2>
+            <h2 class="mb-4 text-2xl font-semibold dark:text-gray-200">Itinerary</h2>
             {% for day in package.tour_days.all %}
-            <div class="mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                <h3 class="text-xl font-semibold mb-2 dark:text-gray-200">Day {{ forloop.counter }} - {{ day.date|date:"Y-m-d" }}</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 dark:text-gray-300">
+            <div class="p-4 mb-6 bg-gray-100 rounded-lg dark:bg-gray-700">
+                <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Day {{ forloop.counter }} - {{ day.date|date:"Y-m-d" }}</h3>
+                <div class="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2 dark:text-gray-300">
                     <p><strong>City:</strong> {{ day.city.name }}</p>
                     <p><strong>Hotel:</strong> {{ day.hotel.name }}</p>
                 </div>
 
-                <h4 class="text-lg font-semibold mt-2 mb-1 dark:text-gray-200">Services:</h4>
-                <ul class="list-disc pl-5 mb-2 dark:text-gray-300">
+                <h4 class="mt-2 mb-1 text-lg font-semibold dark:text-gray-200">Services:</h4>
+                <ul class="pl-5 mb-2 list-disc dark:text-gray-300">
                     {% for service in day.services.all %}
                     <li>{{ service.service.name }} ({{ service.service.service_type.name }}) -
                         {{ service.price_at_booking|floatformat:2 }} USD
@@ -41,8 +41,8 @@
                 </ul>
 
                 {% if day.guide_services.all %}
-                <h4 class="text-lg font-semibold mt-2 mb-1 dark:text-gray-200">Guide Services:</h4>
-                <ul class="list-disc pl-5 dark:text-gray-300">
+                <h4 class="mt-2 mb-1 text-lg font-semibold dark:text-gray-200">Guide Services:</h4>
+                <ul class="pl-5 list-disc dark:text-gray-300">
                     {% for guide_service in day.guide_services.all %}
                     <li>{{ guide_service.guide_service.name }} -
                         {{ guide_service.price_at_booking|floatformat:2 }} USD
@@ -58,15 +58,15 @@
         <div class="p-6 border-b dark:border-gray-700">
             <!-- Service Costs -->
             <div class="mb-6">
-                <h3 class="text-xl font-semibold mb-2 dark:text-gray-200">Service Costs</h3>
+                <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Service Costs</h3>
                 <p class="text-lg dark:text-gray-300">Total Service Cost: <span class="font-bold">{{ package.service_grand_total }} USD</span></p>
             </div>
 
             <!-- Hotel Costs -->
             {% if hotel_costs_with_total %}
             <div class="mb-6">
-                <h3 class="text-xl font-semibold mb-2 dark:text-gray-200">Hotel Costs</h3>
-                <ul class="list-disc pl-5 mb-2 dark:text-gray-300">
+                <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Hotel Costs</h3>
+                <ul class="pl-5 mb-2 list-disc dark:text-gray-300">
                     {% for hotel_cost in hotel_costs_with_total %}
                     <li class="mb-2">
                         <strong>{{ hotel_cost.name }}</strong> ({{ hotel_cost.type }})
@@ -81,13 +81,16 @@
                     </li>
                     {% endfor %}
                 </ul>
+                <p class="dark:text-gray-200"><strong>Remark of hotels</strong></p>
+                <div style="white-space: pre-wrap;" class="mb-4 dark:text-gray-300">{{ package.remark_of_hotels |safe }}</div>
+
                 <p class="text-lg dark:text-gray-300">Total Hotel Cost: <span class="font-bold">{{ package.hotel_grand_total }} USD</span></p>
             </div>
             {% endif %}
 
             <!-- Discounts -->
             <div class="mb-6">
-                <h3 class="text-xl font-semibold mb-2 dark:text-gray-200">Discounts</h3>
+                <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Discounts</h3>
                 <table class="w-full">
                     <thead class="bg-gray-200 dark:bg-gray-700">
                         <tr>
@@ -99,7 +102,7 @@
                         {% for discount in discounts %}
                         <tr>
                             <td class="p-2 border-b dark:border-gray-600">{{ discount.item }}</td>
-                            <td class="p-2 border-b dark:border-gray-600 text-right">{{ discount.amount }}</td>
+                            <td class="p-2 text-right border-b dark:border-gray-600">{{ discount.amount }}</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -123,15 +126,15 @@
             <div style="white-space: pre-wrap;" class="dark:text-gray-300">{{ remark2|safe }}</div>
 
             <!-- Grand Total -->
-            <div class="mt-6 bg-blue-100 dark:bg-blue-900 p-4 rounded-lg">
+            <div class="p-4 mt-6 bg-blue-100 rounded-lg dark:bg-blue-900">
                 <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Grand Total Cost: {{ package.grand_total_cost }} USD</h3>
             </div>
         </div>
 
         <!-- Commission Section -->
         <div class="p-6">
-            <h2 class="text-2xl font-semibold mb-4 dark:text-gray-200">Commission Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 dark:text-gray-300">
+            <h2 class="mb-4 text-2xl font-semibold dark:text-gray-200">Commission Information</h2>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 dark:text-gray-300">
                 <div>
                     <p><strong>Hotel Commission Rate:</strong> {{ package.commission_rate_hotel }}</p>
                     <p><strong>Hotel Commission Amount:</strong> ${{ package.commission_amount_hotel|floatformat:2 }}</p>
@@ -144,33 +147,33 @@
         </div>
     </div>
 
-    <div class="mt-8 flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-        <a href="{% url 'tour_package_edit' package.id %}" class="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition duration-300 text-center">
+    <div class="flex flex-col mt-8 space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+        <a href="{% url 'tour_package_edit' package.id %}" class="px-6 py-3 font-semibold text-center text-white transition duration-300 bg-blue-500 rounded-lg hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
           Edit Package
         </a>
-        <a href="{% url 'tour_package_pdf' package.id %}" class="bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition duration-300 text-center" target="_blank">
+        <a href="{% url 'tour_package_pdf' package.id %}" class="px-6 py-3 font-semibold text-center text-white transition duration-300 bg-green-500 rounded-lg hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700" target="_blank">
           Print PDF
         </a>
         <form
           id="email-form"
           action="{% url 'send_tour_package_email' package.id %}"
           method="post"
-          class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-2"
+          class="flex flex-col items-center space-y-4 md:flex-row md:space-y-0 md:space-x-2"
           x-data="{ loading: false }"
           x-target="email_sent cc_email"
           @ajax:after="loading = false"
           @ajax:before="loading = true"
         >
           {% csrf_token %}
-          <input type="email" name="cc_email" placeholder="CC Email (optional)" class="border rounded px-3 py-2 w-full md:w-auto dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600" id="cc_email">
+          <input type="email" name="cc_email" placeholder="CC Email (optional)" class="w-full px-3 py-2 border rounded md:w-auto dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600" id="cc_email">
           <button
             type="submit"
-            class="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white px-6 py-3 rounded-lg font-semibold transition duration-300 flex items-center justify-center w-full md:w-auto"
+            class="flex items-center justify-center w-full px-6 py-3 font-semibold text-white transition duration-300 bg-yellow-500 rounded-lg hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 md:w-auto"
             :disabled="loading"
           >
             <span x-show="!loading">Send Email</span>
             <span x-show="loading" class="flex items-center">
-              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 mr-3 -ml-1 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>

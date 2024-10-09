@@ -10,6 +10,7 @@ services:
              python manage.py runserver 0.0.0.0:${DJANGO_PORT}"
     volumes:
       - .:/app
+
     ports:
       - "${DJANGO_PORT}:${DJANGO_PORT}"
     environment:
@@ -18,6 +19,24 @@ services:
       - .env
     depends_on:
       - db
+
+
+  webpack:
+    container_name: webpack
+    build:
+      context: .
+      dockerfile: Dockerfile.webpack  # Create a separate Dockerfile for Webpack
+    command: npm run watch  # Using watch mode
+    stdin_open: true        # Add for interactive inputs
+    tty: true               # Keep the terminal session open
+    volumes:
+      - .:/app
+    depends_on:
+      - web
+    environment:
+      - NODE_ENV=development
+
+
 
   db:
     image: postgres:13-alpine

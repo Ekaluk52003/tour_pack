@@ -101,6 +101,7 @@ def save_tour_package(request):
 
             # Both superusers and non-superusers can edit hotel costs
             package.hotel_costs = data['hotelCosts']
+            package.remark_of_hotels = data.get('remark_of_hotels', '')
 
             # Save the package to get a primary key
             package.save()
@@ -216,6 +217,8 @@ def tour_package_pdf(request, pk):
     remark2 = package.remark2.replace(
         '\n', '<br>') if package.remark2 is not None else ''
 
+    remark_of_hotels = package.remark_of_hotels.replace(
+        '\n', '<br>') if package.remark_of_hotels is not None else ''
     # Render the template to HTML
     html_string = render_to_string('tour_quote/tour_package_pdf.html', {
         'package': package,
@@ -228,6 +231,7 @@ def tour_package_pdf(request, pk):
         'discounts': discounts,
         'total_discount': total_discount,
         'remark2': remark2,
+        'remark_of_hotels':remark_of_hotels
 
     })
 
@@ -413,6 +417,7 @@ def tour_package_edit(request, pk):
         'customer_name': package.customer_name,
         'remark': package.remark,
         'remark2': package.remark2,
+        'remark_of_hotels': package.remark_of_hotels,
         'tour_pack_type': package.tour_pack_type_id,
         # Add hotel commission rate
         'commission_rate_hotel': float(package.commission_rate_hotel),

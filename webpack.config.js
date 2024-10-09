@@ -2,7 +2,7 @@ const path = require("path");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = {
-  entry: "./static/js/index.js", // Adjust this path to your main JS file
+  entry: "./static/js/index.js",
   output: {
     filename: "bundle.js",
     path: path.resolve(__dirname, "static/dist"),
@@ -39,7 +39,11 @@ module.exports = {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "static/js"),
-      // Add other aliases as needed
     },
   },
+  watch: true,
+  watchOptions: {
+    ignored: /node_modules/,
+    poll: 1000 // Check for changes every second
+  }
 };

@@ -30,16 +30,15 @@ COPY ./requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-COPY ./package.json ./package-lock.json ./
-RUN npm install
 
-COPY webpack.config.js ./
-COPY tailwind.config.js ./
-COPY postcss.config.js ./
 
-# Copy the static assets explicitly
-COPY ./static ./static
 
-RUN npm run build
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# RUN npm run build
+
+# COPY ./entrypoint.sh .
+# RUN chmod +x /app/entrypoint.sh
+
+# COPY . .
+
+# ENTRYPOINT ["/app/entrypoint.sh"]

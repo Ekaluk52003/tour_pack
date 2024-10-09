@@ -1,0 +1,20 @@
+# Dockerfile.webpack
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json /app/
+
+RUN npm install
+
+COPY webpack.config.js ./
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
+
+# Copy the static assets explicitly
+COPY ./static ./static
+
+COPY . /app/
+
+CMD ["npm", "run", "watch"]

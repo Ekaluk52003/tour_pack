@@ -289,7 +289,11 @@ def send_tour_package_email(request, pk):
         total_discount = sum(float(discount['amount'])
                              for discount in discounts)
 
-        remark2 = package.remark2.replace('\n', '<br>')
+        remark2 = package.remark2.replace(
+        '\n', '<br>') if package.remark2 is not None else ''
+
+        remark_of_hotels = package.remark_of_hotels.replace(
+        '\n', '<br>') if package.remark_of_hotels is not None else ''
 
         # Render the template to HTML
         html_string = render_to_string('tour_quote/tour_package_pdf.html', {
@@ -301,6 +305,7 @@ def send_tour_package_email(request, pk):
             'total_discount': total_discount,
             'static_url': settings.STATIC_URL,
             'remark2': remark2,
+            'remark_of_hotels':remark_of_hotels
         })
 
         # Generate PDF

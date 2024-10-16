@@ -25,6 +25,7 @@ from django.core.mail import EmailMessage
 from io import BytesIO
 from django.contrib import messages
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -592,7 +593,7 @@ def get_predefined_tour_quote(request, quote_id):
             'guideServices': []
         }
 
-        for day_service in day.services.all().select_related('service__service_type'):
+        for day_service in day.services.all().select_related('service__service_type').order_by('order'):
             service = day_service.service
             service_prices = ServicePrice.objects.filter(
                 service=service,
@@ -606,7 +607,8 @@ def get_predefined_tour_quote(request, quote_id):
                 'name': service.name,
                 'type': service.service_type.name,
                 'price': float(price) if price is not None else None,
-                'quantity': day_service.quantity
+                'quantity': day_service.quantity,
+                'order': day_service.order
             })
 
         for guide_service in day.guide_services.all().select_related('guide_service'):

@@ -174,6 +174,7 @@ class PredefinedTourDay(models.Model):
     city = models.ForeignKey(City, on_delete=models.CASCADE)
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
 
+
     class Meta:
         ordering = ['day_number']
 
@@ -184,6 +185,10 @@ class PredefinedTourDayService(models.Model):
     tour_day = models.ForeignKey(PredefinedTourDay, on_delete=models.CASCADE, related_name='services')
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
 
     def __str__(self):
         return f"{self.tour_day} - {self.service}"

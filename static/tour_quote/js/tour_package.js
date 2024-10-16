@@ -393,48 +393,66 @@ window.tourPackage = function () {
 
 
     applyPredefinedQuote() {
-      if (!this.selectedPredefinedQuote) {
-        alert("Please select a predefined quote first.");
-        return;
-      }
+  if (!this.selectedPredefinedQuote) {
+    alert("Please select a predefined quote first.");
+    return;
+  }
 
-      fetch(`/get-predefined-tour-quote/${this.selectedPredefinedQuote}/`)
-        .then((response) => response.json())
-        .then((data) => {
-          this.tourPackType = data.tour_pack_type || this.tourPackType;
-          const today = new Date().toISOString().split("T")[0];
-          const newDays = data.days.map((day) => ({
-            date: today,
-            city: day.city.toString(),
-            hotel: day.hotel.toString(),
-            services: day.services.map((service) => ({
+  fetch(`/get-predefined-tour-quote/${this.selectedPredefinedQuote}/`)
+    .then((response) => response.json())
+    .then((data) => {
+      this.tourPackType = data.tour_pack_type || this.tourPackType;
+
+      // Start with today's date
+      let currentDate = new Date();
+
+      // Clear existing days
+
+
+      // Add new days in the order they come from the predefined quote
+      data.days.forEach((day, index) => {
+        // Format the date as YYYY-MM-DD
+        let formattedDate = currentDate.toISOString().split('T')[0];
+
+        this.days.push({
+          date: formattedDate,
+          city: day.city.toString(),
+          hotel: day.hotel.toString(),
+          services: day.services
+            .sort((a, b) => a.order - b.order)  // Sort services by order
+            .map((service) => ({
               type: service.type.toLowerCase(),
               name: service.id.toString(),
               price: parseFloat(service.price) || 0,
               quantity: service.quantity || 1,
+              order: service.order,
             })),
-            guideServices: day.guideServices.map((gs) => ({
-              name: gs.id.toString(),
-              price: parseFloat(gs.price) || 0,
-            })),
-            cityServices: { hotels: [], service_types: [] },
-          }));
-
-          this.days = [...this.days, ...newDays];
-
-          // Use Promise.all to wait for all updateCityServices calls to complete
-          return Promise.all(
-            this.days.map((day) => this.updateCityServices(day))
-          );
-        })
-        .then(() => {
-          console.log("All city services updated");
-        })
-        .catch((error) => {
-          console.error("Error applying predefined quote:", error);
-          alert("Error applying predefined quote. Please try again.");
+          guideServices: day.guideServices.map((gs) => ({
+            name: gs.id.toString(),
+            price: parseFloat(gs.price) || 0,
+          })),
+          cityServices: { hotels: [], service_types: [] },
         });
-    },
+
+        // Increment the date by 1 day for the next iteration
+        currentDate.setDate(currentDate.getDate() + 1);
+      });
+
+      // Use Promise.all to wait for all updateCityServices calls to complete
+      return Promise.all(
+        this.days.map((day) => this.updateCityServices(day))
+      );
+    })
+    .then(() => {
+      console.log("All city services updated man");
+      this.days.forEach(day => this.selectCorrectOptions(day));
+    })
+    .catch((error) => {
+      console.error("Error applying predefined quote:", error);
+      alert("Error applying predefined quote. Please try again.");
+    });
+},
+
 
     updateAndSelectServices(day) {
       if (day.city && this.tourPackType) {

@@ -451,7 +451,7 @@ window.tourPackage = function () {
         })
         .catch((error) => {
           console.error("Error applying predefined quote:", error);
-          alert("Error applying predefined quote. Please try again.");
+          alert("Please select previous date before applying predefined quote.");
         });
     },
 

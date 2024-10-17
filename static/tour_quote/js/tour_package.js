@@ -393,65 +393,67 @@ window.tourPackage = function () {
 
 
     applyPredefinedQuote() {
-  if (!this.selectedPredefinedQuote) {
-    alert("Please select a predefined quote first.");
-    return;
-  }
+      if (!this.selectedPredefinedQuote) {
+        alert("Please select a predefined quote first.");
+        return;
+      }
 
-  fetch(`/get-predefined-tour-quote/${this.selectedPredefinedQuote}/`)
-    .then((response) => response.json())
-    .then((data) => {
-      this.tourPackType = data.tour_pack_type || this.tourPackType;
+      fetch(`/get-predefined-tour-quote/${this.selectedPredefinedQuote}/`)
+        .then((response) => response.json())
+        .then((data) => {
+          this.tourPackType = data.tour_pack_type || this.tourPackType;
 
-      // Start with today's date
-      let currentDate = new Date();
+          // Find the date of the last existing day, or use today's date if no days exist
+          let currentDate;
+          if (this.days.length > 0) {
+            const lastDay = this.days[this.days.length - 1];
+            currentDate = new Date(lastDay.date);
+          } else {
+            currentDate = new Date();
+          }
 
-      // Clear existing days
+          // Add new days in the order they come from the predefined quote
+          data.days.forEach((day, index) => {
+            // Increment the date by 1 day
+            currentDate.setDate(currentDate.getDate() + 1);
+            // Format the date as YYYY-MM-DD
+            let formattedDate = currentDate.toISOString().split('T')[0];
 
+            this.days.push({
+              date: formattedDate,
+              city: day.city.toString(),
+              hotel: day.hotel.toString(),
+              services: day.services
+                .sort((a, b) => a.order - b.order)  // Sort services by order
+                .map((service) => ({
+                  type: service.type.toLowerCase(),
+                  name: service.id.toString(),
+                  price: parseFloat(service.price) || 0,
+                  quantity: service.quantity || 1,
+                  order: service.order,
+                })),
+              guideServices: day.guideServices.map((gs) => ({
+                name: gs.id.toString(),
+                price: parseFloat(gs.price) || 0,
+              })),
+              cityServices: { hotels: [], service_types: [] },
+            });
+          });
 
-      // Add new days in the order they come from the predefined quote
-      data.days.forEach((day, index) => {
-        // Format the date as YYYY-MM-DD
-        let formattedDate = currentDate.toISOString().split('T')[0];
-
-        this.days.push({
-          date: formattedDate,
-          city: day.city.toString(),
-          hotel: day.hotel.toString(),
-          services: day.services
-            .sort((a, b) => a.order - b.order)  // Sort services by order
-            .map((service) => ({
-              type: service.type.toLowerCase(),
-              name: service.id.toString(),
-              price: parseFloat(service.price) || 0,
-              quantity: service.quantity || 1,
-              order: service.order,
-            })),
-          guideServices: day.guideServices.map((gs) => ({
-            name: gs.id.toString(),
-            price: parseFloat(gs.price) || 0,
-          })),
-          cityServices: { hotels: [], service_types: [] },
+          // Use Promise.all to wait for all updateCityServices calls to complete
+          return Promise.all(
+            this.days.map((day) => this.updateCityServices(day))
+          );
+        })
+        .then(() => {
+          console.log("All city services updated");
+          this.days.forEach(day => this.selectCorrectOptions(day));
+        })
+        .catch((error) => {
+          console.error("Error applying predefined quote:", error);
+          alert("Error applying predefined quote. Please try again.");
         });
-
-        // Increment the date by 1 day for the next iteration
-        currentDate.setDate(currentDate.getDate() + 1);
-      });
-
-      // Use Promise.all to wait for all updateCityServices calls to complete
-      return Promise.all(
-        this.days.map((day) => this.updateCityServices(day))
-      );
-    })
-    .then(() => {
-      console.log("All city services updated man");
-      this.days.forEach(day => this.selectCorrectOptions(day));
-    })
-    .catch((error) => {
-      console.error("Error applying predefined quote:", error);
-      alert("Error applying predefined quote. Please try again.");
-    });
-},
+    },
 
 
     updateAndSelectServices(day) {
@@ -785,6 +787,57 @@ window.tourPackage = function () {
       };
     },
 
+    async copyDay(index) {
+      if (index < 0 || index >= this.days.length) return; // Invalid index
+
+      const originalDay = this.days[index];
+
+      // Create a new day object
+      const newDay = JSON.parse(JSON.stringify(originalDay));
+
+      // Increment the date
+      if (newDay.date) {
+        const nextDate = new Date(newDay.date);
+        nextDate.setDate(nextDate.getDate() + 1);
+        newDay.date = nextDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      }
+
+      // Ensure city is copied
+      newDay.city = originalDay.city;
+
+      // Insert the new day after the original day
+      this.days.splice(index + 1, 0, newDay);
+
+      // Update city services for the new day
+      if (newDay.city) {
+        await this.updateCityServices(newDay);
+        // Select the hotel after city services are updated
+        this.selectHotelForCopiedDay(newDay, originalDay.hotel);
+      }
+
+      // Trigger Alpine.js to re-evaluate the template
+      this.days = [...this.days];
+
+      console.log('Day copied:', newDay);
+    },
+
+    selectHotelForCopiedDay(newDay, originalHotel) {
+      if (originalHotel && newDay.cityServices && newDay.cityServices.hotels) {
+        const selectedHotel = newDay.cityServices.hotels.find(
+          h => h.id.toString() === originalHotel.toString()
+        );
+        if (selectedHotel) {
+          newDay.hotel = selectedHotel.id.toString();
+          console.log('Selected hotel for copied day:', newDay.hotel);
+        } else {
+          newDay.hotel = '';
+          console.log('Original hotel not found in new day\'s options. Hotel selection reset.');
+        }
+      } else {
+        newDay.hotel = '';
+        console.log('No hotel to copy or no hotel options available. Hotel selection reset.');
+      }
+    },
 
   };
 };

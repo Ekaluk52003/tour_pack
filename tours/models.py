@@ -48,6 +48,17 @@ class Service(models.Model):
     name = models.CharField(max_length=200)
     service_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ['name', 'service_type']
+
+    def clean(self):
+        existing_service = Service.objects.filter(name=self.name, service_type=self.service_type).exclude(pk=self.pk).first()
+        if existing_service:
+            raise ValidationError(f"A service named '{self.name}' with the service type '{self.service_type}' already exists.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} - {self.service_type}"

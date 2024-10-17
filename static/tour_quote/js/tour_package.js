@@ -175,8 +175,24 @@ window.tourPackage = function () {
 
 
     insertDayBelow(index) {
+      const previousDay = this.days[index];
+      let newDate;
+
+      if (previousDay && previousDay.date) {
+        // Create a new Date object from the previous day's date and increment it by one day
+        newDate = new Date(previousDay.date);
+        newDate.setDate(newDate.getDate() + 1);
+      } else {
+        // If there's no previous day or it has no date, use tomorrow's date
+        newDate = new Date();
+        newDate.setDate(newDate.getDate() + 1);
+      }
+
+      // Format the new date as YYYY-MM-DD
+      const formattedDate = newDate.toISOString().split('T')[0];
+
       const newDay = {
-        date: "",
+        date: formattedDate,
         city: "",
         hotel: "",
         services: [],
@@ -187,6 +203,8 @@ window.tourPackage = function () {
         },
       };
       this.days.splice(index + 1, 0, newDay);
+      this.days = [...this.days];
+      
     },
 
     updateServicesForPackageType() {
@@ -792,36 +810,79 @@ window.tourPackage = function () {
 
       const originalDay = this.days[index];
 
-      // Create a new day object
-      const newDay = JSON.parse(JSON.stringify(originalDay));
+
+      // Create a new day object with only the essential information
+      const newDay = {
+        date: '',
+        city: originalDay.city,
+        hotel: '', // We'll set this after updating city services
+        services: [], // Empty array for services
+        guideServices: [], // Empty array for guide services
+        cityServices: { hotels: [], service_types: [] },
+      };
 
       // Increment the date
-      if (newDay.date) {
-        const nextDate = new Date(newDay.date);
+      if (originalDay.date) {
+        const nextDate = new Date(originalDay.date);
         nextDate.setDate(nextDate.getDate() + 1);
         newDay.date = nextDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      } else {
+        // If no valid date, use tomorrow's date
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        newDay.date = tomorrow.toISOString().split('T')[0];
       }
 
-      // Ensure city is copied
-      newDay.city = originalDay.city;
+      // Update city services for the new day
+      if (newDay.city) {
+        try {
+          await this.updateCityServices(newDay);
+          console.log('City services updated:', newDay.cityServices);
+          // Select the hotel after city services are updated
+          await this.selectHotelForCopiedDay(newDay, originalDay.hotel);
+          console.log('Hotel selected:', newDay.hotel);
+        } catch (error) {
+          console.error('Error updating city services or selecting hotel:', error);
+        }
+      }
 
       // Insert the new day after the original day
       this.days.splice(index + 1, 0, newDay);
 
-      // Update city services for the new day
-      if (newDay.city) {
-        await this.updateCityServices(newDay);
-        // Select the hotel after city services are updated
-        this.selectHotelForCopiedDay(newDay, originalDay.hotel);
-      }
-
       // Trigger Alpine.js to re-evaluate the template
       this.days = [...this.days];
 
-      console.log('Day copied:', newDay);
+
     },
 
-    selectHotelForCopiedDay(newDay, originalHotel) {
+    async updateCityServices(day) {
+      if (day.city && this.tourPackType) {
+        try {
+          const response = await fetch(
+            `/get-city-services/${day.city}/?tour_pack_type=${encodeURIComponent(this.tourPackType)}`
+          );
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          day.cityServices = {
+            hotels: data.hotels || [],
+            service_types: data.service_types || [],
+          };
+          console.log('Updated city services:', day.cityServices);
+        } catch (error) {
+          console.error("Error fetching city services:", error);
+          day.cityServices = { hotels: [], service_types: [] };
+        }
+      } else {
+        console.log('No city or tour pack type set, skipping city services update');
+        day.cityServices = { hotels: [], service_types: [] };
+      }
+    },
+
+    async selectHotelForCopiedDay(newDay, originalHotel) {
+
+
       if (originalHotel && newDay.cityServices && newDay.cityServices.hotels) {
         const selectedHotel = newDay.cityServices.hotels.find(
           h => h.id.toString() === originalHotel.toString()
@@ -838,6 +899,7 @@ window.tourPackage = function () {
         console.log('No hotel to copy or no hotel options available. Hotel selection reset.');
       }
     },
+
 
   };
 };

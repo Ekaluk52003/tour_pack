@@ -53,7 +53,7 @@ class HotelResource(resources.ModelResource):
             if import_validation_errors is not None:
                 import_validation_errors.append(ValidationError(f"Row {row}: {str(e)}"))
             return True
-        
+
 
 @admin.register(Hotel)
 class HotelAdmin(ImportExportModelAdmin):
@@ -213,25 +213,52 @@ class ServicePriceResource(resources.ModelResource):
         report_skipped = True
 
     def before_import_row(self, row, **kwargs):
-        service_name = row['service']
-        service_type_name = row['service_type']
-        tour_pack_type_name = row['tour_pack_type']
-        city_name = row['city']
+        service_name = row.get('service')
+        service_type_name = row.get('service_type')
+        tour_pack_type_name = row.get('tour_pack_type')
+        city_name = row.get('city')
 
-        # Get or create related objects
-        service_type, _ = ServiceType.objects.get_or_create(name=service_type_name)
-        service, _ = Service.objects.get_or_create(name=service_name, service_type=service_type)
-        tour_pack_type, _ = TourPackType.objects.get_or_create(name=tour_pack_type_name)
-        city, _ = City.objects.get_or_create(name=city_name)
+        if not all([service_name, service_type_name, tour_pack_type_name, city_name]):
+            raise ValueError("Missing required fields")
 
-        # Update row with object instances
-        row['service'] = service.name
-        row['tour_pack_type'] = tour_pack_type.name
-        row['city'] = city.name
+        try:
+            # Get or create related objects
+            service_type, _ = ServiceType.objects.get_or_create(name=service_type_name)
+            service, _ = Service.objects.get_or_create(name=service_name, service_type=service_type)
+            tour_pack_type, _ = TourPackType.objects.get_or_create(name=tour_pack_type_name)
+            city, _ = City.objects.get_or_create(name=city_name)
+
+            # Check if a ServicePrice with these attributes already exists
+            existing_price = ServicePrice.objects.filter(
+                service=service,
+                tour_pack_type=tour_pack_type,
+                city=city
+            ).first()
+
+            if existing_price:
+                # If it exists, we'll update the price instead of creating a new entry
+                row['id'] = existing_price.id  # This will cause an update instead of an insert
+
+            # Update row with object instances
+            row['service'] = service.name
+            row['tour_pack_type'] = tour_pack_type.name
+            row['city'] = city.name
+
+        except IntegrityError as e:
+            raise ValueError(f"Error processing row: {str(e)}")
+
+    def skip_row(self, instance, original, row, import_validation_errors=None):
+        try:
+            instance.full_clean()
+            return False
+        except ValidationError as e:
+            if import_validation_errors is not None:
+                import_validation_errors.append(ValidationError(f"Row {row}: {str(e)}"))
+            return True
 
     def export_field(self, field, obj):
         if field.column_name == 'service_type':
-            return obj.service.service_type.name
+            return obj.service.service_type.name if obj.service and obj.service.service_type else ''
         return super().export_field(field, obj)
 
 @admin.register(ServicePrice)

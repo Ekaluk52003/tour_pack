@@ -21,6 +21,7 @@
         padding: 5px 10px;
         text-decoration: none;
         border-radius: 4px;
+        margin-left: 10px;
         font-size: 12px;
         transition: background-color 0.3s;
     }
@@ -47,13 +48,30 @@
             {% for backup in backups %}
                 <li class="backup-item">
                     <span>{{ backup }}</span>
-                    <a href="{% url 'admin:backup_manager_backupmanagement_restore_db' filename=backup %}" class="restore-button">
-                        Restore
-                    </a>
+
+
+                    <div>
+                        <a href="{% url 'admin:backup_manager_backupmanagement_download_backup' filename=backup %}" class="restore-button">
+                            Download
+                        </a>
+                        <a href="{% url 'admin:backup_manager_backupmanagement_restore_db' filename=backup %}" class="restore-button">
+                            Restore
+                        </a>
+
+                    </div>
+
                 </li>
             {% empty %}
                 <li>No backups available.</li>
             {% endfor %}
         </ul>
+    </div>
+    <div class="module upload-form"></div>
+        <h2>Upload Backup</h2>
+        <form action="{% url 'admin:backup_manager_backupmanagement_upload_backup' %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" name="backup_file" accept=".psql" required>
+            <input type="submit" value="Upload Backup" class="backup-button">
+        </form>
     </div>
 {% endblock %}

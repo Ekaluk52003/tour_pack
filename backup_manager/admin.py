@@ -8,6 +8,10 @@ import os
 from io import StringIO
 from .models import BackupManagement
 from django.db import connection
+from django.http import FileResponse, Http404
+from django.views.decorators.csrf import csrf_protect
+from django.utils.decorators import method_decorator
+from django.core.files.storage import FileSystemStorage
 
 @admin.register(BackupManagement)
 class BackupManagementAdmin(admin.ModelAdmin):
@@ -35,6 +39,13 @@ class BackupManagementAdmin(admin.ModelAdmin):
             path('confirm_restore_db/<str:filename>/',
                  self.admin_site.admin_view(self.confirm_restore_db_view),
                  name='backup_manager_backupmanagement_confirm_restore_db'),
+
+            path('download_backup/<str:filename>/',
+                 self.admin_site.admin_view(self.download_backup_view),
+                 name='backup_manager_backupmanagement_download_backup'),
+            path('upload_backup/',
+                 self.admin_site.admin_view(self.upload_backup_view),
+                 name='backup_manager_backupmanagement_upload_backup'),
         ]
         return custom_urls + urls
 
@@ -46,6 +57,38 @@ class BackupManagementAdmin(admin.ModelAdmin):
                 if file.endswith('.psql'):
                     backups.append(file)
         return sorted(backups, reverse=True)
+
+    def download_backup_view(self, request, filename):
+        backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']
+        file_path = os.path.join(backup_dir, filename)
+
+        if os.path.exists(file_path):
+            response = FileResponse(open(file_path, 'rb'))
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        else:
+            raise Http404("Backup file not found")
+
+    @method_decorator(csrf_protect)
+    def upload_backup_view(self, request):
+        if request.method == 'POST' and request.FILES.get('backup_file'):
+            uploaded_file = request.FILES['backup_file']
+            if not uploaded_file.name.endswith('.psql'):
+                messages.error(request, "Only .psql files are allowed.")
+                return redirect('..')
+
+            backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']
+
+            os.makedirs(backup_dir, exist_ok=True)
+
+            fs = FileSystemStorage(location=backup_dir)
+
+            filename = fs.save(uploaded_file.name, uploaded_file)
+
+            messages.success(request, f"Backup file '{uploaded_file.name}' uploaded successfully.")
+            return redirect('..')
+        
+        return render(request, 'admin/upload_backup.html')
 
     def create_backup_view(self, request):
         backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']

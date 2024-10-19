@@ -119,6 +119,7 @@ class TourPackageQuote(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     hotel_costs = models.JSONField(default=list)
     discounts = models.JSONField(default=list)
+    extra_costs = models.JSONField(default=list)
     grand_total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     # New fields for totals

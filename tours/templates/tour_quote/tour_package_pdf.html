@@ -139,6 +139,20 @@
             color: #2a9d8f;
         }
 
+        .extra h3 {
+            margin-top: 1px; /* Added a small top margin */
+            margin-bottom: 5px; /* Reduced bottom margin */
+            color: #2980B9;
+        }
+
+        .extra-item {
+            display: flex;
+            line-height: 0.25rem;
+            justify-content: space-between;
+            align-items: baseline;
+            color: #2980B9;
+        }
+
         .discount-item {
             display: flex;
             line-height: 0.25rem;
@@ -166,6 +180,10 @@
         }
         .cost-section {
             margin-bottom: 15px;
+        }
+
+        .cost-section .hotel{
+            margin-bottom: 1px;
         }
         .grand-section h2 {
             color: #023e8a;
@@ -374,7 +392,7 @@
         </table>
     </div>
 
-    <div class="cost-section">
+    <div class="cost-section hotel">
 
     <div class="remark2"><h3>Remark hotels</h3></div>
     <div style="white-space: pre-wrap;"><div class="remark2-items">{{ remark_of_hotels|safe }}</div></div>
@@ -390,6 +408,23 @@
 
     {% endif %}
 
+    {% if extra_costs %}
+    <div class="extra">
+        <h3>Extra Costs:</h3>
+        <ul class="list">
+            {% for extra_cost in extra_costs %}
+            <li class="extra-item">
+                <span class="extra-name">{{ extra_cost.item }}</span>
+                <span class="extra-price">  {% if extra_cost.amount == 0 %}
+                    -
+                {% else %}
+                    {{ extra_cost.amount|floatformat:2|intcomma }} THB
+                {% endif %}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 
 
     {% if discounts %}

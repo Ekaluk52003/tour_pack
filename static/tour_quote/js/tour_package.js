@@ -45,6 +45,7 @@ window.tourPackage = function () {
     guideServices: [],
     hotelCosts: [],
     discounts: [],
+    extraCosts: [],
     packageId: null,
     draggingIndex: null,
     isSuperUser: false,
@@ -84,6 +85,7 @@ window.tourPackage = function () {
         }));
         this.hotelCosts = existingData.hotelCosts || [];
         this.discounts = existingData.discounts || [];
+        this.extraCosts  = existingData.extraCosts  || [];
 
         this.initializeCityServicesForAllDays();
       }
@@ -204,7 +206,7 @@ window.tourPackage = function () {
       };
       this.days.splice(index + 1, 0, newDay);
       this.days = [...this.days];
-      
+
     },
 
     updateServicesForPackageType() {
@@ -656,6 +658,10 @@ window.tourPackage = function () {
           ...discount,
           amount: formatNumber(discount.amount),
         })),
+        extraCosts: this.extraCosts.map(cost => ({
+          ...cost,
+          amount: formatNumber(cost.amount),
+        })),
         total_cost: this.calculateGrandTotal(),
       };
 
@@ -704,6 +710,14 @@ window.tourPackage = function () {
       this.discounts.splice(index, 1);
     },
 
+    addExtraCost() {
+      this.extraCosts.push({ item: "", amount: 0 });
+    },
+
+    removeExtraCost(index) {
+      this.extraCosts.splice(index, 1);
+    },
+
     calculateHotelCostTotal() {
       return this.hotelCosts
         .reduce((total, cost) => {
@@ -726,6 +740,14 @@ window.tourPackage = function () {
         }, 0)
         .toFixed(2);
     },
+    calculateTotalExtraCosts() {
+      return this.extraCosts
+        .reduce((total, cost) => {
+          return total + (parseFloat(cost.amount) || 0);
+        }, 0)
+        .toFixed(2);
+    },
+
 
     calculateGrandTotal() {
       let serviceTotal = 0;
@@ -772,6 +794,7 @@ window.tourPackage = function () {
 
       const serviceGrandTotal = serviceTotal + guideServiceTotal;
       const hotelGrandTotal = hotelTotal;
+      const extraCostsTotal = parseFloat(this.calculateTotalExtraCosts());
       const grandTotal = serviceGrandTotal + hotelGrandTotal;
 
       const totalRoomNights = this.hotelCosts.reduce((total, cost) => {
@@ -797,6 +820,7 @@ window.tourPackage = function () {
       return {
         serviceGrandTotal: serviceGrandTotal.toFixed(2),
         hotelGrandTotal: hotelGrandTotal.toFixed(2),
+        extraCostsTotal: extraCostsTotal.toFixed(2),
         grandTotal: grandTotal.toFixed(2),
         finalGrandTotal: finalGrandTotal.toFixed(2),
         commission_amount_hotel: commission_amount_hotel,

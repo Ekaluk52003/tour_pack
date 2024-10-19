@@ -55,19 +55,14 @@ def calculate_totals(package):
         for cost in package.hotel_costs
     )
 
-    # hotel_total = sum(
-    # (safe_decimal(cost['price']) * safe_decimal(cost['room']) * safe_decimal(cost['nights'])) +
-    # (safe_decimal(cost.get('extraBedPrice', 0)) * safe_decimal(cost['nights']) if cost.get('extraBedPrice') else Decimal(0))
-    # for cost in package.hotel_costs
-    # )
-
     service_grand_total = Decimal(service_total) + guide_service_total
     hotel_grand_total = Decimal(hotel_total)
     total_discount = sum(Decimal(discount['amount'])
                          for discount in package.discounts)
-    grand_total = Decimal(service_total) + guide_service_total + hotel_total
+    total_extra_cost = sum(Decimal(extra_cost['amount']) for extra_cost in package.extra_costs)
+    grand_total = Decimal(service_total) + guide_service_total + hotel_total + total_extra_cost - total_discount
 
-    return service_grand_total, hotel_grand_total, grand_total, total_discount
+    return service_grand_total, hotel_grand_total, grand_total, total_discount, total_extra_cost
 
 
 @login_required
@@ -99,6 +94,7 @@ def save_tour_package(request):
                 package.commission_rate_services = data.get(
                     'commission_rate_services', 0)
                 package.discounts = data.get('discounts', [])
+                package.extra_costs = data.get('extraCosts', [])
 
             # Both superusers and non-superusers can edit hotel costs
             package.hotel_costs = data['hotelCosts']
@@ -147,13 +143,11 @@ def save_tour_package(request):
                         )
 
             # Recalculate totals
-            service_grand_total, hotel_grand_total, grand_total, total_discount = calculate_totals(
-                package)
+            service_grand_total, hotel_grand_total, grand_total, total_discount, total_extra_cost = calculate_totals(package)
 
             package.service_grand_total = service_grand_total
             package.hotel_grand_total = hotel_grand_total
-            package.grand_total_cost = grand_total - \
-                total_discount  # Apply discount to grand total
+            package.grand_total_cost = grand_total
 
             # Recalculate commission amounts
             total_room_nights = sum(
@@ -214,6 +208,10 @@ def tour_package_pdf(request, pk):
     discounts = package.discounts
     total_discount = sum(float(discount['amount']) for discount in discounts)
 
+    # Prepare extra costs
+    extra_costs = package.extra_costs
+    total_extra_cost = sum(float(extra_cost['amount']) for extra_cost in extra_costs)
+
     # Handle the case where remark2 might be None
     remark2 = package.remark2.replace(
         '\n', '<br>') if package.remark2 is not None else ''
@@ -228,9 +226,9 @@ def tour_package_pdf(request, pk):
         'base_url': request.build_absolute_uri('/'),
         'discounts': discounts,
         'total_discount': total_discount,
+        'extra_costs': extra_costs,
+        'total_extra_cost': total_extra_cost,
         'static_url': settings.STATIC_URL,
-        'discounts': discounts,
-        'total_discount': total_discount,
         'remark2': remark2,
         'remark_of_hotels':remark_of_hotels
 
@@ -290,6 +288,9 @@ def send_tour_package_email(request, pk):
         total_discount = sum(float(discount['amount'])
                              for discount in discounts)
 
+        extra_costs = package.extra_costs
+        total_extra_cost = sum(float(extra_cost['amount']) for extra_cost in extra_costs)
+
         remark2 = package.remark2.replace(
         '\n', '<br>') if package.remark2 is not None else ''
 
@@ -304,6 +305,8 @@ def send_tour_package_email(request, pk):
             'base_url': request.build_absolute_uri('/'),
             'discounts': discounts,
             'total_discount': total_discount,
+            'extra_costs': extra_costs,
+            'total_extra_cost': total_extra_cost,
             'static_url': settings.STATIC_URL,
             'remark2': remark2,
             'remark_of_hotels':remark_of_hotels
@@ -390,6 +393,10 @@ def tour_package_detail(request, pk):
     discounts = package.discounts
     total_discount = sum(float(discount['amount']) for discount in discounts)
 
+    # Prepare extra costs information
+    extra_costs = package.extra_costs
+    total_extra_cost = sum(float(extra_cost['amount']) for extra_cost in extra_costs)
+
     remark2 = package.remark2.replace(
         '\n', '<br>') if package.remark2 is not None else ''
     # remark2 = package.remark2.replace('\n', '<br>')
@@ -400,6 +407,8 @@ def tour_package_detail(request, pk):
         'tour_pack_type': package.tour_pack_type,  # Add this line
         'discounts': discounts,
         'total_discount': total_discount,
+        'extra_costs': extra_costs,
+        'total_extra_cost': total_extra_cost,
         'remark2': remark2
     }
 
@@ -461,6 +470,14 @@ def tour_package_edit(request, pk):
                 'amount': float(discount['amount'])
             }
             for discount in package.discounts
+        ],
+
+          'extraCosts': [
+            {
+                'item': extra_cost['item'],
+                'amount': float(extra_cost['amount'])
+            }
+            for extra_cost in package.extra_costs
         ],
         'hotelCosts': package.hotel_costs
 

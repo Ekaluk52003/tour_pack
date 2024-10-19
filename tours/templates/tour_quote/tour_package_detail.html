@@ -88,6 +88,41 @@
             </div>
             {% endif %}
 
+
+            <div class="mt-8">
+                <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Extra Costs</h3>
+                <table class="w-full">
+                    <thead class="bg-gray-200 dark:bg-gray-700">
+                        <tr>
+                            <th class="p-2 text-left dark:text-gray-200">Item</th>
+                            <th class="p-2 text-right dark:text-gray-200">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for extra_cost in extra_costs %}
+                        <tr>
+                            <td class="p-2 border-b dark:border-gray-600">{{ extra_cost.item }}</td>
+                            <td class="p-2 text-right border-b dark:border-gray-600">${{ extra_cost.amount }}</td>
+                        </tr>
+                        {% empty %}
+
+                        <tr>
+                            <td colspan="2" class="p-2 text-center">No extra cost</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                    {% if extra_costs %}
+                    <tfoot class="font-bold dark:text-gray-200">
+                        <tr>
+                            <td class="p-2">Total Extra Costs</td>
+                            <td class="p-2 text-right">${{ total_extra_cost }}</td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+
             <!-- Discounts -->
             <div class="mb-6">
                 <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Discounts</h3>

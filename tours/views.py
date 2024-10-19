@@ -93,7 +93,7 @@ def save_tour_package(request):
                     'commission_rate_hotel', 0)
                 package.commission_rate_services = data.get(
                     'commission_rate_services', 0)
-              
+
 
             # Both superusers and non-superusers can edit hotel costs
             package.hotel_costs = data['hotelCosts']
@@ -120,27 +120,20 @@ def save_tour_package(request):
 
                     # Create services for the day
                     for service_data in day_data['services']:
-                        service_price = ServicePrice.objects.get(
-                            service_id=service_data['name'],
-                            city_id=day_data['city'],
-                            tour_pack_type_id=data['tour_pack_type']
-                        )
+                        service = Service.objects.get(id=service_data['name'])
                         TourDayService.objects.create(
                             tour_day=tour_day,
-                            service=service_price.service,
-                            price_at_booking=service_data.get(
-                                'price_at_booking', service_price.price)
+                            service=service,
+                            price_at_booking=service_data['price_at_booking']
                         )
 
                     # Create guide services for the day
-                    for guide_service_data in day_data.get('guide_services', []):
-                        guide_service = GuideService.objects.get(
-                            id=guide_service_data['name'])
+                    for guide_service_data in day_data['guide_services']:
+                        guide_service = GuideService.objects.get(id=guide_service_data['name'])
                         TourDayGuideService.objects.create(
                             tour_day=tour_day,
                             guide_service=guide_service,
-                            price_at_booking=guide_service_data.get(
-                                'price_at_booking', guide_service.price)
+                            price_at_booking=guide_service_data['price_at_booking']
                         )
 
             # Recalculate totals
@@ -401,6 +394,8 @@ def tour_package_detail(request, pk):
     remark2 = package.remark2.replace(
         '\n', '<br>') if package.remark2 is not None else ''
     # remark2 = package.remark2.replace('\n', '<br>')
+
+    comission_total = package.commission_amount_hotel + package.commission_amount_services
     context = {
         'package': package,
         # Pass hotel costs with total calculation
@@ -410,7 +405,8 @@ def tour_package_detail(request, pk):
         'total_discount': total_discount,
         'extra_costs': extra_costs,
         'total_extra_cost': total_extra_cost,
-        'remark2': remark2
+        'remark2': remark2,
+        'comission_total': comission_total
     }
 
     return render(request, 'tour_quote/tour_package_detail.html', context)

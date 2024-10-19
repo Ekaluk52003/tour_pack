@@ -641,11 +641,11 @@ window.tourPackage = function () {
           hotel: day.hotel,
           services: day.services.map((service) => ({
             name: service.name,
-            price_at_booking: service.price_at_booking,
+            price_at_booking: service.price
           })),
           guide_services: day.guideServices.map((gs) => ({
             name: gs.name,
-            price_at_booking: gs.price_at_booking,
+            price_at_booking: gs.price
           })),
         })),
         // hotelCosts: this.hotelCosts,
@@ -920,6 +920,12 @@ window.tourPackage = function () {
       }
     },
 
+     formatCommaNumber(num) {
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    },
+    unformatCommaNumber(num) {
+      return num.replace(/,/g, '');
+    }
 
   };
 };

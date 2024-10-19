@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load humanize %}
 {% block content %}
 <div class="container px-4 py-8 mx-auto">
     <div class="overflow-hidden bg-white rounded-lg shadow-lg dark:bg-gray-800">
@@ -35,7 +35,8 @@
                 <ul class="pl-5 mb-2 list-disc dark:text-gray-300">
                     {% for service in day.services.all %}
                     <li>{{ service.service.name }} ({{ service.service.service_type.name }}) -
-                        {{ service.price_at_booking|floatformat:2 }} THB
+                        {{ service.price_at_booking|intcomma}} THB
+
                     </li>
                     {% endfor %}
                 </ul>
@@ -45,7 +46,7 @@
                 <ul class="pl-5 list-disc dark:text-gray-300">
                     {% for guide_service in day.guide_services.all %}
                     <li>{{ guide_service.guide_service.name }} -
-                        {{ guide_service.price_at_booking|floatformat:2 }} THB
+                        {{ guide_service.price_at_booking|intcomma }} THB
                     </li>
                     {% endfor %}
                 </ul>
@@ -58,7 +59,7 @@
         <div class="p-6 border-b dark:border-gray-700">
 
             <div class="p-4 mb-4 bg-blue-100 rounded-lg dark:bg-blue-900">
-                <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Total Service Cost: {{ package.service_grand_total }} THB</h3>
+                <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Total Service Cost: {{ package.service_grand_total|intcomma }} THB</h3>
             </div>
 
             <!-- Hotel Costs -->
@@ -70,13 +71,13 @@
                     <li class="mb-2">
                         <strong>{{ hotel_cost.name }}</strong> ({{ hotel_cost.type }})
                         <br>
-                        {{ hotel_cost.room }} room(s), {{ hotel_cost.nights }} night(s) at {{ hotel_cost.price }} THB per night
+                        {{ hotel_cost.room }} room(s), {{ hotel_cost.nights|intcomma }} night(s) at {{ hotel_cost.price|intcomma }} THB per night
                         {% if hotel_cost.extraBedPrice %}
                         <br>
-                        Extra bed: {{ hotel_cost.extraBedPrice }} THB per night
+                        Extra bed: {{ hotel_cost.extraBedPrice|intcomma }} THB per night
                         {% endif %}
                         <br>
-                        <strong>Total: {{ hotel_cost.total|floatformat:"2" }} THB</strong>
+                        <strong>Total: {{ hotel_cost.total|intcomma }} THB</strong>
                     </li>
                     {% endfor %}
                 </ul>
@@ -85,7 +86,7 @@
 
 
                 <div class="p-4 mt-6 bg-blue-100 rounded-lg dark:bg-blue-900">
-                    <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Total Hotel Cost: {{ package.hotel_grand_total }} THB</h3>
+                    <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Total Hotel Cost: {{ package.hotel_grand_total|intcomma }} THB</h3>
                 </div>
 
             </div>
@@ -105,7 +106,7 @@
                         {% for extra_cost in extra_costs %}
                         <tr>
                             <td class="p-2 border-b dark:border-gray-600">{{ extra_cost.item }}</td>
-                            <td class="p-2 text-right border-b dark:border-gray-600">{{ extra_cost.amount }} THB</td>
+                            <td class="p-2 text-right border-b dark:border-gray-600">{{ extra_cost.amount|intcomma }} THB</td>
                         </tr>
                         {% empty %}
 
@@ -119,7 +120,7 @@
                     <tfoot class="font-bold dark:text-gray-200">
                         <tr>
                             <td class="p-2">Total Extra Costs</td>
-                            <td class="p-2 text-right">{{ total_extra_cost }} THB</td>
+                            <td class="p-2 text-right">{{ total_extra_cost|intcomma }} THB</td>
                         </tr>
                     </tfoot>
                     {% endif %}
@@ -140,7 +141,7 @@
                         {% for discount in discounts %}
                         <tr>
                             <td class="p-2 border-b dark:border-gray-600">{{ discount.item }}</td>
-                            <td class="p-2 text-right border-b dark:border-gray-600">{{ discount.amount }} THB</td>
+                            <td class="p-2 text-right border-b dark:border-gray-600">{{ discount.amount|intcomma }} THB</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -152,7 +153,7 @@
                     <tfoot class="font-bold dark:text-gray-200">
                         <tr>
                             <td class="p-2">Total Discount</td>
-                            <td class="p-2 text-right">{{ total_discount }} THB</td>
+                            <td class="p-2 text-right">{{ total_discount|intcomma }} THB</td>
                         </tr>
                     </tfoot>
                     {% endif %}
@@ -165,7 +166,7 @@
 
             <!-- Grand Total -->
             <div class="p-4 mt-6 bg-blue-100 rounded-lg dark:bg-blue-900">
-                <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Grand Total Cost: {{ package.grand_total_cost }} THB</h3>
+                <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Grand Total Cost: {{ package.grand_total_cost|intcomma }} THB</h3>
             </div>
         </div>
 
@@ -174,14 +175,20 @@
             <h2 class="mb-4 text-2xl font-semibold dark:text-gray-200">Commission Information</h2>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 dark:text-gray-300">
                 <div>
-                    <p><strong>Hotel Commission Rate:</strong> {{ package.commission_rate_hotel }}</p>
-                    <p><strong>Hotel Commission Amount:</strong> {{ package.commission_amount_hotel|floatformat:2}} THB</p>
+                    <p><strong>Hotel Commission Rate:</strong> {{ package.commission_rate_hotel|intcomma }} THB</p>
+                    <p><strong>Hotel Commission Amount:</strong> {{ package.commission_amount_hotel|intcomma}} THB</p>
                 </div>
                 <div>
                     <p><strong>Service Commission Rate:</strong> {{ package.commission_rate_services }} %</p>
-                    <p><strong>Service Commission Amount:</strong> {{ package.commission_amount_services|floatformat:2 }} THB</p>
+                    <p><strong>Service Commission Amount:</strong> {{ package.commission_amount_services|intcomma }} THB</p>
                 </div>
+
             </div>
+
+            <div class="px-4 py-6 mt-4 bg-gray-100 rounded-md">
+                <p><strong>Total Commission Amount:</strong> {{ comission_total|intcomma }} THB</p>
+            </div>
+
         </div>
     </div>
 

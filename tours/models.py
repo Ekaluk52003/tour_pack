@@ -130,7 +130,7 @@ class TourPackageQuote(models.Model):
     tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.SET_NULL, null=True)
     remark2 = models.TextField(blank=True, null=True)
     remark_of_hotels = models.TextField(blank=True, null=True)
-    commission_rate_hotel = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    commission_rate_hotel = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     commission_amount_hotel = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     commission_rate_services = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     commission_amount_services = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)

@@ -93,12 +93,13 @@ def save_tour_package(request):
                     'commission_rate_hotel', 0)
                 package.commission_rate_services = data.get(
                     'commission_rate_services', 0)
-                package.discounts = data.get('discounts', [])
-                package.extra_costs = data.get('extraCosts', [])
+              
 
             # Both superusers and non-superusers can edit hotel costs
             package.hotel_costs = data['hotelCosts']
             package.remark_of_hotels = data.get('remark_of_hotels', '')
+            package.discounts = data.get('discounts', [])
+            package.extra_costs = data.get('extraCosts', [])
 
             # Save the package to get a primary key
             package.save()

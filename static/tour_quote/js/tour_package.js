@@ -107,13 +107,9 @@ window.tourPackage = function () {
       if (this.days.length === 0) {
         this.addDay();
       }
-
-      console.log("Window Guide Services Data:", window.guideServicesData);
-
       // Initialize guide services
       this.guideServices = window.guideServicesData || [];
 
-      console.log("This Guide Services:", this.guideServices);
 
       if (this.guideServices.length === 0) {
         console.warn('No guide services available');

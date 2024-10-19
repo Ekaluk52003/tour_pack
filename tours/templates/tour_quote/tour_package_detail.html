@@ -35,7 +35,7 @@
                 <ul class="pl-5 mb-2 list-disc dark:text-gray-300">
                     {% for service in day.services.all %}
                     <li>{{ service.service.name }} ({{ service.service.service_type.name }}) -
-                        {{ service.price_at_booking|floatformat:2 }} USD
+                        {{ service.price_at_booking|floatformat:2 }} THB
                     </li>
                     {% endfor %}
                 </ul>
@@ -45,7 +45,7 @@
                 <ul class="pl-5 list-disc dark:text-gray-300">
                     {% for guide_service in day.guide_services.all %}
                     <li>{{ guide_service.guide_service.name }} -
-                        {{ guide_service.price_at_booking|floatformat:2 }} USD
+                        {{ guide_service.price_at_booking|floatformat:2 }} THB
                     </li>
                     {% endfor %}
                 </ul>
@@ -56,10 +56,9 @@
 
         <!-- Cost Breakdown Section -->
         <div class="p-6 border-b dark:border-gray-700">
-            <!-- Service Costs -->
-            <div class="mb-6">
-                <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Service Costs</h3>
-                <p class="text-lg dark:text-gray-300">Total Service Cost: <span class="font-bold">{{ package.service_grand_total }} USD</span></p>
+
+            <div class="p-4 mb-4 bg-blue-100 rounded-lg dark:bg-blue-900">
+                <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Total Service Cost: {{ package.service_grand_total }} THB</h3>
             </div>
 
             <!-- Hotel Costs -->
@@ -71,26 +70,30 @@
                     <li class="mb-2">
                         <strong>{{ hotel_cost.name }}</strong> ({{ hotel_cost.type }})
                         <br>
-                        {{ hotel_cost.room }} room(s), {{ hotel_cost.nights }} night(s) at {{ hotel_cost.price }} USD per night
+                        {{ hotel_cost.room }} room(s), {{ hotel_cost.nights }} night(s) at {{ hotel_cost.price }} THB per night
                         {% if hotel_cost.extraBedPrice %}
                         <br>
-                        Extra bed: {{ hotel_cost.extraBedPrice }} USD per night
+                        Extra bed: {{ hotel_cost.extraBedPrice }} THB per night
                         {% endif %}
                         <br>
-                        <strong>Total: {{ hotel_cost.total|floatformat:"2" }} USD</strong>
+                        <strong>Total: {{ hotel_cost.total|floatformat:"2" }} THB</strong>
                     </li>
                     {% endfor %}
                 </ul>
                 <p class="dark:text-gray-200"><strong>Remark hotels</strong></p>
                 <div style="white-space: pre-wrap;" class="mb-4 dark:text-gray-300">{{ package.remark_of_hotels |safe }}</div>
 
-                <p class="text-lg dark:text-gray-300">Total Hotel Cost: <span class="font-bold">{{ package.hotel_grand_total }} USD</span></p>
+
+                <div class="p-4 mt-6 bg-blue-100 rounded-lg dark:bg-blue-900">
+                    <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Total Hotel Cost: {{ package.hotel_grand_total }} THB</h3>
+                </div>
+
             </div>
             {% endif %}
 
 
             <div class="mt-8">
-                <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Extra Costs</h3>
+                <h3 class="mb-2 text-xl font-semibolddark:text-gray-200">Extra Costs</h3>
                 <table class="w-full">
                     <thead class="bg-gray-200 dark:bg-gray-700">
                         <tr>
@@ -102,7 +105,7 @@
                         {% for extra_cost in extra_costs %}
                         <tr>
                             <td class="p-2 border-b dark:border-gray-600">{{ extra_cost.item }}</td>
-                            <td class="p-2 text-right border-b dark:border-gray-600">${{ extra_cost.amount }}</td>
+                            <td class="p-2 text-right border-b dark:border-gray-600">{{ extra_cost.amount }} THB</td>
                         </tr>
                         {% empty %}
 
@@ -116,7 +119,7 @@
                     <tfoot class="font-bold dark:text-gray-200">
                         <tr>
                             <td class="p-2">Total Extra Costs</td>
-                            <td class="p-2 text-right">${{ total_extra_cost }}</td>
+                            <td class="p-2 text-right">{{ total_extra_cost }} THB</td>
                         </tr>
                     </tfoot>
                     {% endif %}
@@ -125,7 +128,7 @@
 
             <!-- Discounts -->
             <div class="mb-6">
-                <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Discounts</h3>
+                <h3 class="mb-2 text-xl font-semibold text-green-600 dark:text-gray-200">Discounts</h3>
                 <table class="w-full">
                     <thead class="bg-gray-200 dark:bg-gray-700">
                         <tr>
@@ -137,7 +140,7 @@
                         {% for discount in discounts %}
                         <tr>
                             <td class="p-2 border-b dark:border-gray-600">{{ discount.item }}</td>
-                            <td class="p-2 text-right border-b dark:border-gray-600">{{ discount.amount }}</td>
+                            <td class="p-2 text-right border-b dark:border-gray-600">{{ discount.amount }} THB</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -149,7 +152,7 @@
                     <tfoot class="font-bold dark:text-gray-200">
                         <tr>
                             <td class="p-2">Total Discount</td>
-                            <td class="p-2 text-right">${{ total_discount }}</td>
+                            <td class="p-2 text-right">{{ total_discount }} THB</td>
                         </tr>
                     </tfoot>
                     {% endif %}
@@ -162,7 +165,7 @@
 
             <!-- Grand Total -->
             <div class="p-4 mt-6 bg-blue-100 rounded-lg dark:bg-blue-900">
-                <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Grand Total Cost: {{ package.grand_total_cost }} USD</h3>
+                <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Grand Total Cost: {{ package.grand_total_cost }} THB</h3>
             </div>
         </div>
 
@@ -172,11 +175,11 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 dark:text-gray-300">
                 <div>
                     <p><strong>Hotel Commission Rate:</strong> {{ package.commission_rate_hotel }}</p>
-                    <p><strong>Hotel Commission Amount:</strong> ${{ package.commission_amount_hotel|floatformat:2 }}</p>
+                    <p><strong>Hotel Commission Amount:</strong> {{ package.commission_amount_hotel|floatformat:2}} THB</p>
                 </div>
                 <div>
-                    <p><strong>Service Commission Rate:</strong> {{ package.commission_rate_services }}</p>
-                    <p><strong>Service Commission Amount:</strong> ${{ package.commission_amount_services|floatformat:2 }}</p>
+                    <p><strong>Service Commission Rate:</strong> {{ package.commission_rate_services }} %</p>
+                    <p><strong>Service Commission Amount:</strong> {{ package.commission_amount_services|floatformat:2 }} THB</p>
                 </div>
             </div>
         </div>

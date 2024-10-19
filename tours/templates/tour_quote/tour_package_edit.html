@@ -200,10 +200,10 @@
                 >
                   <option value="">Select Service</option>
                   <template x-for="option in getServiceNames(day, service.type)" :key="option.id">
-                    <option :value="option.id" x-text="`${option.name} (${option.price} USD)`" :selected="service.name == option.id"></option>
+                    <option :value="option.id" x-text="`${option.name} (${option.price} THB)`" :selected="service.name == option.id"></option>
                   </template>
                 </select>
-                <span class="ml-2 text-gray-900 dark:text-white" x-text="`Booked: ${service.price_at_booking || service.price} USD`"></span>
+                <span class="ml-2 text-gray-900 dark:text-white" x-text="`Booked: ${service.price_at_booking || service.price} THB`"></span>
                 <button @click="removeService(day, serviceIndex)" class="ml-2 text-red-600 dark:text-red-400">Remove</button>
               </div>
               <div class="mt-2">
@@ -229,10 +229,10 @@
               <select x-model="guideService.name" @change="updateGuideService(guideService)" class="w-3/4 px-3 py-2 mr-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
                 <option value="">Select Guide Service</option>
                 <template x-for="option in guideServices" :key="option.id">
-                  <option :value="String(option.id)" x-text="`${option.name} (${option.price} USD)`" :selected="guideService.name == option.id"></option>
+                  <option :value="String(option.id)" x-text="`${option.name} (${option.price} THB)`" :selected="guideService.name == option.id"></option>
                 </template>
               </select>
-              <span class="ml-2 text-gray-900 dark:text-white" x-text="`Booked: ${guideService.price_at_booking.toFixed(2)} USD`"></span>
+              <span class="ml-2 text-gray-900 dark:text-white" x-text="`Booked: ${guideService.price_at_booking.toFixed(2)} THB`"></span>
               <button @click="removeGuideService(day, guideIndex)"  class="ml-2 text-red-600 dark:text-red-400">Remove</button>
             </div>
           </template>
@@ -267,7 +267,7 @@
   </div>
 
   <div class="my-4">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Service Grand Total: <span x-text="calculateGrandTotal().serviceGrandTotal + ' USD'"></span></h3>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Service Grand Total: <span x-text="calculateGrandTotal().serviceGrandTotal + ' THB'"></span></h3>
 </div>
 
 
@@ -296,7 +296,7 @@
               <td class="px-2 border"><input type="number" x-model="cost.room" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
               <td class="px-2 border"><input type="number" x-model="cost.price" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
               <td class="px-2 border"><input type="number" x-model="cost.extraBedPrice" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
-              <td class="px-2 text-gray-900 border dark:text-white" x-text="((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2) + ' USD'"></td>
+              <td class="px-2 text-gray-900 border dark:text-white" x-text="((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2) + ' THB'"></td>
               <td class="px-4 py-2">
                   <button @click="removeHotelCost(index)" class="px-2 py-1 text-white bg-red-500 rounded">Delete</button>
               </td>
@@ -317,7 +317,7 @@
 
    <div class="text-right">
     <strong >Total Hotel Cost: </strong>
-    <span class="text-right" x-text="calculateHotelCostTotal() + ' USD'"></span>
+    <span class="text-right" x-text="calculateHotelCostTotal() + ' THB'"></span>
 
    </div>
   </div>
@@ -356,13 +356,13 @@
 </div>
 
 <div class="mt-2 text-right text-gray-900 dark:text-white">
-  <strong>Total Extra Costs:</strong> <span x-text="calculateTotalExtraCosts() + ' USD'"></span>
+  <strong>Total Extra Costs:</strong> <span x-text="calculateTotalExtraCosts() + ' THB'"></span>
 </div>
 
 
 <!-- Discounts Section -->
-<div class="mb-4"  x-show="isSuperUser">
-  <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Discounts</h2>
+<div class="mb-4" >
+  <h2 class="mb-2 text-xl font-semibold text-green-600 dark:text-white">Discounts</h2>
   <div class="overflow-x-auto">
     <table class="w-full table-auto">
       <thead>
@@ -392,7 +392,7 @@
   <button @click="addDiscount" class="px-3 py-2 mt-2 text-white bg-blue-500 rounded">Add Discount</button>
   <div class="mt-2 text-right text-gray-900 dark:text-white">
     <strong>Total Discounts: </strong>
-    <span x-text="calculateTotalDiscounts() + ' USD'"></span>
+    <span x-text="calculateTotalDiscounts() + ' THB'"></span>
   </div>
 </div>
 
@@ -401,10 +401,10 @@
 <!-- Grand Total Section -->
 <div class="mt-8 mb-4">
   <div class="mb-4">
-    <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2</label>
+    <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2 (Only Superuser is allowed to edit)</label>
     <textarea id="remark2" x-model="remark2" :disabled="!isSuperUser" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
   </div>
-  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Grand Total Cost: <span x-text="(parseFloat(calculateGrandTotal().grandTotal) - calculateTotalDiscounts() + parseFloat(calculateTotalExtraCosts())).toFixed(2) + ' USD'"></span></h3>
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Grand Total Cost: <span x-text="(parseFloat(calculateGrandTotal().grandTotal) - calculateTotalDiscounts() + parseFloat(calculateTotalExtraCosts())).toFixed(2) + ' THB'"></span></h3>
 </div>
 
 
@@ -428,17 +428,17 @@
       <div>
           <p class="font-medium text-gray-900 dark:text-white">Hotel Commission:</p>
           <p x-text="`Rate: ${commission_rate_hotel} THB`" class="text-gray-900 dark:text-white"></p>
-          <p x-text="`Amount: $${calculateGrandTotal().commission_amount_hotel}`" class="text-green-600 dark:text-green-400"></p>
+          <p x-text="`Amount: ${calculateGrandTotal().commission_amount_hotel} THB`" class="text-green-600 dark:text-green-400"></p>
       </div>
       <div>
           <p class="font-medium text-gray-900 dark:text-white">Services Commission:</p>
           <p x-text="`Rate: ${commission_rate_services}%`" class="text-gray-900 dark:text-white"></p>
-          <p x-text="`Amount: $${calculateGrandTotal().commission_amount_services}`" class="text-green-600 dark:text-green-400"></p>
+          <p x-text="`Amount: ${calculateGrandTotal().commission_amount_services} THB`" class="text-green-600 dark:text-green-400"></p>
       </div>
   </div>
   <div class="mt-4">
       <p class="font-medium text-gray-900 dark:text-white">Total Commission:</p>
-      <p x-text="`$${(parseFloat(calculateGrandTotal().commission_amount_hotel) + parseFloat(calculateGrandTotal().commission_amount_services)).toFixed(2)}`" class="text-xl font-bold text-green-600 dark:text-green-400"></p>
+      <p x-text="`${(parseFloat(calculateGrandTotal().commission_amount_hotel) + parseFloat(calculateGrandTotal().commission_amount_services)).toFixed(2)} THB`" class="text-xl font-bold text-green-600 dark:text-green-400"></p>
   </div>
 </div>
   <button @click="saveTourPackage" class="px-3 py-2 mt-4 text-white bg-green-500 rounded">Save Changes</button>

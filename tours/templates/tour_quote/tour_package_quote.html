@@ -436,7 +436,7 @@ Add Day
   <p x-text="`${formatCommaNumber((parseFloat(calculateGrandTotal().commission_amount_hotel) + parseFloat(calculateGrandTotal().commission_amount_services)).toFixed(2))} THB`" class="text-xl font-bold text-green-600 dark:text-green-400"></p>
 </div>
 </div>
-<button @click="saveTourPackage" class="px-4 py-2 mt-4 text-white bg-indigo-500 rounded hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700">Create Quote</button>
+<button @click="saveTourPackage" class="px-3 py-2 mt-4 text-white bg-green-500 rounded" x-text="packageReference ? 'Update Package' : 'Create Package'"></button>
 </div>
 </div>
 {% endblock %}

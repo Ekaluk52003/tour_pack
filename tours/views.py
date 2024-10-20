@@ -720,3 +720,75 @@ def get_city_services(request, city_id):
         print("Error in get_city_services:", str(e))
         print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_http_methods(["GET"])
+def duplicate_tour_package(request, package_reference):
+    # Check if the user is a superuser
+    if not request.user.is_superuser:
+        messages.error(request, "You do not have permission to duplicate tour packages.")
+        return redirect('tour_package_detail', package_reference=package_reference)
+
+    # Get the original package
+    original_package = get_object_or_404(TourPackageQuote, package_reference=package_reference)
+
+    # Create a new package with copied data
+    new_package = TourPackageQuote.objects.create(
+        name=f"{original_package.name}_(copy)",
+        customer_name=original_package.customer_name,
+        remark=original_package.remark,
+        remark2=original_package.remark2,
+        remark_of_hotels=original_package.remark_of_hotels,
+        tour_pack_type=original_package.tour_pack_type,
+        commission_rate_hotel=original_package.commission_rate_hotel,
+        commission_rate_services=original_package.commission_rate_services,
+        hotel_costs=original_package.hotel_costs,
+        discounts=original_package.discounts,
+        extra_costs=original_package.extra_costs
+    )
+
+    # Copy tour days and their associated services
+    for original_day in original_package.tour_days.all():
+        new_day = TourDay.objects.create(
+            tour_package=new_package,
+            date=original_day.date,
+            city=original_day.city,
+            hotel=original_day.hotel
+        )
+
+        # Copy services
+        for original_service in original_day.services.all():
+            TourDayService.objects.create(
+                tour_day=new_day,
+                service=original_service.service,
+                price_at_booking=original_service.price_at_booking
+            )
+
+        # Copy guide services
+        for original_guide_service in original_day.guide_services.all():
+            TourDayGuideService.objects.create(
+                tour_day=new_day,
+                guide_service=original_guide_service.guide_service,
+                price_at_booking=original_guide_service.price_at_booking
+            )
+
+    # Recalculate totals for the new package
+    service_grand_total, hotel_grand_total, grand_total, total_discount, total_extra_cost = calculate_totals(new_package)
+
+    new_package.service_grand_total = service_grand_total
+    new_package.hotel_grand_total = hotel_grand_total
+    new_package.grand_total_cost = grand_total
+
+    # Recalculate commission amounts
+    total_room_nights = sum(
+        safe_decimal(hotel.get('room')) * safe_decimal(hotel.get('nights'))
+        for hotel in new_package.hotel_costs
+    )
+
+    new_package.commission_amount_hotel = new_package.commission_rate_hotel * total_room_nights
+    new_package.commission_amount_services = new_package.commission_rate_services * new_package.service_grand_total / Decimal('100')
+
+    new_package.save()
+
+    messages.success(request, f"Tour package '{new_package.name}' has been created as a copy.")
+    return redirect('tour_package_edit', package_reference=new_package.package_reference)

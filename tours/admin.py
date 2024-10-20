@@ -12,7 +12,15 @@ from .models import (
     TourDayService, TourDayGuideService, ServicePrice, ReferenceID
 )
 from import_export.formats import base_formats
+from import_export.results import Result, RowResult
+from import_export.signals import post_import, post_export
 from import_export.fields import Field
+from django.db import IntegrityError
+import logging
+
+
+logger = logging.getLogger(__name__)
+
 
 class CityWidget(widgets.ForeignKeyWidget):
     def clean(self, value, row=None, *args, **kwargs):
@@ -206,13 +214,17 @@ class ServicePriceResource(resources.ModelResource):
 
     class Meta:
         model = ServicePrice
-        fields = ('service', 'service_type', 'tour_pack_type', 'price', 'city')
+        fields = ('id', 'service', 'service_type', 'tour_pack_type', 'price', 'city')
         export_order = fields
         import_id_fields = ('service', 'tour_pack_type', 'city')
         skip_unchanged = True
         report_skipped = True
 
     def before_import_row(self, row, **kwargs):
+        try:
+            row['price'] = "{:.2f}".format(float(row['price']))
+        except ValueError:
+            raise ValueError("Invalid price format in row.")
         service_name = row.get('service')
         service_type_name = row.get('service_type')
         tour_pack_type_name = row.get('tour_pack_type')
@@ -228,17 +240,6 @@ class ServicePriceResource(resources.ModelResource):
             tour_pack_type, _ = TourPackType.objects.get_or_create(name=tour_pack_type_name)
             city, _ = City.objects.get_or_create(name=city_name)
 
-            # Check if a ServicePrice with these attributes already exists
-            existing_price = ServicePrice.objects.filter(
-                service=service,
-                tour_pack_type=tour_pack_type,
-                city=city
-            ).first()
-
-            if existing_price:
-                # If it exists, we'll update the price instead of creating a new entry
-                row['id'] = existing_price.id  # This will cause an update instead of an insert
-
             # Update row with object instances
             row['service'] = service.name
             row['tour_pack_type'] = tour_pack_type.name
@@ -247,14 +248,14 @@ class ServicePriceResource(resources.ModelResource):
         except IntegrityError as e:
             raise ValueError(f"Error processing row: {str(e)}")
 
+
     def skip_row(self, instance, original, row, import_validation_errors=None):
-        try:
-            instance.full_clean()
-            return False
-        except ValidationError as e:
-            if import_validation_errors is not None:
-                import_validation_errors.append(ValidationError(f"Row {row}: {str(e)}"))
-            return True
+        # Your skip logic (already implemented as discussed previously)
+
+        return False
+
+
+
 
     def export_field(self, field, obj):
         if field.column_name == 'service_type':
@@ -273,7 +274,6 @@ class ServicePriceAdmin(ImportExportModelAdmin):
         return obj.service.service_type
     get_service_type.short_description = 'Service Type'
     get_service_type.admin_order_field = 'service__service_type__name'
-
 
 ####Service Price end
 @admin.register(ReferenceID)

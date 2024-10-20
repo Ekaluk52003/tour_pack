@@ -232,16 +232,16 @@ def tour_package_pdf(request, pk):
     response = HttpResponse(content_type='application/pdf')
 
        # Generate the filename
-    customer_name = package.customer_name if package.customer_name else 'unknown'
+    package_name = package.name if package.name else 'unknown'
     tour_pack_type = package.tour_pack_type.name if package.tour_pack_type else 'unknown'
     reference = package.package_reference if package.package_reference else str(package.id)
 
     # Clean the filename components
-    customer_name = ''.join(e for e in customer_name if e.isalnum() or e in ['-', '_']).strip()
+    package_name = ''.join(e for e in package_name if e.isalnum() or e in ['-', '_']).strip()
     tour_pack_type = ''.join(e for e in tour_pack_type if e.isalnum() or e in ['-', '_']).strip()
     reference = ''.join(e for e in reference if e.isalnum() or e in ['-', '_']).strip()
 
-    filename = f"{customer_name}_{tour_pack_type}_{reference}.pdf"
+    filename = f"{package_name}_{tour_pack_type}_{reference}.pdf"
 
     response['Content-Disposition'] = f'inline; filename="{filename}"'
 
@@ -339,16 +339,16 @@ def send_tour_package_email(request, pk):
 
 
           # Generate filename
-        customer_name = package.customer_name if package.customer_name else 'unknown'
+        package_name = package.name if package.name else 'unknown'
         tour_pack_type = package.tour_pack_type.name if package.tour_pack_type else 'unknown'
         reference = package.package_reference if package.package_reference else str(package.id)
 
         # Clean the filename components
-        customer_name = ''.join(e for e in customer_name if e.isalnum() or e in ['-', '_']).strip()
+        package_name = ''.join(e for e in package_name if e.isalnum() or e in ['-', '_']).strip()
         tour_pack_type = ''.join(e for e in tour_pack_type if e.isalnum() or e in ['-', '_']).strip()
         reference = ''.join(e for e in reference if e.isalnum() or e in ['-', '_']).strip()
 
-        filename = f"{customer_name}_{tour_pack_type}_{reference}.pdf"
+        filename = f"{package_name}_{tour_pack_type}_{reference}.pdf"
 
         # Prepare email
         subject = f'Tour Package {package.package_reference}: {package.name}'

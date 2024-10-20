@@ -75,7 +75,7 @@ class ServiceTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'service_type')
+    list_display = ('id','name', 'service_type')
     list_filter = ('service_type',)
     search_fields = ('name', 'service_type__name')
     autocomplete_fields = ['service_type']

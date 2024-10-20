@@ -24,6 +24,7 @@ class Hotel(models.Model):
 
     class Meta:
         unique_together = ['name', 'city']
+        ordering = ['name']
 
 
     def clean(self):
@@ -50,6 +51,7 @@ class Service(models.Model):
 
     class Meta:
         unique_together = ['name', 'service_type']
+        ordering = ['name']
 
     def clean(self):
         existing_service = Service.objects.filter(name=self.name, service_type=self.service_type).exclude(pk=self.pk).first()
@@ -81,6 +83,7 @@ class ServicePrice(models.Model):
 
     class Meta:
         unique_together = ['service', 'tour_pack_type', 'city']
+        ordering = ['service__name']
 
     def __str__(self):
         return f"{self.service} - {self.tour_pack_type} - {self.city} - ${self.price}"

@@ -18,14 +18,27 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('tours.urls')),
     path('accounts/', include('allauth.urls')),
-    path("__reload__/", include("django_browser_reload.urls")),
     path('backup_manager/', include('backup_manager.urls')),
+
 ]
 
+
+
 if settings.DEBUG:
-       urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += [
+        path('404/', TemplateView.as_view(template_name='404.html'), name='404'),
+        path('500/', TemplateView.as_view(template_name='500.html'), name='500'),
+    ]
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+    # Use Django's built-in static file serving for development
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+    # Add django_browser_reload only in DEBUG mode
+    urlpatterns += [path("__reload__/", include("django_browser_reload.urls"))]

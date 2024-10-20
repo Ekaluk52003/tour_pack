@@ -135,3 +135,5 @@ sudo docker-compose -f docker-compose.prod.yml up -d --build web
 sudo docker-compose -f docker-compose.prod.yml logs -f web
 
 sudo docker-compose -f docker-compose.prod.yml exec web python manage.py makemigrations
+
+sudo docker-compose -f docker-compose.prod.yml down

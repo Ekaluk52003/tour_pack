@@ -47,13 +47,14 @@ window.tourPackage = function () {
     discounts: [],
     extraCosts: [],
     packageId: null,
+    packageReference: null,
     draggingIndex: null,
     isSuperUser: false,
 
     initEditForm(existingData, isSuperUser) {
       this.isSuperUser = isSuperUser;
       if (existingData) {
-        this.packageId = existingData.id;
+        this.packageReference = existingData.package_reference;
         this.name = existingData.name;
         this.customerName = existingData.customer_name;
         this.remark = existingData.remark || "";
@@ -619,7 +620,8 @@ window.tourPackage = function () {
   };
 
       data = {
-        id: this.packageId, // Include the package ID for existing packages
+    // Include the package ID for existing packages
+        package_reference: this.packageReference,
         hotelCosts: this.hotelCosts.map(cost => ({
           ...cost,
           room: parseInt(cost.room) || 0,
@@ -661,7 +663,11 @@ window.tourPackage = function () {
         total_cost: this.calculateGrandTotal(),
       };
 
-      fetch("/save-tour-package/", {
+      const url = this.packageReference
+    ? `/save-tour-package/${this.packageReference}/`
+    : "/save-tour-package/";
+
+      fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -673,12 +679,13 @@ window.tourPackage = function () {
         .then((data) => {
           if (data.status === "success") {
             alert("Tour package saved successfully!");
-            console.log("success", data);
-            console.log(data.package_id);
-            window.location.href = `/${data.package_id}/`;
+            window.location.href = `/${data.package_reference}/`;
           } else {
-            alert("Error saving tour package");
+            alert("Error saving tour package: " + data.message);
           }
+        }).catch((error) => {
+          console.error("Error:", error);
+          alert("An error occurred while saving the tour package.");
         });
     },
     //  #########################cal

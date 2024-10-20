@@ -279,8 +279,8 @@
     </button>
   </div>
 
-  <div class="my-4">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Service Grand Total: <span x-text="formatCommaNumber(calculateGrandTotal().serviceGrandTotal) + ' THB'"></span></h3>
+  <div class="p-4 mb-4 bg-blue-100 rounded-lg dark:bg-blue-900">
+    <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Service Grand Total: <span x-text="formatCommaNumber(calculateGrandTotal().serviceGrandTotal) + ' THB'"></span></h3>
 </div>
 
 
@@ -355,9 +355,9 @@
   </div>
 </div>
 
-<!-- Extra Costs Section -->
+<!-- Additional Costs Section -->
 <div class="mb-4">
-  <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Extra Costs</h2>
+  <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Additional Costs</h2>
   <div class="overflow-x-auto">
     <table class="w-full table-auto">
       <thead>
@@ -392,11 +392,11 @@
       </tbody>
     </table>
   </div>
-  <button @click="addExtraCost()" class="px-4 py-2 mt-2 text-white bg-blue-500 rounded hover:bg-blue-600">Add Extra Cost</button>
+  <button @click="addExtraCost()" class="px-4 py-2 mt-2 text-white bg-blue-500 rounded hover:bg-blue-600">Add Addional Cost</button>
 </div>
 
 <div class="mt-2 text-right text-gray-900 dark:text-white">
-  <strong>Total Extra Costs:</strong> <span x-text="formatCommaNumber(calculateTotalExtraCosts()) + ' THB'"></span>
+  <strong>Total Additional Costs:</strong> <span x-text="formatCommaNumber(calculateTotalExtraCosts()) + ' THB'"></span>
 </div>
 
 
@@ -454,13 +454,17 @@
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2 (Only Superuser is allowed to edit)</label>
     <textarea id="remark2" x-model="remark2" :disabled="!isSuperUser" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
   </div>
-  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Grand Total Cost: <span x-text="(() => {
-    const grandTotal = calculateGrandTotal().grandTotal;
-    const discounts = calculateTotalDiscounts();
-    const extraCosts = calculateTotalExtraCosts();
-    const total = parseFloat(grandTotal) - parseFloat(discounts) + parseFloat(extraCosts);
-    return formatCommaNumber(total.toFixed(2)) + ' THB';
-  })()"></span></h3>
+
+  <div class="p-4 mb-4 bg-blue-100 rounded-lg dark:bg-blue-900">
+    <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Grand Total Cost: <span x-text="(() => {
+      const grandTotal = calculateGrandTotal().grandTotal;
+      const discounts = calculateTotalDiscounts();
+      const extraCosts = calculateTotalExtraCosts();
+      const total = parseFloat(grandTotal) - parseFloat(discounts) + parseFloat(extraCosts);
+      return formatCommaNumber(total.toFixed(2)) + ' THB';
+    })()"></span></h3>
+  </div>
+
 </div>
 
 
@@ -505,8 +509,7 @@
       <p x-text="`${formatCommaNumber((parseFloat(calculateGrandTotal().commission_amount_hotel) + parseFloat(calculateGrandTotal().commission_amount_services)).toFixed(2))} THB`" class="text-xl font-bold text-green-600 dark:text-green-400"></p>
   </div>
 </div>
-  <button @click="saveTourPackage" class="px-3 py-2 mt-4 text-white bg-green-500 rounded">Save Changes</button>
-
+  <button @click="saveTourPackage" class="px-3 py-2 mt-4 text-white bg-green-500 rounded" x-text="packageReference ? 'Update Package' : 'Create Package'"></button>
 </div>
 
 {% endblock %}

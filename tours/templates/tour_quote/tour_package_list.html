@@ -1,28 +1,28 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto px-4">
-    <h1 class="text-2xl font-bold mb-4">Tour Packages</h1>
-    <table class="w-full border-collapse border border-gray-300">
+<div class="container px-4 mx-auto">
+    <h1 class="mb-4 text-2xl font-bold">Tour Packages</h1>
+    <table class="w-full border border-collapse border-gray-300">
         <thead>
             <tr class="bg-gray-100">
-                <th class="border border-gray-300 px-4 py-2">Reference</th>
-                <th class="border border-gray-300 px-4 py-2">Name</th>
-                <th class="border border-gray-300 px-4 py-2">Customer</th>
-                <th class="border border-gray-300 px-4 py-2">Created At</th>
-                <th class="border border-gray-300 px-4 py-2">Actions</th>
+                <th class="px-4 py-2 border border-gray-300">Reference</th>
+                <th class="px-4 py-2 border border-gray-300">Name</th>
+                <th class="px-4 py-2 border border-gray-300">Customer</th>
+                <th class="px-4 py-2 border border-gray-300">Created At</th>
+                <th class="px-4 py-2 border border-gray-300">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for package in packages %}
             <tr>
-                <td class="border border-gray-300 px-4 py-2">{{ package.package_reference }}</td>
-                <td class="border border-gray-300 px-4 py-2">{{ package.name }}</td>
-                <td class="border border-gray-300 px-4 py-2">{{ package.customer_name }}</td>
-                <td class="border border-gray-300 px-4 py-2">{{ package.created_at|date:"Y-m-d H:i" }}</td>
-                <td class="border border-gray-300 px-4 py-2">
-                    <a href="{% url 'tour_package_detail' package.id %}" class="text-blue-500 hover:underline">View</a>
-                    <a href="{% url 'tour_package_edit' package.id %}" class="ml-2 text-green-500 hover:underline">Edit</a>
+                <td class="px-4 py-2 border border-gray-300">{{ package.package_reference }}</td>
+                <td class="px-4 py-2 border border-gray-300">{{ package.name }}</td>
+                <td class="px-4 py-2 border border-gray-300">{{ package.customer_name }}</td>
+                <td class="px-4 py-2 border border-gray-300">{{ package.created_at|date:"Y-m-d H:i" }}</td>
+                <td class="px-4 py-2 border border-gray-300">
+                    <a href="{% url 'tour_package_detail' package.package_reference %}" class="text-blue-500 hover:underline">View</a>
+                    <a href="{% url 'tour_package_edit' package.package_reference %}" class="ml-2 text-green-500 hover:underline">Edit</a>
                 </td>
             </tr>
             {% endfor %}

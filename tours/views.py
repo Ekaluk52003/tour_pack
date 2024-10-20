@@ -67,13 +67,13 @@ def calculate_totals(package):
 
 @login_required
 @require_http_methods(["POST"])
-def save_tour_package(request):
+def save_tour_package(request, package_reference=None):
     try:
         data = json.loads(request.body)
         with transaction.atomic():
             # Determine if it's a new package or an update
-            if 'id' in data and data['id']:
-                package = TourPackageQuote.objects.get(id=data['id'])
+            if package_reference:
+                package = get_object_or_404(TourPackageQuote, package_reference=package_reference)
                 is_new = False
             else:
                 if request.user.is_superuser:
@@ -164,7 +164,7 @@ def save_tour_package(request):
         return JsonResponse({
             'status': 'success',
             'message': 'Tour package saved successfully',
-            'package_id': package.id
+            'package_reference': package.package_reference
         })
 
 
@@ -230,7 +230,20 @@ def tour_package_pdf(request, pk):
 
     # Create a response object and generate PDF
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="tour_package_{package.id}.pdf"'
+
+       # Generate the filename
+    customer_name = package.customer_name if package.customer_name else 'unknown'
+    tour_pack_type = package.tour_pack_type.name if package.tour_pack_type else 'unknown'
+    reference = package.package_reference if package.package_reference else str(package.id)
+
+    # Clean the filename components
+    customer_name = ''.join(e for e in customer_name if e.isalnum() or e in ['-', '_']).strip()
+    tour_pack_type = ''.join(e for e in tour_pack_type if e.isalnum() or e in ['-', '_']).strip()
+    reference = ''.join(e for e in reference if e.isalnum() or e in ['-', '_']).strip()
+
+    filename = f"{customer_name}_{tour_pack_type}_{reference}.pdf"
+
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
 
     # WeasyPrint to generate the PDF
     HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf(response, stylesheets=[CSS(string='''
@@ -324,6 +337,19 @@ def send_tour_package_email(request, pk):
         ''')])
         pdf_file.seek(0)
 
+
+          # Generate filename
+        customer_name = package.customer_name if package.customer_name else 'unknown'
+        tour_pack_type = package.tour_pack_type.name if package.tour_pack_type else 'unknown'
+        reference = package.package_reference if package.package_reference else str(package.id)
+
+        # Clean the filename components
+        customer_name = ''.join(e for e in customer_name if e.isalnum() or e in ['-', '_']).strip()
+        tour_pack_type = ''.join(e for e in tour_pack_type if e.isalnum() or e in ['-', '_']).strip()
+        reference = ''.join(e for e in reference if e.isalnum() or e in ['-', '_']).strip()
+
+        filename = f"{customer_name}_{tour_pack_type}_{reference}.pdf"
+
         # Prepare email
         subject = f'Tour Package {package.package_reference}: {package.name}'
         message = f'Please find attached the tour package quote for {package.customer_name}.'
@@ -335,7 +361,7 @@ def send_tour_package_email(request, pk):
 
         # Send email
         email = EmailMessage(subject, message, from_email, to_email)
-        email.attach(f'tour_package_{package.id}.pdf', pdf_file.getvalue(), 'application/pdf')
+        email.attach(filename, pdf_file.getvalue(), 'application/pdf')
 
         email.send(fail_silently=False)
 
@@ -360,8 +386,8 @@ def tour_package_list(request):
 
 
 @login_required
-def tour_package_detail(request, pk):
-    package = get_object_or_404(TourPackageQuote, pk=pk)
+def tour_package_detail(request, package_reference):
+    package = get_object_or_404(TourPackageQuote, package_reference=package_reference)
 
     # Calculate total costs for hotels
     hotel_costs_with_total = []
@@ -413,8 +439,8 @@ def tour_package_detail(request, pk):
 
 
 @login_required
-def tour_package_edit(request, pk):
-    package = get_object_or_404(TourPackageQuote, pk=pk)
+def tour_package_edit(request, package_reference):
+    package = get_object_or_404(TourPackageQuote, package_reference=package_reference)
     cities = City.objects.all()
     guide_services = list(GuideService.objects.values('id', 'name', 'price'))
     predefined_quotes = PredefinedTourQuote.objects.all()
@@ -424,7 +450,7 @@ def tour_package_edit(request, pk):
         return save_tour_package(request, package.id)
 
     package_data = {
-        'id': package.id,
+        'package_reference': package.package_reference,
         'name': package.name,
         'customer_name': package.customer_name,
         'remark': package.remark,

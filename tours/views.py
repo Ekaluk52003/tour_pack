@@ -233,16 +233,13 @@ def tour_package_pdf(request, pk):
 
        # Generate the filename
     package_name = package.name if package.name else 'unknown'
-    tour_pack_type = package.tour_pack_type.name if package.tour_pack_type else 'unknown'
     reference = package.package_reference if package.package_reference else str(package.id)
 
     # Clean the filename components
     package_name = ''.join(e for e in package_name if e.isalnum() or e in ['-', '_']).strip()
-    tour_pack_type = ''.join(e for e in tour_pack_type if e.isalnum() or e in ['-', '_']).strip()
     reference = ''.join(e for e in reference if e.isalnum() or e in ['-', '_']).strip()
 
-    filename = f"{package_name}_{tour_pack_type}_{reference}.pdf"
-
+    filename = f"{package_name}_{reference}.pdf"
     response['Content-Disposition'] = f'inline; filename="{filename}"'
 
     # WeasyPrint to generate the PDF
@@ -340,15 +337,13 @@ def send_tour_package_email(request, pk):
 
           # Generate filename
         package_name = package.name if package.name else 'unknown'
-        tour_pack_type = package.tour_pack_type.name if package.tour_pack_type else 'unknown'
         reference = package.package_reference if package.package_reference else str(package.id)
 
         # Clean the filename components
         package_name = ''.join(e for e in package_name if e.isalnum() or e in ['-', '_']).strip()
-        tour_pack_type = ''.join(e for e in tour_pack_type if e.isalnum() or e in ['-', '_']).strip()
         reference = ''.join(e for e in reference if e.isalnum() or e in ['-', '_']).strip()
 
-        filename = f"{package_name}_{tour_pack_type}_{reference}.pdf"
+        filename = f"{package_name}_{reference}.pdf"
 
         # Prepare email
         subject = f'Tour Package {package.package_reference}: {package.name}'

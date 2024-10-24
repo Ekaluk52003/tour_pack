@@ -48,6 +48,7 @@ class ServiceType(models.Model):
 class Service(models.Model):
     name = models.CharField(max_length=200)
     service_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
+    cities = models.ManyToManyField(City)
 
     class Meta:
         unique_together = ['name', 'service_type']
@@ -63,7 +64,8 @@ class Service(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.name} - {self.service_type}"
+        cities_str = ", ".join(city.name for city in self.cities.all())
+        return f"{self.name} - {self.service_type} - ({cities_str})"
 
     def get_cities(self):
         return list(set([price.city for price in self.prices.all()]))
@@ -79,14 +81,14 @@ class ServicePrice(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='prices')
     tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    city = models.ForeignKey(City, on_delete=models.CASCADE)
+
 
     class Meta:
-        unique_together = ['service', 'tour_pack_type', 'city']
+        unique_together = ['service', 'tour_pack_type']
         ordering = ['service__name']
 
     def __str__(self):
-        return f"{self.service} - {self.tour_pack_type} - {self.city} - ${self.price}"
+        return f"{self.service} - {self.tour_pack_type} - ${self.price}"
 
 
 class GuideService(models.Model):

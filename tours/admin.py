@@ -264,20 +264,15 @@ class PredefinedTourDayServiceForm(forms.ModelForm):
         return cleaned_data
 
 
-
 class PredefinedTourDayServiceInline(admin.TabularInline):
     model = PredefinedTourDayService
     extra = 1
     autocomplete_fields = ['service']
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "service":
-            if hasattr(request, '_obj_') and request._obj_ is not None:
-                kwargs["queryset"] = Service.objects.filter(
-                    cities=request._obj_.city
-                ).select_related('service_type')
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.city_being_updated = getattr(request, '_city_being_updated', False)
+        return formset
 
 
 class PredefinedTourDayGuideServiceInline(admin.TabularInline):
@@ -313,40 +308,83 @@ class PredefinedTourDayAdmin(admin.ModelAdmin):
     inlines = [PredefinedTourDayServiceInline, PredefinedTourDayGuideServiceInline]
 
     def get_form(self, request, obj=None, **kwargs):
-        request._obj_ = obj
+        # Store if we're updating city
+        if obj and request.method == "POST":
+            data = request.POST
+            if 'city' in data and str(obj.city.id) != data['city']:
+                request._city_being_updated = True
         return super().get_form(request, obj, **kwargs)
 
     def save_model(self, request, obj, form, change):
-        try:
+        if change and 'city' in form.changed_data:
+            # Store old services before saving
+            if obj.pk:
+                old_services = list(obj.services.all())
+            else:
+                old_services = []
+
+            # Save the model with new city
             super().save_model(request, obj, form, change)
-        except ValidationError as e:
-            messages.error(request, str(e))
-            return False
+
+            # Process the services
+            invalid_services = []
+            for service in old_services:
+                if not service.service.cities.filter(id=obj.city.id).exists():
+                    invalid_services.append(service)
+                    service.delete()
+
+            if invalid_services:
+                service_names = ", ".join(s.service.name for s in invalid_services)
+                messages.warning(
+                    request,
+                    f"The following services were removed as they are not available in {obj.city}: {service_names}"
+                )
+        else:
+            super().save_model(request, obj, form, change)
 
     def save_formset(self, request, form, formset, change):
-        try:
+        if formset.model == PredefinedTourDayService:
             instances = formset.save(commit=False)
-            for instance in instances:
-                if isinstance(instance, PredefinedTourDayService):
-                    # Validate city availability
-                    if not instance.service.cities.filter(id=instance.tour_day.city.id).exists():
-                        available_cities = ', '.join(c.name for c in instance.service.cities.all())
-                        msg = f"The service '{instance.service}' is not available in {instance.tour_day.city}. Available cities: {available_cities}"
-                        messages.error(request, msg)
-                        return False  # Prevent saving
 
-            # If all validations pass, save the instances
+            # Check if we're updating the city
+            city_being_updated = getattr(request, '_city_being_updated', False)
+
+            if city_being_updated:
+                # If updating city, just save without validation
+                for instance in instances:
+                    instance.save()
+                formset.save_m2m()
+                return
+
+            # Normal case - validate services against city
+            valid_instances = []
             for instance in instances:
+                if instance.service and instance.tour_day:
+                    if instance.service.cities.filter(id=instance.tour_day.city.id).exists():
+                        valid_instances.append(instance)
+                    else:
+                        available_cities = ', '.join(c.name for c in instance.service.cities.all())
+                        messages.error(
+                            request,
+                            f"The service '{instance.service}' is not available in {instance.tour_day.city}. "
+                            f"Available cities: {available_cities}"
+                        )
+                        continue
+
+            # Save valid instances
+            for instance in valid_instances:
                 instance.save()
             formset.save_m2m()
-
-        except ValidationError as e:
-            messages.error(request, str(e))
-            return False
+        else:
+            formset.save()
 
     def response_change(self, request, obj):
         try:
-            return super().response_change(request, obj)
+            response = super().response_change(request, obj)
+            # Clear any temporary flags
+            if hasattr(request, '_city_being_updated'):
+                delattr(request, '_city_being_updated')
+            return response
         except ValidationError as e:
             messages.error(request, str(e))
             return self.render_change_form(
@@ -355,7 +393,6 @@ class PredefinedTourDayAdmin(admin.ModelAdmin):
                 obj=obj,
                 form=self.get_form(request, obj)(instance=obj)
             )
-
 
 class TourDayServiceInline(admin.TabularInline):
     model = TourDayService
@@ -458,7 +495,7 @@ class ServicePriceResource(resources.ModelResource):
 
         except IntegrityError as e:
             raise ValueError(f"Error processing row: {str(e)}")
-        
+
     def skip_row(self, instance, original, row, import_validation_errors=None):
         # Your skip logic (already implemented as discussed previously)
 

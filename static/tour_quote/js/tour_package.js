@@ -420,6 +420,23 @@ window.tourPackage = function () {
         return;
       }
 
+       // Check if there are existing days with missing dates
+  const hasInvalidDays = this.days.some(day => !day.date);
+  if (hasInvalidDays) {
+    const confirmContinue = confirm(
+      "Some existing days don't have dates selected. Would you like to:\n\n" +
+      "• Click 'OK' to remove incomplete days and apply the predefined quote\n" +
+      "• Click 'Cancel' to go back and fill in missing dates"
+    );
+
+    if (confirmContinue) {
+      // Remove days with missing dates
+      this.days = this.days.filter(day => day.date);
+    } else {
+      return;
+    }
+  }
+
       // Add the tour pack type to the request
       const url = `/get-predefined-tour-quote/${this.selectedPredefinedQuote}/?tour_pack_type=${encodeURIComponent(this.tourPackType)}`;
 

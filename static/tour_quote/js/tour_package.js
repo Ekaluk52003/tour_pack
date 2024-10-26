@@ -51,6 +51,67 @@ window.tourPackage = function () {
     draggingIndex: null,
     isSuperUser: false,
 
+    fetchHotelsFromTourDays() {
+      // Create a map to store hotels and their nights
+      const hotelCounts = new Map();
+
+      // Count nights for each hotel
+      this.days.forEach(day => {
+        if (!day.hotel || !day.date) return;
+
+        const hotelName = day.cityServices.hotels.find(h => h.id.toString() === day.hotel)?.name;
+        if (!hotelName) return;
+
+        if (hotelCounts.has(hotelName)) {
+          hotelCounts.set(hotelName, hotelCounts.get(hotelName) + 1);
+        } else {
+          hotelCounts.set(hotelName, 1);
+        }
+      });
+
+      // Create fresh hotel cost entries
+      const newHotelCosts = Array.from(hotelCounts).map(([hotelName, nights]) => ({
+        date: '',
+        name: hotelName,
+        type: '',
+        room: 1,
+        nights: nights,
+        price: '0',
+        extraBedPrice: '0',
+        _tempDisplay: {  // Add temporary display values that will trigger the x-data bindings
+          priceDisplay: '0.00',
+          extraBedPriceDisplay: '0.00'
+        }
+      }));
+
+      // Update the hotel costs array
+      this.hotelCosts = newHotelCosts;
+
+      // Force a reactive update and wait for the next tick to ensure template is updated
+      this.$nextTick(() => {
+        // Force all inputs to update their display values
+        const inputs = document.querySelectorAll('input[x-model="displayValue"]');
+        inputs.forEach(input => {
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+
+        // Recalculate totals
+        this.calculateHotelCostTotal();
+        this.calculateGrandTotal();
+      });
+    },
+    // Update the calculateHotelCostTotal method to ensure proper calculation
+    calculateHotelCostTotal() {
+      return this.hotelCosts.reduce((total, cost) => {
+        const roomCost = (parseFloat(cost.room) || 0) *
+                        (parseFloat(cost.nights) || 0) *
+                        (parseFloat(cost.price) || 0);
+        const extraBedCost = (parseFloat(cost.nights) || 0) *
+                            (parseFloat(cost.extraBedPrice) || 0);
+        return total + roomCost + extraBedCost;
+      }, 0).toFixed(2);
+    },
+
     initEditForm(existingData, isSuperUser) {
       this.isSuperUser = isSuperUser;
       if (existingData) {
@@ -682,6 +743,7 @@ window.tourPackage = function () {
         package_reference: this.packageReference,
         hotelCosts: this.hotelCosts.map(cost => ({
           ...cost,
+          date: cost.date || '',
           room: parseInt(cost.room) || 0,
           nights: parseInt(cost.nights) || 0,
           price: formatNumber(cost.price),

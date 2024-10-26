@@ -239,20 +239,76 @@
             margin-top: 5px;
         }
         .table th, .table td {
-            border: 1px solid #dee2e6;
-            padding: 8px;
+            border: 0.15px  solid #dee2e6;
+            padding: 4px;
             text-align: left;
-            font-size: 11px;
+            font-size: 10px;
         }
         .table th {
             background-color: #f8f9fa;
-            font-weight: bold;
-            color: #2980B9;
+            font-weight: normal;
+           
         }
 
         .table tr {
             page-break-inside: avoid;
         }
+      /* price columns */
+        .table th:last-child,
+        .table th:nth-child(7),
+        .table th:nth-child(6),
+        .table td:nth-child(6),
+        .table td:nth-child(7),
+        .table td:last-child {
+            width: 65px;
+            min-width: 65px;
+            max-width: 65px;
+            padding-left: 4px;
+            padding-right: 0px;
+        }
+
+         /* price columns */
+         .table th:last-child,
+         .table th:nth-child(7),
+         .table th:nth-child(6),
+         .table td:nth-child(6),
+         .table td:nth-child(7),
+         .table td:last-child {
+             width: 65px;
+             min-width: 65px;
+             max-width: 65px;
+             padding-left: 4px;
+             padding-right: 0px;
+         }
+
+        /* Rooms column Nights column */
+        .table th:nth-child(5),
+        .table th:nth-child(4),
+        .table td:nth-child(4),
+        .table td:nth-child(5) {
+            text-align: center;
+            padding-left: 2px;
+            padding-right: 0px;
+        }                    /* Add these new styles for the date column */
+
+        .table td:first-child {
+                width: 75px;  /* Fixed width for date column */
+                min-width: 70px;  /* Ensures minimum width */
+                max-width: 80px;  /* Ensures maximum width */
+                padding-left: 1px;
+                padding-right: 1px;
+        }
+
+         /* price columns */
+
+         .table th:nth-child(2),
+         .table th:nth-child(3),
+         .table td:nth-child(2),
+         .table td:nth-child(3) {
+
+             padding-left: 2px;
+             padding-right: 0px;
+         }
 
         .quotation-header {
             font-size: 16px;
@@ -360,6 +416,7 @@
         <table class="table">
             <thead>
                 <tr>
+                    <th>Date</th>
                     <th>Hotel Name</th>
                     <th>Room type including breakfast</th>
                     <th>Rooms</th>
@@ -372,7 +429,8 @@
             <tbody>
                 {% for hotel_cost in hotel_costs_with_total %}
                 <tr>
-                    <td>{{ hotel_cost.name }}</td>
+                    <td>{{ hotel_cost.date }}</td>
+                    <td></strong>{{ hotel_cost.name }}</td>
                     <td>{{ hotel_cost.type }}</td>
                     <td>{{ hotel_cost.room }}</td>
                     <td> {{hotel_cost.nights}}</td>

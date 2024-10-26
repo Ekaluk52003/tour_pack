@@ -69,8 +69,8 @@
                 <ul class="pl-5 mb-2 list-disc dark:text-gray-300">
                     {% for hotel_cost in hotel_costs_with_total %}
                     <li class="mb-2">
-                        <strong>{{ hotel_cost.name }}</strong> ({{ hotel_cost.type }})
-                        <br>
+                         <strong>{{ hotel_cost.date }}</strong><br>
+                       {{ hotel_cost.name }} ({{ hotel_cost.type }})
                         {{ hotel_cost.room }} room(s), {{ hotel_cost.nights|intcomma }} night(s) at {{ hotel_cost.price|intcomma }} THB per night
                         {% if hotel_cost.extraBedPrice %}
                         <br>

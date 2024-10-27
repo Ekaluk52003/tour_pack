@@ -51,6 +51,35 @@ window.tourPackage = function () {
     draggingIndex: null,
     isSuperUser: false,
 
+
+    updateHotelDateDisplay(cost) {
+      if (!cost.date) return;
+
+      // Check if input is in the format "STARTDATE to ENDDATE"
+      if (cost.date.includes('to')) {
+        const [startDate, endDate] = cost.date.split('to').map(d => d.trim());
+
+        // If start and end dates are the same day
+        if (startDate === endDate) {
+          cost.date = `${startDate}\nto\n${endDate}`;
+        }
+        // If different days but same month and year
+        else {
+          const startParts = startDate.match(/(\d{2})-([A-Za-z]{3})-(\d{2})/);
+          const endParts = endDate.match(/(\d{2})-([A-Za-z]{3})-(\d{2})/);
+
+          if (startParts && endParts &&
+              startParts[2] === endParts[2] &&
+              startParts[3] === endParts[3]) {
+            cost.date = `${startParts[1]}-${endParts[1]}-${startParts[2]}-${startParts[3]}`;
+          } else {
+            cost.date = `${startDate}\nto\n${endDate}`;
+          }
+        }
+      }
+    },
+
+
     fetchHotelsFromTourDays() {
       // Create a map to store hotels and their nights
       const hotelCounts = new Map();

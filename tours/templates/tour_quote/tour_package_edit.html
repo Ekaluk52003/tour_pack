@@ -297,13 +297,15 @@
           <div class="flex w-full">
             <table class="w-full">
               <tr class="bg-gray-100 border-b dark:border-gray-600 dark:bg-gray-900">
-                <td class="w-40 p-2">
+                <td class="w-56 p-2">
                   <input
-                    type="text"
-                     x-model="cost.date"
-                    class="w-full p-2 border rounded dark:bg-gray-700"
-                    placeholder="Date"
-                  />
+                      type="text"
+                      x-model="cost.date"
+                      @input="updateHotelDateDisplay(cost)"
+                      class="w-full p-2 whitespace-pre-line border rounded dark:bg-gray-700"
+                      placeholder="e.g., 13-Mar-25 to 13-Mar-25"
+
+                    />
                 </td>
                 <td class="p-2 w-96">
                   <input

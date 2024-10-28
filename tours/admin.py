@@ -128,6 +128,13 @@ class CityForeignKeyWidget(ForeignKeyWidget):
         return ""
 
 class ServiceResource(resources.ModelResource):
+
+    service = fields.Field(
+        column_name='service',
+        attribute='name'
+
+    )
+
     service_type = fields.Field(
         column_name='service_type',
         attribute='service_type',
@@ -137,15 +144,19 @@ class ServiceResource(resources.ModelResource):
     city = fields.Field(
         column_name='city',
         attribute='city',
-        widget=CityForeignKeyWidget()
+        widget=ForeignKeyWidget(City, 'name')
     )
 
     class Meta:
         model = Service
-        import_id_fields = ['name', 'service_type']
-        fields = ('name', 'service_type', 'city')
+        import_id_fields = ['service', 'service_type']
+        fields = ('service', 'service_type', 'city')
         export_order = fields
         skip_unchanged = True
+
+    def dehydrate_city(self, service):
+        """Create a comma-separated list of city names for the city field."""
+        return ", ".join(city.name for city in service.cities.all())
 
     def before_import_row(self, row, **kwargs):
         """Ensure service type and city exist"""
@@ -170,7 +181,7 @@ class ServiceResource(resources.ModelResource):
         if row_result.import_type != row_result.IMPORT_TYPE_ERROR:
             try:
                 service = Service.objects.get(
-                    name=row['name'],
+                    name=row['service'],
                     service_type__name=row['service_type']
                 )
                 city = City.objects.get(name=row['city'])
@@ -181,7 +192,7 @@ class ServiceResource(resources.ModelResource):
 
     def skip_row(self, instance, original, row, import_validation_errors=None):
         try:
-            if not row.get('name') or not row.get('service_type') or not row.get('city'):
+            if not row.get('service') or not row.get('service_type') or not row.get('city'):
                 raise ValidationError("Name, service type, and city are all required.")
             return False
         except ValidationError as e:

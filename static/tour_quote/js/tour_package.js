@@ -15,6 +15,8 @@ window.tourPackage = function () {
   }
 
 
+
+
   return {
 
 
@@ -48,7 +50,6 @@ window.tourPackage = function () {
     extraCosts: [],
     packageId: null,
     packageReference: null,
-    draggingIndex: null,
     isSuperUser: false,
 
 
@@ -681,15 +682,41 @@ window.tourPackage = function () {
     },
 
     dragStart(event, index) {
+
+      event.target.classList.add("dragging");
       event.dataTransfer.effectAllowed = "move";
       event.dataTransfer.setData("text/plain", index);
+      this.isDragging = true;
     },
+
+    dragEnd(event) {
+      event.target.classList.remove("dragging"); // Remove dragging class
+      console.log("Dragging ended, class removed:", event.target); // Debugging
+  },
     dragEnter(event) {
       if (!event.target.classList.contains("border-dashed")) {
         event.target.classList.add("border-dashed", "border-blue-500");
       }
     },
+    dragOver(event) {
+
+        // Scroll when near the top or bottom of the viewport
+      const scrollMargin = 300; // Pixels from the edge to trigger scroll
+      const scrollSpeed = 20; // Speed of scrolling
+
+
+      if (event.clientY < scrollMargin) {
+          // Near the top
+          window.scrollBy(0, -scrollSpeed);
+      } else if (window.innerHeight - event.clientY < scrollMargin) {
+          // Near the bottom
+          window.scrollBy(0, scrollSpeed);
+      }
+
+      event.preventDefault(); // Prevent default to allow drop
+  },
     dragLeave(event) {
+
       if (
         !event.relatedTarget ||
         !event.currentTarget.contains(event.relatedTarget)
@@ -700,17 +727,18 @@ window.tourPackage = function () {
 
     drop(event, toIndex) {
       event.preventDefault();
+
       const fromIndex = parseInt(event.dataTransfer.getData("text/plain"));
 
       if (fromIndex !== toIndex) {
-        const movedDay = this.days.splice(fromIndex, 1)[0];
-        this.days.splice(toIndex, 0, movedDay);
+          const movedDay = this.days.splice(fromIndex, 1)[0];
+          this.days.splice(toIndex, 0, movedDay);
       }
 
       this.isDragging = false;
-      this.draggedIndex = null;
+
       event.target.classList.remove("border-dashed", "border-blue-500");
-    },
+  },
 
     //#############################################this is for submit create#####################################################################
 

@@ -6,3 +6,18 @@
     display: none !important;
 }
 
+
+.dragging {
+    opacity: 0.75; /* Reduced opacity */
+    background-color: rgba(255, 255, 255, 0.9); /* Light background for contrast */
+    border: 2px dashed green; /* Highlight border for the dragged item */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Slight shadow for emphasis */
+    transform: scale(1.05); /* Enlarge slightly */
+    transition: all 0.2s ease; /* Smooth transition */
+}
+  .service-item {
+    transition: all 0.2s ease-in-out;
+  }
+  .service-item:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }

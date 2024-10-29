@@ -11,30 +11,21 @@
   {{ guide_services_json|safe }}
 </script>
 <style>
-  .drag-ghost {
-    opacity: 0.5;
-    background: #c8e6c9;
-    border: 2px dashed #4caf50;
-  }
-  .drop-zone-active {
-    border: 2px dashed #2196f3;
-    background-color: #e3f2fd;
-  }
+  .dragging {
+    opacity: 0.75; /* Reduced opacity */
+    background-color: rgba(255, 255, 255, 0.9); /* Light background for contrast */
+    border: 2px dashed green; /* Highlight border for the dragged item */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Slight shadow for emphasis */
+    transform: scale(1.05); /* Enlarge slightly */
+    transition: all 0.2s ease; /* Smooth transition */
+}
   .service-item {
     transition: all 0.2s ease-in-out;
   }
   .service-item:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
-  .drag-ghost {
-    opacity: 0.5;
-    background: #c8e6c9;
-    border: 2px dashed #4caf50;
-  }
-  .drop-zone-active {
-    border: 2px dashed #2196f3;
-    background-color: #e3f2fd;
-  }
+
 </style>
 <div class="p-8 mx-auto bg-white rounded shadow-lg dark:bg-gray-800"
      x-data="tourPackage()"
@@ -117,10 +108,10 @@
       <div class="p-4 mb-4 bg-white border rounded-lg dark:bg-gray-700"
            draggable="true"
            @dragstart="dragStart($event, index)"
+           @dragend="dragEnd"
+           @dragover="dragOver($event)"
            @dragover.prevent
-           @drop="drop($event, index)"
-
-           >
+           @drop="drop($event, index)">
            <div class="flex items-center justify-between mb-2">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white" x-text="`Day ${index + 1}`"></h2>  <div class="flex items-center">
             <span class="mr-2 text-gray-500 dark:text-gray-400">

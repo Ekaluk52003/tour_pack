@@ -213,8 +213,12 @@ def tour_package_pdf(request, pk):
     remark_of_hotels = package.remark_of_hotels.replace(
         '\n', '<br>') if package.remark_of_hotels is not None else ''
     # Render the template to HTML
+
+    ordered_tour_days = package.tour_days.all().order_by('date')
+
     html_string = render_to_string('tour_quote/tour_package_pdf.html', {
         'package': package,
+        'ordered_tour_days': ordered_tour_days,
         'tour_pack_type': package.tour_pack_type,
         'hotel_costs_with_total': hotel_costs_with_total,
         'base_url': request.build_absolute_uri('/'),
@@ -301,9 +305,12 @@ def send_tour_package_email(request, pk):
         remark_of_hotels = package.remark_of_hotels.replace(
         '\n', '<br>') if package.remark_of_hotels is not None else ''
 
+        # Get ordered tour days
+        ordered_tour_days = package.tour_days.all().order_by('date')
         # Render the template to HTML
         html_string = render_to_string('tour_quote/tour_package_pdf.html', {
             'package': package,
+            'ordered_tour_days': ordered_tour_days,
             'tour_pack_type': package.tour_pack_type,
             'hotel_costs_with_total': hotel_costs_with_total,
             'base_url': request.build_absolute_uri('/'),
@@ -411,7 +418,7 @@ def tour_package_detail(request, package_reference):
     # Prepare extra costs information
     extra_costs = package.extra_costs
     total_extra_cost = sum(float(extra_cost['amount']) for extra_cost in extra_costs)
-
+    ordered_tour_days = package.tour_days.all().order_by('date')
     remark2 = package.remark2.replace(
         '\n', '<br>') if package.remark2 is not None else ''
     # remark2 = package.remark2.replace('\n', '<br>')
@@ -427,7 +434,8 @@ def tour_package_detail(request, package_reference):
         'extra_costs': extra_costs,
         'total_extra_cost': total_extra_cost,
         'remark2': remark2,
-        'comission_total': comission_total
+        'comission_total': comission_total,
+        'ordered_tour_days': ordered_tour_days
     }
 
     return render(request, 'tour_quote/tour_package_detail.html', context)
@@ -480,7 +488,7 @@ def tour_package_edit(request, package_reference):
                     for guide_service in day.guide_services.all()
                 ]
             }
-            for day in package.tour_days.all()
+            for day in package.tour_days.all().order_by('date')
         ],
         'discounts': [
             {

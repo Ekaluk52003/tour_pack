@@ -359,7 +359,7 @@
             </div>
         </div>
 
-        {% for day in package.tour_days.all %}
+        {% for day in ordered_tour_days %}
         <div class="day-section">
             <div class="day-header">
                 <h2>Day {{ forloop.counter }} - {{ day.date|date:"d-M-Y" }}</h2>

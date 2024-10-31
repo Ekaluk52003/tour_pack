@@ -263,7 +263,6 @@ window.tourPackage = function () {
       day.guideServices.splice(guideIndex, 1);
     },
 
-
     insertDayBelow(index) {
       const previousDay = this.days[index];
       let newDate;
@@ -293,6 +292,19 @@ window.tourPackage = function () {
         },
       };
       this.days.splice(index + 1, 0, newDay);
+
+        // Update all subsequent days' dates
+  for (let i = index + 2; i < this.days.length; i++) {
+    if (this.days[i].date) {
+      // Create date object for the previous day
+      const prevDate = new Date(this.days[i - 1].date);
+      // Increment by one day
+      prevDate.setDate(prevDate.getDate() + 1);
+      // Update the current day's date
+      this.days[i].date = prevDate.toISOString().split('T')[0];
+    }
+  }
+
       this.days = [...this.days];
 
     },

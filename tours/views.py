@@ -814,3 +814,50 @@ def duplicate_tour_package(request, package_reference):
 
     messages.success(request, f"Tour package '{new_package.name}' has been created as a copy.")
     return redirect('tour_package_edit', package_reference=new_package.package_reference)
+
+
+@login_required
+def service_price_form(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            with transaction.atomic():
+                # Get or create service type
+                service_type, _ = ServiceType.objects.get_or_create(
+                    name=data['service_type']
+                )
+
+                # Create service
+                service = Service.objects.create(
+                    name=data['name'],
+                    service_type=service_type
+                )
+
+                # Add cities
+                for city_id in data['cities']:
+                    city = City.objects.get(id=city_id)
+                    service.cities.add(city)
+
+                # Create prices
+                for price_data in data['prices']:
+                    ServicePrice.objects.create(
+                        service=service,
+                        tour_pack_type_id=price_data['tour_pack_type'],
+                        price=price_data['price']
+                    )
+
+            return JsonResponse({'status': 'success', 'message': 'Service created successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+    # GET request - render form
+    cities = City.objects.all()
+    tour_pack_types = TourPackType.objects.all()
+    service_types = ServiceType.objects.all()
+
+    context = {
+        'cities': cities,
+        'tour_pack_types': tour_pack_types,
+        'service_types': service_types,
+    }
+    return render(request, 'tour_quote/service_price_form.html', context)

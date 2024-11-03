@@ -50,6 +50,11 @@
                 >Create New</a
               >
               <a
+                href="{% url 'service_price_form' %}"
+                class="px-3 py-2 text-sm font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'service_price_form' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %}"
+                >New Service</a
+              >
+              <a
                 href="{% url 'admin:index' %}"
                 class="px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
                 >Admin</a
@@ -157,6 +162,11 @@
             href="{% url 'tour_package_quote' %}"
             class="block px-3 py-2 text-base font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'tour_package_quote' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %} hover:bg-blue-800 dark:hover:bg-gray-700"
             >Create New</a
+          >
+          <a
+            href="{% url 'service_price_form' %}"
+            class="block px-3 py-2 text-base font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'service_price_form' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %} hover:bg-blue-800 dark:hover:bg-gray-700"
+            >New Service</a
           >
           <a
             href="{% url 'admin:index' %}"

@@ -16,6 +16,6 @@ urlpatterns = [
     path('get-predefined-tour-quote/<int:quote_id>/', views.get_predefined_tour_quote, name='get_predefined_tour_quote'),
     path('tour-package/<int:pk>/send-email/', views.send_tour_package_email, name='send_tour_package_email'),
     path('tour-package/<str:package_reference>/duplicate/', views.duplicate_tour_package, name='duplicate_tour_package'),
-
+    path('services/price-form/', views.service_price_form, name='service_price_form'),
 ]
 

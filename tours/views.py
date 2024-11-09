@@ -240,7 +240,7 @@ def tour_package_pdf(request, pk):
     reference = package.package_reference if package.package_reference else str(package.id)
 
     # Clean the filename components
-    package_name = ''.join(e for e in package_name if e.isalnum() or e in ['-', '_']).strip()
+    package_name = ''.join(e for e in package_name if e.isalnum() or e in ['-', '_','(', ')']).strip()
     reference = ''.join(e for e in reference if e.isalnum() or e in ['-', '_']).strip()
 
     filename = f"{package_name}_{reference}.pdf"
@@ -347,7 +347,7 @@ def send_tour_package_email(request, pk):
         reference = package.package_reference if package.package_reference else str(package.id)
 
         # Clean the filename components
-        package_name = ''.join(e for e in package_name if e.isalnum() or e in ['-', '_']).strip()
+        package_name = ''.join(e for e in package_name if e.isalnum() or e in ['-', '_','(', ')']).strip()
         reference = ''.join(e for e in reference if e.isalnum() or e in ['-', '_']).strip()
 
         filename = f"{package_name}_{reference}.pdf"

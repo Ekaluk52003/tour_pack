@@ -28,8 +28,8 @@ window.tourPackage = function () {
     remark_of_hotels: "",
     tourPackType: "",
     selectedPredefinedQuote: "",
-    commission_rate_hotel: 0,
-    commission_rate_services: 0,
+    commission_rate_hotel: 20,
+    commission_rate_services: 5,
     days: [
       {
         date: "",

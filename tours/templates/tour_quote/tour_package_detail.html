@@ -85,7 +85,7 @@
                                 <td class="p-2">{{ hotel_cost.date }}</td>
                                 <td class="p-2">
                                     {{ hotel_cost.name }}
-                                    <div class="text-sm text-gray-600 dark:text-gray-400">({{ hotel_cost.type }})</div>
+                                    <div class="text-sm text-gray-600 dark:text-gray-400">{% if hotel_cost.type %}({{ hotel_cost.type }}){% endif %}</div>
                                 </td>
                                 <td class="p-2 text-center">{{ hotel_cost.room }}</td>
                                 <td class="p-2 text-center">{{ hotel_cost.nights }}</td>

@@ -309,38 +309,46 @@ window.tourPackage = function () {
 
     },
 
-    updateServicesForPackageType() {
-      if (this.tourPackType) {
-        const promises = this.days.map((day) => {
-          if (day.city) {
-            return this.updateCityServices(day);
-          }
-          return Promise.resolve();
-        });
-
-        Promise.all(promises).then(() => {
-          this.days.forEach((day) => {
-            this.selectCorrectOptions(day);
-            day.services.forEach((service) => this.updateService(day, service));
-            day.guideServices.forEach((guideService) => this.updateGuideService(guideService));
-          });
-          // Trigger a recalculation of all costs
-          this.$nextTick(() => {
-            this.calculateGrandTotal();
-          });
-        });
-      } else {
-        this.days.forEach((day) => {
-          day.services = [];
-          day.guideServices = [];
-          day.cityServices = { hotels: [], service_types: [] };
-        });
-        // Trigger a recalculation of all costs
-        this.$nextTick(() => {
-          this.calculateGrandTotal();
-        });
+  // Modified version of insertHotelCostBelow function
+  insertHotelCostBelow(index) {
+    // Create a completely fresh hotel object with null prices
+    const newHotel = {
+      date: "",
+      name: "",
+      type: "",
+      room: "1",
+      nights: "1",
+      price: null,
+      extraBedPrice: null,
+      _display: {  // Add display properties to ensure price fields stay empty
+        price: "",
+        extraBedPrice: ""
       }
-    },
+    };
+
+    // Create new array with the inserted hotel
+    this.hotelCosts = [
+      ...this.hotelCosts.slice(0, index + 1),
+      JSON.parse(JSON.stringify(newHotel)), // Create a deep copy to ensure no references are shared
+      ...this.hotelCosts.slice(index + 1)
+    ];
+
+    // Reset the values in the next tick to ensure they stay empty
+    this.$nextTick(() => {
+      const insertedIndex = index + 1;
+      if (this.hotelCosts[insertedIndex]) {
+        this.hotelCosts[insertedIndex] = {
+          ...this.hotelCosts[insertedIndex],
+          price: null,
+          extraBedPrice: null,
+          _display: {
+            price: "",
+            extraBedPrice: ""
+          }
+        };
+      }
+    });
+  },
 
     updateCityServices(day) {
       return new Promise((resolve, reject) => {
@@ -890,9 +898,11 @@ window.tourPackage = function () {
       });
     },
 
-    removeHotelCost(index) {
-      this.hotelCosts.splice(index, 1);
-    },
+  // Remove function - simple removal without affecting other values
+  removeHotelCost(index) {
+    // Simply remove the item at the specified index
+    this.hotelCosts.splice(index, 1);
+},
 
     addDiscount() {
       this.discounts.push({ item: "", amount: 0 });

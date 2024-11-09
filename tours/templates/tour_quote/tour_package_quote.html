@@ -247,71 +247,157 @@ Add Day
 
 <div class="mb-4">
   <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Hotel Costs</h2>
-  <div class="overflow-x-auto">
-    <table class="w-full table-auto">
-      <thead>
-        <tr class="bg-gray-200 dark:bg-gray-600">
-          <th class="px-2 text-left text-gray-900 dark:text-white">Name</th>
-          <th class="px-2 text-left text-gray-900 dark:text-white">Type</th>
-          <th class="px-2 text-left text-gray-900 dark:text-white">Nights</th>
-          <th class="px-2 text-left text-gray-900 dark:text-white">Rooms</th>
-          <th class="px-2 text-left text-gray-900 dark:text-white">Price per Night</th>
-          <th class="px-4 py-2 text-gray-900 dark:text-white">Extra Bed Price</th>
-          <th class="px-2 text-left text-gray-900 dark:text-white">Total</th>
-          <th class="px-2 text-left text-gray-900 dark:text-white">Actions</th>
-        </tr>
-      </thead>
+
+
+  <div class="mb-8 overflow-x-auto">
+    <table class="w-full border-collapse">
       <tbody>
         <template x-for="(cost, index) in hotelCosts" :key="index">
           <tr>
-              <td class="px-2 border"><input x-model="cost.name" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
-              <td class="px-2 border"><input x-model="cost.type" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
-              <td class="px-2 border"><input type="number" x-model="cost.nights" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
-              <td class="px-2 border"><input type="number" x-model="cost.room" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></td>
+            <td class="p-0">
+              <!-- First TR: Main hotel cost row -->
+              <div class="flex w-full" :data-hotel-index="index">
+                <table class="w-full">
+                  <tr class="bg-gray-100 border-b dark:border-gray-600 dark:bg-gray-900">
+                    <td class="w-56 p-2">
+                      <input
+                        type="text"
+                        x-model="cost.date"
+                        @input="updateHotelDateDisplay(cost)"
+                        class="w-full p-2 whitespace-pre-line border rounded dark:bg-gray-700"
+                        placeholder="e.g., 13-Mar-25 to 13-Mar-25"
+                      />
+                    </td>
+                    <td class="p-2 w-96">
+                      <input
+                        type="text"
+                        x-model="cost.name"
+                        class="w-full p-2 border rounded dark:bg-gray-700"
+                        placeholder="Enter hotel name"
+                      />
+                    </td>
+                    <td class="p-2 w-96">
+                      <input
+                        type="text"
+                        x-model="cost.type"
+                        class="w-full p-2 border rounded dark:bg-gray-700"
+                        placeholder="Enter hotel Type"
+                      />
+                    </td>
+                    <td class="w-24 p-2">
+                      <button class="px-4 py-2 text-white bg-red-500 rounded hover:bg-red-600" @click="removeHotelCost(index)">
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
 
-              <td class="px-2 border" x-data="{ displayValue: formatCommaNumber(cost.price), actualValue: cost.price }">
-                <input type="text"
-                       x-model="displayValue"
-                       @input="actualValue = unformatCommaNumber($event.target.value);
-                               cost.price = actualValue;
-                               displayValue = formatCommaNumber(actualValue);"
-                       class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
-              </td>
+                  <tr class="border-b dark:border-gray-600">
+                    <td colspan="4">
+                      <div class="flex items-center px-2 py-3 space-x-4">
+                        <div class="flex items-center">
+                          <label class="block w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Nights:
+                          </label>
+                          <input
+                            type="number"
+                            class="w-20 p-2 text-center border rounded dark:bg-gray-700"
+                            min="1"
+                            x-model="cost.nights"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div class="flex items-center">
+                          <label class="block w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Rooms:
+                          </label>
+                          <input
+                            type="number"
+                            x-model="cost.room"
+                            class="w-20 p-2 text-center border rounded dark:bg-gray-700"
+                            min="1"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div class="flex items-center">
+                          <label class="block w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Price/Night:
+                          </label>
+                          <input
+                            type="text"
+                            :value="cost.price === null ? '' : formatCommaNumber(cost.price)"
+                            @input="cost.price = unformatCommaNumber($event.target.value) || null"
+                            class="p-2 text-center border rounded w-25 dark:bg-gray-700"
+                            placeholder="0"
+                          />
+                        </div>
+                      <!-- Extra bed price input field -->
+                      <div class="flex items-center">
+                        <label class="block w-32 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Extra Bed Price:
+                        </label>
+                        <input
+                          type="text"
+                          :value="cost.extraBedPrice === null ? '' : formatCommaNumber(cost.extraBedPrice)"
+                          @input="cost.extraBedPrice = unformatCommaNumber($event.target.value) || null"
+                          class="p-2 text-center border rounded w-25 dark:bg-gray-700"
+                          placeholder="0"
+                        />
+                        </div>
+                        <div class="flex items-center">
+                          <label class="block w-10 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Total THB:
+                          </label>
+                          <span className="w-56 pl-8 font-medium text-right" x-text="formatCommaNumber(((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2))"></span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
 
-
-
-              <td class="px-2 border" x-data="{ displayValue: formatCommaNumber(cost.extraBedPrice), actualValue: cost.extraBedPrice }">
-                <input type="text"
-                       x-model="displayValue"
-                       @input="actualValue = unformatCommaNumber($event.target.value);
-                               cost.extraBedPrice = actualValue;
-                               displayValue = formatCommaNumber(actualValue);"
-                       class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
-              </td>
-
-              <td class="px-2 text-gray-900 border dark:text-white" x-text="formatCommaNumber(((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2)) + ' THB'"></td>
-              <td class="px-4 py-2">
-                  <button @click="removeHotelCost(index)" class="px-2 py-1 text-white bg-red-500 rounded">Delete</button>
-              </td>
+              <!-- Insert button row - appears after each hotel cost except the last one -->
+              <template x-if="index < hotelCosts.length - 1">
+                <div class="w-full py-2">
+                  <button @click="insertHotelCostBelow(index)"
+                          class="flex items-center justify-center w-full px-4 py-2 space-x-2 text-blue-600 transition-colors duration-200 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    <span>Insert Hotel</span>
+                  </button>
+                </div>
+              </template>
+            </td>
           </tr>
-      </template>
+        </template>
       </tbody>
     </table>
   </div>
-  <button @click="addHotelCost" class="px-3 py-2 mt-2 text-white bg-blue-500 rounded">Add Hotel Cost</button>
-  <div class="mt-2 text-gray-900 dark:text-white">
+
+
+  <div class="flex justify-between">
+
+    <div>
+      <button @click="addHotelCost" class="px-3 py-2 mt-2 text-white bg-blue-500 rounded">Add Hotel Cost</button>
+     
+    </div>
+
+  <div class="text-right">
+    <strong>Total Hotel Cost: </strong>
+    <span class="text-right" x-text="formatCommaNumber(calculateHotelCostTotal()) + ' THB'"></span>
+    </div>
+  </div>
+
+
 
     <div class="mb-4">
       <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark hotels</label>
       <textarea id="remark_of_hotels" x-model="remark_of_hotels"  class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
     </div>
 
-<div class="text-right">
-  <strong>Total Hotel Cost: </strong>
-  <span class="text-right" x-text="formatCommaNumber(calculateHotelCostTotal()) + ' THB'"></span>
-</div>
+
   </div>
-</div>
+
  <!--  Section -->
  <div class="mb-4">
   <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white"></h2>

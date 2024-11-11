@@ -130,13 +130,15 @@
            </div>
 
 
-        <div class="mb-2">
-          <label class="block mb-2 text-gray-900 dark:text-white">Date</label>
-          <input type="date" x-model="day.date"
-                 class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
-                 :class="{'border-red-500': !day.date}">
-          <p class="mt-1 text-sm text-red-500" x-show="!day.date">Please select a date.</p>
-        </div>
+           <div class="mb-2">
+            <label class="block mb-2 text-gray-900 dark:text-white">Date</label>
+            <input type="date"
+                   x-model="day.date"
+                   @input="index === 0 && handleFirstDayDateChange()"
+                   class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
+                   :class="{'border-red-500': !day.date}">
+            <p class="mt-1 text-sm text-red-500" x-show="!day.date">Please select a date.</p>
+          </div>
 
 
 

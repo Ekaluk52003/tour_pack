@@ -202,6 +202,12 @@ window.tourPackage = function () {
       // Initialize guide services
       this.guideServices = window.guideServicesData || [];
 
+      this.$watch('days[0].date', (newValue, oldValue) => {
+        if (newValue !== oldValue) {
+          this.handleFirstDayDateChange();
+        }
+      });
+
 
       if (this.guideServices.length === 0) {
         console.warn('No guide services available');
@@ -212,7 +218,8 @@ window.tourPackage = function () {
       // Fetch guide services if they're not already available
     },
 
-    addDay() {
+     // Modify addDay to use the new date logic
+     addDay() {
       this.days.push({
         date: "",
         city: "",
@@ -221,10 +228,12 @@ window.tourPackage = function () {
         guideServices: [],
         cityServices: { hotels: [], service_types: [] },
       });
+      this.updateAllDates();
     },
 
     removeDay(index) {
       this.days.splice(index, 1);
+      this.updateAllDates();
     },
 
     addService(day) {
@@ -292,20 +301,7 @@ window.tourPackage = function () {
         },
       };
       this.days.splice(index + 1, 0, newDay);
-
-        // Update all subsequent days' dates
-  for (let i = index + 2; i < this.days.length; i++) {
-    if (this.days[i].date) {
-      // Create date object for the previous day
-      const prevDate = new Date(this.days[i - 1].date);
-      // Increment by one day
-      prevDate.setDate(prevDate.getDate() + 1);
-      // Update the current day's date
-      this.days[i].date = prevDate.toISOString().split('T')[0];
-    }
-  }
-
-      this.days = [...this.days];
+      this.updateAllDates();
 
     },
 
@@ -1079,6 +1075,8 @@ window.tourPackage = function () {
       this.days = [...this.days];
 
 
+      // Update all dates after copying the day
+     this.updateAllDates();
     },
 
     async updateCityServices(day) {
@@ -1131,7 +1129,27 @@ window.tourPackage = function () {
     },
     unformatCommaNumber(num) {
       return num.replace(/,/g, '');
-    }
+    },
+    handleFirstDayDateChange() {
+      this.updateAllDates();
+    },
+
+    updateAllDates() {
+      if (this.days.length === 0) return;
+
+      const firstDay = this.days[0];
+      if (!firstDay.date) return;
+
+      // Start from the first date and update all subsequent dates
+      const startDate = new Date(firstDay.date);
+
+      // Update all days after the first one
+      for (let i = 1; i < this.days.length; i++) {
+        const nextDate = new Date(startDate);
+        nextDate.setDate(startDate.getDate() + i);
+        this.days[i].date = nextDate.toISOString().split('T')[0];
+      }
+    },
 
   };
 };

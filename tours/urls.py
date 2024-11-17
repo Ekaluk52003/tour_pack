@@ -17,5 +17,12 @@ urlpatterns = [
     path('tour-package/<int:pk>/send-email/', views.send_tour_package_email, name='send_tour_package_email'),
     path('tour-package/<str:package_reference>/duplicate/', views.duplicate_tour_package, name='duplicate_tour_package'),
     path('services/price-form/', views.service_price_form, name='service_price_form'),
+
+    path('service-price-edit/', views.service_price_edit, name='service_price_edit'),
+    path('get-service-prices/<int:service_id>/', views.get_service_prices, name='get_service_prices'),
+    path('save-service-prices/', views.save_service_prices, name='save_service_prices'),
+    path('service-list/', views.service_list, name='service_list'),
+
+
 ]
 

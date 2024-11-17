@@ -112,6 +112,17 @@ window.tourPackage = function () {
     },
 
 
+
+    formatDateForDisplay(isoDate) {
+      if (!isoDate) return '';
+      try {
+        const [year, month, day] = isoDate.split('-');
+        return `${day}/${month}/${year}`;
+      } catch (e) {
+        return '';
+      }
+    },
+
     updateHotelDateDisplay(cost) {
       if (!cost.date) return;
 

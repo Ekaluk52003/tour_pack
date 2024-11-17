@@ -131,13 +131,24 @@
 
 
            <div class="mb-2">
-            <label class="block mb-2 text-gray-900 dark:text-white">Date</label>
-            <input type="date"
-                   x-model="day.date"
-                   @input="index === 0 && handleFirstDayDateChange()"
-                   class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
-                   :class="{'border-red-500': !day.date}">
-            <p class="mt-1 text-sm text-red-500" x-show="!day.date">Please select a date.</p>
+            <div class="relative">
+              <!-- Native date input on top -->
+              <input type="date"
+                     x-model="day.date"
+                     @input="index === 0 && handleFirstDayDateChange()"
+                     class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
+                     :class="{'border-red-500': !day.date}"
+                     x-ref="dateInput">
+
+              <!-- Display input with explicit reference to parent's dateInput -->
+              <input type="text"
+                     :value="day.date ? formatDateForDisplay(day.date) : ''"
+                     @click="$el.previousElementSibling.showPicker()"
+                     readonly
+                     class="absolute inset-0 w-full px-3 py-2 text-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white"
+                     :class="{'border-red-500': !day.date}"
+                     placeholder="DD/MM/YYYY">
+            </div>
           </div>
 
 

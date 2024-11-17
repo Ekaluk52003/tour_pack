@@ -52,6 +52,65 @@ window.tourPackage = function () {
     packageReference: null,
     isSuperUser: false,
 
+    async updateServicesForPackageType() {
+      if (!this.tourPackType) {
+        console.log('No tour package type selected');
+        return;
+      }
+
+      // Update services for each day
+      for (const day of this.days) {
+        if (day.city) {
+          try {
+            // Fetch updated services with prices for the new tour package type
+            await this.updateCityServices(day);
+
+            // Update existing services with new prices
+            day.services = await Promise.all(day.services.map(async (service) => {
+              const serviceTypeObj = day.cityServices.service_types.find(
+                st => st.type.toLowerCase() === service.type.toLowerCase()
+              );
+
+              if (serviceTypeObj) {
+                const updatedService = serviceTypeObj.services.find(
+                  s => s.id.toString() === service.name
+                );
+
+                if (updatedService) {
+                  return {
+                    ...service,
+                    price: parseFloat(updatedService.price) || 0,
+                    price_at_booking: parseFloat(updatedService.price) || 0
+                  };
+                }
+              }
+
+              // If service is not found in new package type, remove it
+              return null;
+            }));
+
+            // Filter out null services (ones that weren't found in new package type)
+            day.services = day.services.filter(service => service !== null);
+
+            // Update hotel if it exists in new package type
+            if (day.hotel) {
+              const hotelExists = day.cityServices.hotels.some(
+                h => h.id.toString() === day.hotel
+              );
+              if (!hotelExists) {
+                day.hotel = ''; // Reset hotel if not available in new package type
+              }
+            }
+          } catch (error) {
+            console.error('Error updating services for day:', error);
+          }
+        }
+      }
+
+      // Recalculate totals after updating all services
+      this.calculateGrandTotal();
+    },
+
 
     updateHotelDateDisplay(cost) {
       if (!cost.date) return;

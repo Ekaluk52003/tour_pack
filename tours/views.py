@@ -694,54 +694,6 @@ def get_predefined_tour_quote(request, quote_id):
 
 
 
-@login_required
-@require_http_methods(["GET"])
-def get_city_services(request, city_id):
-    try:
-        tour_pack_type_id = request.GET.get('tour_pack_type')
-        city = get_object_or_404(City, id=city_id)
-        tour_pack_type = get_object_or_404(TourPackType, id=tour_pack_type_id)
-
-        hotels = list(Hotel.objects.filter(city=city).values('id', 'name'))
-
-        # Updated query to use the new model structure
-        services = Service.objects.filter(
-            cities=city
-        ).prefetch_related('prices').select_related('service_type')
-
-        service_types = {}
-        for service in services:
-            service_type = service.service_type.name
-            if service_type not in service_types:
-                service_types[service_type] = []
-
-            # Get price for this service and tour pack type
-            price = service.prices.filter(tour_pack_type=tour_pack_type).first()
-            if price:
-                service_types[service_type].append({
-                    'id': service.id,
-                    'name': service.name,
-                    'price': float(price.price)
-                })
-
-        guide_services = list(
-            GuideService.objects.all().values('id', 'name', 'price'))
-        for gs in guide_services:
-            gs['price'] = float(gs['price'])
-
-        response_data = {
-            'hotels': hotels,
-            'service_types': [
-                {'type': st, 'services': services}
-                for st, services in service_types.items()
-            ],
-            'guide_services': guide_services
-        }
-
-        return JsonResponse(response_data, safe=False, content_type='application/json')
-    except Exception as e:
-        print("Error in get_city_services:", str(e))
-        return JsonResponse({'error': str(e)}, status=500, content_type='application/json')
 
 @login_required
 @require_http_methods(["GET"])
@@ -861,3 +813,130 @@ def service_price_form(request):
         'service_types': service_types,
     }
     return render(request, 'tour_quote/service_price_form.html', context)
+
+@login_required
+def service_price_edit(request):
+    """
+    View for editing service prices.
+    """
+    services = Service.objects.all().select_related('service_type')
+    tour_pack_types = TourPackType.objects.all()
+
+    context = {
+        'services': services,
+        'tour_pack_types': tour_pack_types,
+    }
+    return render(request, 'tour_quote/service_price_edit.html', context)
+
+@login_required
+@require_http_methods(['GET'])
+def get_service_prices(request, service_id):
+    """
+    API endpoint to get prices for a specific service.
+    """
+    try:
+        service = Service.objects.get(id=service_id)
+        prices = ServicePrice.objects.filter(service=service).select_related('tour_pack_type')
+
+        return JsonResponse({
+            'service': {
+                'id': service.id,
+                'name': service.name,
+                'service_type': service.service_type.name,
+            },
+            'prices': [{
+                'id': price.id,
+                'tour_pack_type_id': price.tour_pack_type.id,
+                'tour_pack_type_name': price.tour_pack_type.name,
+                'price': float(price.price)
+            } for price in prices]
+        })
+    except Service.DoesNotExist:
+        return JsonResponse({'error': 'Service not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_http_methods(['POST'])
+def save_service_prices(request):
+    try:
+        data = json.loads(request.body)
+        service_id = data['service_id']
+        prices = data['prices']
+
+        service = Service.objects.get(id=service_id)
+
+        with transaction.atomic():
+            processed_price_ids = []
+
+            for price_data in prices:
+                tour_pack_type_id = price_data['tour_pack_type_id']
+                try:
+                    price_value = Decimal(str(price_data['price']))
+                except (ValueError, TypeError, InvalidOperation):
+                    price_value = Decimal('0')
+
+                price_id = price_data.get('price_id')
+
+                # Skip if price is 0
+                if price_value == 0:
+                    if price_id:
+                        ServicePrice.objects.filter(id=price_id).delete()
+                    continue
+
+                if price_id:
+                    price_obj = ServicePrice.objects.filter(id=price_id).first()
+                    if price_obj:
+                        price_obj.price = price_value
+                        price_obj.save()
+                        processed_price_ids.append(price_obj.id)
+                else:
+                    price_obj, created = ServicePrice.objects.get_or_create(
+                        service=service,
+                        tour_pack_type_id=tour_pack_type_id,
+                        defaults={'price': price_value}
+                    )
+                    if not created:
+                        price_obj.price = price_value
+                        price_obj.save()
+                    processed_price_ids.append(price_obj.id)
+
+            # Delete unprocessed prices
+            ServicePrice.objects.filter(
+                service=service
+            ).exclude(
+                id__in=processed_price_ids
+            ).delete()
+
+        # Fetch updated prices and convert Decimal to float for JSON serialization
+        updated_prices = []
+        for price in ServicePrice.objects.filter(service=service).select_related('tour_pack_type'):
+            updated_prices.append({
+                'id': price.id,
+                'tour_pack_type_id': price.tour_pack_type.id,
+                'tour_pack_type_name': price.tour_pack_type.name,
+                'price': float(price.price)  # Convert Decimal to float
+            })
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Prices updated successfully',
+            'prices': updated_prices
+        })
+    except Service.DoesNotExist:
+        return JsonResponse({'error': 'Service not found'}, status=404)
+    except Exception as e:
+        print(f"Error in save_service_prices: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def service_list(request):
+    """
+    View to list all services with their prices.
+    """
+    services = Service.objects.all().select_related('service_type').prefetch_related('prices__tour_pack_type')
+    context = {
+        'services': services
+    }
+    return render(request, 'tour_quote/service_list.html', context)

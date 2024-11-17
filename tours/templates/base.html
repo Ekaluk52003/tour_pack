@@ -55,6 +55,11 @@
                 >New Service</a
               >
               <a
+                href="{% url 'service_price_edit' %}"
+                class="px-3 py-2 text-sm font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'service_price_edit' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %}"
+                >Service Price</a
+              >
+              <a
                 href="{% url 'admin:index' %}"
                 class="px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
                 >Admin</a
@@ -168,6 +173,11 @@
             class="block px-3 py-2 text-base font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'service_price_form' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %} hover:bg-blue-800 dark:hover:bg-gray-700"
             >New Service</a
           >
+          <a
+          href="{% url 'service_price_edit' %}"
+          class="block px-3 py-2 text-base font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'service_price_edit' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %} hover:bg-blue-800 dark:hover:bg-gray-700"
+          >Service Price</a
+        >
           <a
             href="{% url 'admin:index' %}"
             class="block px-3 py-2 text-base font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"

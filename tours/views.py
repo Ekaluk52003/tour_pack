@@ -833,6 +833,7 @@ def service_price_edit(request):
 def get_service_prices(request, service_id):
     """
     API endpoint to get prices for a specific service.
+    Returns empty string for blank prices, but actual 0 for zero prices.
     """
     try:
         service = Service.objects.get(id=service_id)
@@ -848,7 +849,7 @@ def get_service_prices(request, service_id):
                 'id': price.id,
                 'tour_pack_type_id': price.tour_pack_type.id,
                 'tour_pack_type_name': price.tour_pack_type.name,
-                'price': float(price.price)
+                'price': str(price.price) if price.price is not None else ''  # Keep 0 as "0", blank as ""
             } for price in prices]
         })
     except Service.DoesNotExist:
@@ -859,11 +860,15 @@ def get_service_prices(request, service_id):
 @login_required
 @require_http_methods(['POST'])
 def save_service_prices(request):
+    """
+    API endpoint to save service prices.
+    - Accepts 0 as a valid price
+    - Skips creation/removes existing prices for blank inputs
+    """
     try:
         data = json.loads(request.body)
         service_id = data['service_id']
         prices = data['prices']
-
         service = Service.objects.get(id=service_id)
 
         with transaction.atomic():
@@ -871,58 +876,69 @@ def save_service_prices(request):
 
             for price_data in prices:
                 tour_pack_type_id = price_data['tour_pack_type_id']
-                try:
-                    price_value = Decimal(str(price_data['price']))
-                except (ValueError, TypeError, InvalidOperation):
-                    price_value = Decimal('0')
-
                 price_id = price_data.get('price_id')
+                price_input = price_data['price']
 
-                # Skip if price is 0
-                if price_value == 0:
+                # Handle blank input case
+                if price_input == '' or price_input is None:
+                    # If there's an existing price record, delete it
                     if price_id:
                         ServicePrice.objects.filter(id=price_id).delete()
                     continue
 
+                # Convert price to Decimal
+                try:
+                    price_value = Decimal(str(price_input))
+                except (ValueError, TypeError, InvalidOperation):
+                    continue
+
+                # Handle existing price record
                 if price_id:
-                    price_obj = ServicePrice.objects.filter(id=price_id).first()
-                    if price_obj:
+                    try:
+                        price_obj = ServicePrice.objects.get(id=price_id)
                         price_obj.price = price_value
                         price_obj.save()
                         processed_price_ids.append(price_obj.id)
+                    except ServicePrice.DoesNotExist:
+                        # If price record doesn't exist anymore, create new if not blank
+                        price_obj = ServicePrice.objects.create(
+                            service=service,
+                            tour_pack_type_id=tour_pack_type_id,
+                            price=price_value
+                        )
+                        processed_price_ids.append(price_obj.id)
                 else:
-                    price_obj, created = ServicePrice.objects.get_or_create(
+                    # Create new price record
+                    price_obj = ServicePrice.objects.create(
                         service=service,
                         tour_pack_type_id=tour_pack_type_id,
-                        defaults={'price': price_value}
+                        price=price_value
                     )
-                    if not created:
-                        price_obj.price = price_value
-                        price_obj.save()
                     processed_price_ids.append(price_obj.id)
 
-            # Delete unprocessed prices
+            # Delete any price records that weren't processed
             ServicePrice.objects.filter(
                 service=service
             ).exclude(
                 id__in=processed_price_ids
             ).delete()
 
-        # Fetch updated prices and convert Decimal to float for JSON serialization
-        updated_prices = []
-        for price in ServicePrice.objects.filter(service=service).select_related('tour_pack_type'):
-            updated_prices.append({
-                'id': price.id,
-                'tour_pack_type_id': price.tour_pack_type.id,
-                'tour_pack_type_name': price.tour_pack_type.name,
-                'price': float(price.price)  # Convert Decimal to float
+            # Get updated prices for response
+            updated_prices = ServicePrice.objects.filter(
+                service=service
+            ).select_related('tour_pack_type')
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Prices updated successfully',
+                'prices': [{
+                    'id': price.id,
+                    'tour_pack_type_id': price.tour_pack_type.id,
+                    'tour_pack_type_name': price.tour_pack_type.name,
+                    'price': str(price.price) if price.price is not None else ''
+                } for price in updated_prices]
             })
 
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Prices updated successfully',
-            'prices': updated_prices
-        })
     except Service.DoesNotExist:
         return JsonResponse({'error': 'Service not found'}, status=404)
     except Exception as e:

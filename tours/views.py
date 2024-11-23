@@ -292,10 +292,29 @@ def tour_package_pdf(request, pk):
 def send_tour_package_email(request, pk):
     try:
         package = get_object_or_404(TourPackageQuote, pk=pk)
+
+        # Define the image path based on your project structure
+        logo_data_uri = None
+        # Try multiple possible paths for Docker environment
+        possible_paths = [
+        os.path.join(settings.BASE_DIR, 'static', 'image', 'rsz_animo1.png')         ]
+
+        # Try to find and load the image
+        for logo_path in possible_paths:
+            if os.path.exists(logo_path):
+                try:
+                    with open(logo_path, 'rb') as f:
+                        logo_binary = f.read()
+                        logo_base64 = base64.b64encode(logo_binary).decode('utf-8')
+                        logo_data_uri = f'data:image/png;base64,{logo_base64}'
+                        break
+                except Exception as e:
+                    print(f"Error reading file at {logo_path}: {str(e)}")  # Debug print
+
+        if not logo_data_uri:
+            print("Could not find or load the logo image")  # Debug print
         cc_email = request.POST.get('cc_email')
 
-        logger.info(f"Attempting to send email for package {pk}")
-        logger.info(f"CC Email: {cc_email}")
 
         # Calculate totals (replicating logic from tour_package_pdf)
         hotel_costs_with_total = []
@@ -342,7 +361,8 @@ def send_tour_package_email(request, pk):
             'total_extra_cost': total_extra_cost,
             'static_url': settings.STATIC_URL,
             'remark2': remark2,
-            'remark_of_hotels':remark_of_hotels
+            'remark_of_hotels':remark_of_hotels,
+            'logo_data_uri': logo_data_uri
         })
 
         # Generate PDF

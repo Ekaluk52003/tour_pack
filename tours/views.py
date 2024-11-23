@@ -24,7 +24,8 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 from io import BytesIO
 from django.contrib import messages
-
+import os
+import base64
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +183,31 @@ def save_tour_package(request, package_reference=None):
 def tour_package_pdf(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
 
-    # Prepare hotel costs with total calculation
+    # Define the image path based on your project structure
+    logo_data_uri = None
+
+    # Try multiple possible paths for Docker environment
+    possible_paths = [
+      os.path.join(settings.BASE_DIR, 'static', 'image', 'rsz_animo1.png')        # Add more paths if needed
+    ]
+
+    # Try to find and load the image
+    for logo_path in possible_paths:
+
+        if os.path.exists(logo_path):
+            try:
+                with open(logo_path, 'rb') as f:
+                    logo_binary = f.read()
+                    logo_base64 = base64.b64encode(logo_binary).decode('utf-8')
+                    logo_data_uri = f'data:image/png;base64,{logo_base64}'
+                    break
+            except Exception as e:
+                print(f"Error reading file at {logo_path}: {str(e)}")  # Debug print
+
+    if not logo_data_uri:
+        print("Could not find or load the logo image")  # Debug print
+
+    # Your existing code for hotel costs calculations...
     hotel_costs_with_total = []
     for cost in package.hotel_costs:
         room_cost = float(cost['room']) * \
@@ -192,7 +217,7 @@ def tour_package_pdf(request, pk):
             cost['nights']) if extra_bed_price and extra_bed_price.strip() else 0
         total_cost = room_cost + extra_bed_cost
 
-        cost_with_total = cost.copy()  # Create a copy to avoid modifying the original
+        cost_with_total = cost.copy()
         cost_with_total['room_cost'] = room_cost
         cost_with_total['extra_bed_cost'] = extra_bed_cost
         cost_with_total['total'] = total_cost
@@ -202,17 +227,14 @@ def tour_package_pdf(request, pk):
     discounts = package.discounts
     total_discount = sum(float(discount['amount']) for discount in discounts)
 
-    # Prepare extra costs
     extra_costs = package.extra_costs
     total_extra_cost = sum(float(extra_cost['amount']) for extra_cost in extra_costs)
 
-    # Handle the case where remark2 might be None
     remark2 = package.remark2.replace(
         '\n', '<br>') if package.remark2 is not None else ''
 
     remark_of_hotels = package.remark_of_hotels.replace(
         '\n', '<br>') if package.remark_of_hotels is not None else ''
-    # Render the template to HTML
 
     ordered_tour_days = package.tour_days.all().order_by('date')
 
@@ -228,42 +250,42 @@ def tour_package_pdf(request, pk):
         'total_extra_cost': total_extra_cost,
         'static_url': settings.STATIC_URL,
         'remark2': remark2,
-        'remark_of_hotels':remark_of_hotels
-
+        'remark_of_hotels': remark_of_hotels,
+        'logo_data_uri': logo_data_uri
     })
 
-    # Create a response object and generate PDF
+    # Create response and set filename
     response = HttpResponse(content_type='application/pdf')
-
-       # Generate the filename
     package_name = package.name if package.name else 'unknown'
     reference = package.package_reference if package.package_reference else str(package.id)
-
-    # Clean the filename components
     package_name = ''.join(e for e in package_name if e.isalnum() or e in ['-', '_','(', ')']).strip()
     reference = ''.join(e for e in reference if e.isalnum() or e in ['-', '_']).strip()
-
     filename = f"{package_name}_{reference}.pdf"
     response['Content-Disposition'] = f'inline; filename="{filename}"'
 
-    # WeasyPrint to generate the PDF
-    HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf(response, stylesheets=[CSS(string='''
-    @page {
-        size: A4;
-        margin: 2cm;
-        @bottom-right {
-            content: "Page " counter(page) " of " counter(pages);
-            font-size: 10px;
-            color: #666;
-        }
-    }
-    body {
-        font-family: sans-serif;
-    }
-''')])
+    # Generate PDF with custom styles
+    HTML(
+        string=html_string,
+        base_url=request.build_absolute_uri()
+    ).write_pdf(
+        response,
+        stylesheets=[CSS(string='''
+            @page {
+                size: A4;
+                margin: 2cm;
+                @bottom-right {
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 10px;
+                    color: #666;
+                }
+            }
+            body {
+                font-family: sans-serif;
+            }
+        ''')]
+    )
 
     return response
-
 
 @login_required
 @require_http_methods(["POST"])

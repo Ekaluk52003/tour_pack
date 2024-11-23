@@ -102,6 +102,18 @@
                 margin-bottom: 1px;
             }
 
+            .remarkTwo h3 {
+                color: #8a0707;
+                font-size: 12px;
+                margin-bottom: 1px;
+            }
+
+            .remarkTwo {
+                color: #8a0707;
+                font-size: 12px;
+                margin-bottom: 1px;
+            }
+
 
 
 
@@ -334,7 +346,11 @@
         <div class="header-container">
             <div class="company-header">
                 <!-- <img src="https://i.ibb.co/M8cDH9F/animo.jpg" alt="Company Logo"> -->
-                <img src="https://i.postimg.cc/cCr52JqK/rsz-animo1.png"alt="Company Logo">
+                <div class="logo">
+                    {% if logo_data_uri %}
+                        <img src="{{ logo_data_uri }}" alt="Animo Tours Logo">
+                    {% endif %}
+                </div>
                 <h1>Animo Tours</h1>
             </div>
 
@@ -534,8 +550,10 @@
 
         <div class="subject-service"><strong>***This quotation is subject to availability of all mentioned services.</strong></div>
 
-        <div class="remark2"><h3>Remark2:</h3></div>
-        <div style="white-space: pre-wrap;"><div class="remark2-items">{{ remark2|safe }}</div></div>
+        {% if remark2 and remark2|length > 0 %}
+    <div class="remarkTwo"><h3>Remark2:</h3></div>
+    <div style="white-space: pre-wrap;"><div class="remarkTwo">{{ remark2|safe }}</div></div>
+{% endif %}
 
     </div>
 

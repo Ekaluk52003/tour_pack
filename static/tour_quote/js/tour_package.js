@@ -150,55 +150,111 @@ window.tourPackage = function () {
       }
     },
 
-
     fetchHotelsFromTourDays() {
-      // Create a map to store hotels and their nights
-      const hotelCounts = new Map();
+      // Group consecutive stays by hotel
+      const hotelStays = [];
+      let currentStay = null;
 
-      // Count nights for each hotel
-      this.days.forEach(day => {
+      // Sort days by date
+      const sortedDays = [...this.days].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      sortedDays.forEach((day) => {
         if (!day.hotel || !day.date) return;
 
-        const hotelName = day.cityServices.hotels.find(h => h.id.toString() === day.hotel)?.name;
-        if (!hotelName) return;
+        // Find hotel info from cityServices
+        const hotelInfo = day.cityServices.hotels.find(h => h.id.toString() === day.hotel);
+        if (!hotelInfo) return;
 
-        if (hotelCounts.has(hotelName)) {
-          hotelCounts.set(hotelName, hotelCounts.get(hotelName) + 1);
+        // Check if this is a continuation of the current stay at the same hotel
+        if (currentStay && currentStay.name === hotelInfo.name) {
+          // Update end date and increment nights
+          currentStay.toDate = day.date;
+          currentStay.nights++;
         } else {
-          hotelCounts.set(hotelName, 1);
+          // If there was a previous stay, add it to the array
+          if (currentStay) {
+            // Format and add the current stay
+            const formattedDate = this.formatStayDates(
+              new Date(currentStay.date),
+              new Date(day.date) // checkout date is same as next check-in
+            );
+            currentStay.date = formattedDate;
+            hotelStays.push(currentStay);
+          }
+
+          // Find existing cost data for this hotel
+          const existingCost = this.hotelCosts.find(cost => cost.name === hotelInfo.name);
+
+          // Start new stay
+          currentStay = {
+            date: day.date, // Temporary date, will be formatted later
+            name: hotelInfo.name,
+            type: hotelInfo.type || (existingCost ? existingCost.type : ''),
+            nights: 1,
+            room: existingCost ? existingCost.room : "1",
+            price: existingCost ? existingCost.price : "0",
+            extraBedPrice: existingCost ? existingCost.extraBedPrice : "0"
+          };
         }
       });
 
-      // Create fresh hotel cost entries
-      const newHotelCosts = Array.from(hotelCounts).map(([hotelName, nights]) => ({
-        date: '',
-        name: hotelName,
-        type: '',
-        room: 1,
-        nights: nights,
-        price: '0',
-        extraBedPrice: '0',
-        _tempDisplay: {  // Add temporary display values that will trigger the x-data bindings
-          priceDisplay: '0.00',
-          extraBedPriceDisplay: '0.00'
-        }
+      // Handle the last stay
+      if (currentStay) {
+        // Calculate checkout date for last stay (day after last night)
+        const lastDate = new Date(currentStay.toDate || currentStay.date);
+        const checkoutDate = new Date(lastDate);
+        checkoutDate.setDate(lastDate.getDate() + 1);
+
+        // Format the date for the last stay
+        const formattedDate = this.formatStayDates(
+          new Date(currentStay.date),
+          checkoutDate
+        );
+        currentStay.date = formattedDate;
+        hotelStays.push(currentStay);
+      }
+
+      // Update hotelCosts array
+      this.hotelCosts = hotelStays.map(stay => ({
+        ...stay,
+        price: parseFloat(stay.price).toFixed(2),
+        extraBedPrice: parseFloat(stay.extraBedPrice).toFixed(2)
       }));
 
-      // Update the hotel costs array
-      this.hotelCosts = newHotelCosts;
-
-      // Force a reactive update and wait for the next tick to ensure template is updated
+      // Recalculate totals
       this.$nextTick(() => {
-        // Force all inputs to update their display values
-        const inputs = document.querySelectorAll('input[x-model="displayValue"]');
-        inputs.forEach(input => {
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-
-        // Recalculate totals
         this.calculateHotelCostTotal();
         this.calculateGrandTotal();
       });
+    },
+
+    // Add this new helper function
+    formatStayDates(checkIn, checkOut) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      if (checkIn.getMonth() === checkOut.getMonth()) {
+        // Same month format: dd-dd-MMM-yy
+        return `${checkIn.getDate().toString().padStart(2, '0')}-` +
+               `${checkOut.getDate().toString().padStart(2, '0')}-` +
+               `${months[checkIn.getMonth()]}-` +
+               `${checkOut.getFullYear().toString().slice(-2)}`;
+      } else {
+        // Different months format: dd-MMM-dd-MMM-yy
+        return `${checkIn.getDate().toString().padStart(2, '0')}-` +
+               `${months[checkIn.getMonth()]}-` +
+               `${checkOut.getDate().toString().padStart(2, '0')}-` +
+               `${months[checkOut.getMonth()]}-` +
+               `${checkOut.getFullYear().toString().slice(-2)}`;
+      }
+    },
+    formatDateForDisplay(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: '2-digit'
+      }).replace(/ /g, '-');
     },
     // Update the calculateHotelCostTotal method to ensure proper calculation
     calculateHotelCostTotal() {

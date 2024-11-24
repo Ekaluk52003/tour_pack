@@ -144,7 +144,6 @@
               <input type="text"
                      :value="day.date ? formatDateForDisplay(day.date) : ''"
                      @click="$el.previousElementSibling.showPicker()"
-                     readonly
                      class="absolute inset-0 w-full px-3 py-2 text-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white"
                      :class="{'border-red-500': !day.date}"
                      placeholder="DD/MM/YYYY">
@@ -303,15 +302,18 @@
               <table class="w-full">
                 <tr class="bg-gray-100 border-b dark:border-gray-600 dark:bg-gray-900">
                   <td class="w-56 p-2">
+                    <label class="block mb-1 text-xs text-gray-500">Date In/Out</label>
                     <input
                       type="text"
                       x-model="cost.date"
-                      @input="updateHotelDateDisplay(cost)"
                       class="w-full p-2 whitespace-pre-line border rounded dark:bg-gray-700"
-                      placeholder="e.g., 13-Mar-25 to 13-Mar-25"
+                      placeholder="e.g., 25-27-Nov-24"
+                      readonly
                     />
                   </td>
+
                   <td class="p-2 w-96">
+                    <label class="block mb-1 text-xs text-gray-500">Hotel Name</label>
                     <input
                       type="text"
                       x-model="cost.name"
@@ -320,6 +322,7 @@
                     />
                   </td>
                   <td class="p-2 w-96">
+                    <label class="block mb-1 text-xs text-gray-500">Room Type</label>
                     <input
                       type="text"
                       x-model="cost.type"
@@ -365,13 +368,9 @@
                         <label class="block w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
                           Price/Night:
                         </label>
-                        <input
-                          type="text"
-                          :value="cost.price === null ? '' : formatCommaNumber(cost.price)"
-                          @input="cost.price = unformatCommaNumber($event.target.value) || null"
-                          class="p-2 text-center border rounded w-25 dark:bg-gray-700"
-                          placeholder="0"
-                        />
+                        <input type="text" class="w-32 px-2 py-1 text-right border rounded dark:bg-gray-700"
+                        x-bind:value="formatCommaNumber(cost.price || 0)"
+                        @input="cost.price = unformatCommaNumber($event.target.value); calculateHotelCostTotal()">
                       </div>
                     <!-- Extra bed price input field -->
                     <div class="flex items-center">

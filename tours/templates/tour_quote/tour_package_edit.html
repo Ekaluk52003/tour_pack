@@ -375,18 +375,7 @@
                 <tr class="border-b dark:border-gray-600">
                   <td colspan="4">
                     <div class="flex items-center px-2 py-3 space-x-4">
-                      <div class="flex items-center">
-                        <label class="block w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Nights:
-                        </label>
-                        <input
-                          type="number"
-                          class="w-20 p-2 text-center border rounded dark:bg-gray-700"
-                          min="1"
-                          x-model="cost.nights"
-                          placeholder="0"
-                        />
-                      </div>
+
                       <div class="flex items-center">
                         <label class="block w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
                           Rooms:
@@ -399,6 +388,19 @@
                           placeholder="0"
                         />
                       </div>
+                      <div class="flex items-center">
+                        <label class="block w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Nights:
+                        </label>
+                        <input
+                          type="number"
+                          class="w-20 p-2 text-center border rounded dark:bg-gray-700"
+                          min="1"
+                          x-model="cost.nights"
+                          placeholder="0"
+                        />
+                      </div>
+
                       <div class="flex items-center">
                         <label class="block w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
                           Price/Night:

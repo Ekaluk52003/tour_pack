@@ -281,20 +281,23 @@ window.tourPackage = function () {
         this.commission_rate_hotel = existingData.commission_rate_hotel || 0;
         this.commission_rate_services =
           existingData.commission_rate_services || 0;
-        this.days = existingData.days.map((day) => ({
-          date: day.date,
-          city: day.city.toString(), // Ensure city is a string
-          hotel: day.hotel.toString(), // Ensure hotel is a string
-          services: day.services.map((service) => ({
-            type: service.type || "",
-            name: (service.name || "").toString(),
-            price: parseFloat(service.price_at_booking) || 0,
-            price_at_booking: parseFloat(service.price_at_booking) || 0,
-          })),
+          this.days = existingData.days.map((day) => ({
+            date: day.date,
+            city: day.city.toString(),
+            hotel: day.hotel.toString(),
+            services: day.services.map((service) => {
+                console.log("Initializing service:", service);
+                return {
+                    type: (service.type || "").toString(),
+                    name: (service.name || "").toString(),
+                    price: parseFloat(service.price) || 0,
+                    price_at_booking: parseFloat(service.price_at_booking) || 0,
+                };
+            }),
           guideServices: day.guideServices.map((gs) => ({
             name: gs.name.toString(), // Ensure guide service name is a string
-            price: parseFloat(gs.price_at_booking) || 0,
-            price_at_booking: parseFloat(gs.price_at_booking) || 0,
+            price: parseFloat(gs.price || (gs.service && gs.service.price) || 0),
+            price_at_booking: parseFloat(gs.price_at_booking || 0)
           })),
           cityServices: {
             hotels: [],
@@ -305,18 +308,24 @@ window.tourPackage = function () {
         this.discounts = existingData.discounts || [];
         this.extraCosts  = existingData.extraCosts  || [];
 
-        this.initializeCityServicesForAllDays();
+         // Initialize city services and wait for completion
+         this.initializeCityServicesForAllDays().then(() => {
+          // After city services are loaded, select correct options
+          this.days.forEach(day => {
+              this.selectCorrectOptions(day);
+              // Mark services as initialized
+              day.services.forEach(service => {
+                  service._initialized = true;
+              });
+          });
+      });
       }
     },
 
     initializeCityServicesForAllDays() {
-      const promises = this.days.map((day, index) =>
-        this.updateCityServices(day)
-      );
-      Promise.all(promises).then(() => {
-        this.days.forEach((day) => this.selectCorrectOptions(day));
-      });
-    },
+      const promises = this.days.map((day) => this.updateCityServices(day));
+      return Promise.all(promises);
+  },
 
 
 
@@ -364,11 +373,20 @@ window.tourPackage = function () {
 
     addService(day) {
       if (!day || !Array.isArray(day.services)) {
-        console.log("Invalid day object or services array");
-        return;
+          console.log("Invalid day object or services array");
+          return;
       }
-      day.services.push({ type: "", name: "", price: 0 });
-    },
+      // Add new service with all required properties initialized
+      day.services.push({
+          type: "",
+          name: "",
+          price: 0,
+          price_at_booking: 0,
+          _display_name: "", // Add display name property
+          _initialized: false  // Add this flag for new services
+      });
+      console.log("Added new service to day:", day);
+  },
 
     removeService(day, serviceIndex) {
       if (!day || !Array.isArray(day.services)) {
@@ -524,85 +542,84 @@ window.tourPackage = function () {
     selectCorrectOptions(day) {
       console.log("Selecting correct options for day:", day);
 
-      // Select the correct hotel
-      if (day.hotel) {
-        const selectedHotel = day.cityServices.hotels.find(
-          (h) => h.id.toString() === day.hotel
-        );
-        if (selectedHotel) {
-          console.log("Selected hotel:", selectedHotel);
-          day.hotel = selectedHotel.id.toString();
-        } else {
-          console.log("Hotel not found:", day.hotel);
-        }
-      }
+      // Select the correct services
+      if (day.services && Array.isArray(day.services)) {
+          day.services.forEach((service, index) => {
+              if (service.type && service.name) {
+                  // Only set _original_booking_price for services loaded from backend
+                  service._original_booking_price = service.price_at_booking;
+                  service._initialized = true;
 
-      // Select the correct services
-      // Select the correct services
-      day.services.forEach((service) => {
-        console.log("Processing service for selection:", service);
-        const serviceType = day.cityServices.service_types.find(
-          (st) => st.type.toLowerCase() === service.type.toLowerCase()
-        );
-        if (serviceType) {
-          console.log("Found service type:", serviceType);
-          const selectedService = serviceType.services.find(
-            (s) => s.id.toString() === service.name
-          );
-          if (selectedService) {
-            console.log("Selected service:", selectedService);
-            service.name = selectedService.id.toString();
-            service.price = parseFloat(selectedService.price) || 0;
-          } else {
-            console.log("Service not found:", service.name);
-          }
-        } else {
-          console.log("Service type not found:", service.type);
-        }
-      });
+                  const serviceType = day.cityServices.service_types.find(
+                      st => st.type.toLowerCase() === service.type.toLowerCase()
+                  );
+
+                  if (serviceType) {
+                      const selectedService = serviceType.services.find(
+                          s => s.id.toString() === service.name.toString()
+                      );
+
+                      if (selectedService) {
+                          console.log(`Found matching service for service ${index}:`, selectedService);
+                          service.name = selectedService.id.toString();
+                          service.price = parseFloat(selectedService.price) || 0;
+                          service._display_name = selectedService.name;
+                      }
+                  }
+              }
+          });
+      }
 
       // Select the correct guide services
       day.guideServices.forEach((guideService) => {
-        console.log("Processing guide service for selection:", guideService);
-        const selectedGuideService = this.guideServices.find(
-          (gs) => gs.id.toString() === guideService.name
-        );
-        if (selectedGuideService) {
-          console.log("Selected guide service:", selectedGuideService);
-          guideService.name = selectedGuideService.id.toString();
-          guideService.price = parseFloat(selectedGuideService.price) || 0;
-        } else {
-          console.log("Guide service not found:", guideService.name);
-        }
+          console.log("Processing guide service for selection:", guideService);
+          const selectedGuideService = this.guideServices.find(
+              (gs) => gs.id.toString() === guideService.name
+          );
+          if (selectedGuideService) {
+              console.log("Selected guide service:", selectedGuideService);
+              guideService.name = selectedGuideService.id.toString();
+              guideService.price = parseFloat(selectedGuideService.price) || 0;
+          } else {
+              console.log("Guide service not found:", guideService.name);
+          }
       });
-    },
+  },
     getServiceNames(day, serviceType) {
-        if (!day || !serviceType) {
-            console.log("No day or service type provided.");
-            return [];
-        }
-
-        const serviceTypeObj = day.cityServices.service_types.find(st => st.type.toLowerCase() === serviceType.toLowerCase());
-        if (serviceTypeObj && Array.isArray(serviceTypeObj.services)) {
-            console.log("Found services for type:", serviceType, serviceTypeObj.services);
-            return serviceTypeObj.services;
-        }
-
-        console.log("No services found for type:", serviceType);
-        return [];
-    },
-    updateService(day, service) {
-      const serviceNames = this.getServiceNames(day, service.type);
-      const selectedService = serviceNames.find(s => s.id.toString() === service.name);
-      if (selectedService) {
-        service.price = parseFloat(selectedService.price) || 0;
-        service.price_at_booking = parseFloat(selectedService.price) || 0;
-      } else {
-        service.price = 0;
-        service.price_at_booking = 0;
+      if (!day || !serviceType) {
+          console.log("No day or service type provided for getServiceNames");
+          return [];
       }
-    },
 
+      const serviceTypeObj = day.cityServices.service_types.find(
+          st => st.type.toLowerCase() === serviceType.toLowerCase()
+      );
+
+      if (serviceTypeObj && Array.isArray(serviceTypeObj.services)) {
+          console.log(`Found ${serviceTypeObj.services.length} services for type:`, serviceType);
+          return serviceTypeObj.services;
+      }
+
+      console.log("No services found for type:", serviceType);
+      return [];
+  },
+
+  updateService(day, service) {
+    console.log("Updating service:", service);
+    const serviceNames = this.getServiceNames(day, service.type);
+
+    if (service.name) {
+        const selectedService = serviceNames.find(s => s.id.toString() === service.name);
+        if (selectedService) {
+            service.name = selectedService.id.toString();
+            service.price = parseFloat(selectedService.price);
+            // Restore original booking price if it exists
+            if (service._original_booking_price) {
+                service.price_at_booking = service._original_booking_price;
+            }
+        }
+    }
+},
     updateGuideService(guideService) {
       const selectedGuideService = this.guideServices.find(
         (gs) => gs.id.toString() === guideService.name

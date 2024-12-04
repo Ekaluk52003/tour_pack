@@ -318,13 +318,60 @@
               </template>
             </div>
           </div>
-        </template>
-        <button @click="addService(day)" class="px-3 py-2 text-white bg-blue-500 rounded">Add Service</button>
+
+                <!-- Rest of the dropdown code remains the same -->
+                <div x-show="isOpen"
+                    class="absolute z-50 w-full mt-1 overflow-y-auto bg-white border rounded-md shadow-lg max-h-60 dark:bg-gray-800">
+                    <template x-for="option in filteredServices" :key="option.id">
+                        <div @click="
+                            searchQuery = option.name;
+                            service.name = option.id.toString();
+                            service.price = parseFloat(option.price);
+                            service.price_at_booking = parseFloat(option.price);
+                            service._display_name = option.name;
+                            isOpen = false;
+                        "
+                        class="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                        :class="{'bg-blue-50 dark:bg-blue-900': service.name === option.id.toString()}">
+                            <div x-text="option.name" class="font-medium text-gray-900 dark:text-white"></div>
+                            <div x-text="'Price: ' + option.price + ' THB'" class="text-sm text-gray-600 dark:text-gray-400"></div>
+                        </div>
+                    </template>
+
+                    <div x-show="filteredServices.length === 0"
+                        class="p-2 text-center text-gray-500">
+                        No services found
+                    </div>
+                </div>
+            </div>
+          </div>
+              <!-- Price - 2 columns -->
+              <div class="md:col-span-2">
+                <input type="text"
+                       :value="formatCommaNumber(service.price) + ' THB'"
+                       disabled
+                       class="w-full px-3 py-2 text-right bg-gray-100 border rounded-md dark:bg-gray-700 dark:text-white">
+            </div>
+
+              <!-- Delete Button - 1 column -->
+              <div class="flex items-center justify-center md:col-span-1">
+                  <button @click="removeService(day, serviceIndex)"
+                          class="text-red-500 hover:text-red-700">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                  </button>
+              </div>
+          </div>
       </div>
+  </template>
 
-
-
-
+  <!-- Add Service Button -->
+  <button @click="addService(day)"
+          class="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">
+      Add Service
+  </button>
+</div>
       <div class="mb-4">
         <h3 class="mt-4 mb-2 text-lg font-semibold text-gray-900 dark:text-white">Guide Services</h3>
         <template x-for="(guideService, guideIndex) in day.guideServices" :key="guideIndex">

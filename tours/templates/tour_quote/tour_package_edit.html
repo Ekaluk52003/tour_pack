@@ -140,53 +140,52 @@
          :class="{'border-red-500': !dateValue}"
          placeholder="Select Date">
 
-            <div x-show="showDatepicker"
-                 class="absolute z-50 w-64 p-4 mt-2 bg-white rounded-lg shadow-lg dark:bg-gray-800"
-                 @click.away="showDatepicker = false"
-                 x-transition>
-              <div class="flex items-center justify-between mb-2">
-                <div>
-                  <span x-text="MONTH_NAMES[month]" class="text-lg font-bold"></span>
-                  <span x-text="year" class="ml-1 text-lg font-bold"></span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <button @click="decrementMonth" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                  </button>
-                  <button @click="incrementMonth" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
+         <div x-show="showDatepicker"
+         class="absolute z-50 w-64 p-4 mt-2 bg-white rounded-lg shadow-lg dark:bg-gray-800"
+         @click.away="showDatepicker = false"
+         x-transition>
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <span x-text="MONTH_NAMES[month]" class="text-lg font-bold"></span>
+          <span x-text="year" class="ml-1 text-lg font-bold"></span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button @click="decrementMonth" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+          <button @click="incrementMonth" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+      </div>
 
-              <div class="grid grid-cols-7 gap-1 mb-2">
-                <template x-for="day in DAYS" :key="day">
-                  <div x-text="day" class="text-sm text-center text-gray-600 dark:text-gray-400"></div>
-                </template>
-              </div>
+      <div class="grid grid-cols-7 gap-1 mb-2">
+        <template x-for="day in DAYS" :key="day">
+          <div x-text="day" class="text-sm text-center text-gray-600 dark:text-gray-400"></div>
+        </template>
+      </div>
 
-              <div class="grid grid-cols-7 gap-1">
-                <template x-for="(date, dateIndex) in days" :key="dateIndex">
-                  <div x-show="date !== ''"
-                       @click="date && selectDate(date)"
-                       x-text="date"
-                       class="p-1 text-center rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
-                       :class="{
-                         'bg-blue-500 text-white hover:bg-blue-600': isSelected(date),
-                         'text-blue-500 font-bold': isToday(date),
-                         'cursor-not-allowed': !date
-                       }">
-                  </div>
-                </template>
-              </div>
-            </div>
+      <div class="grid grid-cols-7 gap-1">
+        <template x-for="(date, dateIndex) in days" :key="dateIndex">
+          <div x-show="date !== ''"
+               @click="date && selectDate(date)"
+               x-text="date"
+               class="p-1 text-center rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
+               :class="{
+                'bg-blue-600 text-white hover:bg-blue-700': isSelected(date),
+                 'text-blue-600 dark:text-blue-400 font-semibold': isToday(date) && !isSelected(date),
+                 'cursor-not-allowed': !date,
+                 'hover:bg-blue-100 dark:hover:bg-blue-900': date && !isSelected(date)
+               }">
           </div>
-
-
+        </template>
+      </div>
+    </div>
+          </div>
         <div class="mb-2">
           <label class="block mb-2 text-gray-900 dark:text-white">City</label>
           <select x-model="day.city"
@@ -217,12 +216,14 @@
         <div class="mb-4">
           <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Services</h3>
           <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
-            <div class="flex flex-col p-2 mb-2 overflow-x-auto bg-white border rounded dark:bg-gray-600 service-item">
-              <div class="flex items-center">
+            <div class="flex flex-col p-2 mb-2 bg-white border rounded dark:bg-gray-600 service-item relative">
+              <div class="flex flex-col p-4 mb-4 bg-white dark:bg-gray-800 dark:border-gray-700">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+                <div class="md:col-span-2">
                 <select
                   x-model="service.type"
                   @change="service.name = ''"
-                  class="p-2 mr-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
+                  class="w-full p-2 text-sm text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                   :class="{'border-red-500': !service.type}"
                 >
                   <option value="">Select Service Type</option>
@@ -232,24 +233,101 @@
                   <option value="custom">Custom</option>
                   <option value="zero">zero</option>
                 </select>
+                </div>
 
-                <select
-                  x-model="service.name"
-                  @change="updateService(day, service)"
-                  class="p-2 mr-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
-                  :class="{'border-red-500': service.type && !service.name}"
-                >
-                  <option value="">Select Service</option>
-
-                  <template x-for="option in getServiceNames(day, service.type)" :key="option.id">
-                    <option :value="option.id" x-text="`${option.name} (${formatCommaNumber(option.price)} THB)`" :selected="service.name == option.id"></option>
+                <div class="md:col-span-8">
+                <div class="relative flex flex-col flex-grow" x-data="{ 
+                  open: false, 
+                  search: '',
+                  selectedIndex: -1,
+                  filteredServices() {
+                    return getServiceNames(day, service.type)?.filter(s => s.name.toLowerCase().includes(this.search.toLowerCase())) || [];
+                  }
+                }" :key="dayIndex + '-' + serviceIndex">
+                  <input 
+                    type="text" 
+                    x-model="search"
+                    @click="open = true"
+                    @click.away="open = false"
+                    @keydown.enter.prevent="
+                      if (selectedIndex >= 0 && selectedIndex < filteredServices().length) {
+                        const selectedService = filteredServices()[selectedIndex];
+                        service.name = String(selectedService.id);
+                        updateService(day, service);
+                        open = false;
+                        search = '';
+                        selectedIndex = -1;
+                      } else if (filteredServices().length === 1) {
+                        const selectedService = filteredServices()[0];
+                        service.name = String(selectedService.id);
+                        updateService(day, service);
+                        open = false;
+                        search = '';
+                        selectedIndex = -1;
+                      }
+                    "
+                    @keydown.down.prevent="
+                      if (open) {
+                        selectedIndex = selectedIndex < filteredServices().length - 1 ? selectedIndex + 1 : 0;
+                      } else {
+                        open = true;
+                      }
+                    "
+                    @keydown.up.prevent="
+                      if (open) {
+                        selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : filteredServices().length - 1;
+                      }
+                    "
+                    :placeholder="(() => {
+                      if (!service.name || !service.type) return 'Search service...';
+                      const serviceObj = getServiceNames(day, service.type)?.find(s => String(s.id) === String(service.name));
+                      return serviceObj ? `${serviceObj.name} (${formatCommaNumber(serviceObj.price)} THB)` : 'Search service...';
+                    })()"
+                    class="w-full p-2 text-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white placeholder-gray-900 dark:placeholder-gray-300"
+                    :class="{'border-red-500': service.type && !service.name}"
+                  >
+                  <template x-if="service.price_at_booking !== undefined && service.price_at_booking !== service.price">
+                    <div class="text-yellow-600 dark:text-yellow-400 text-sm mt-1" x-text="`**Previous Price: ${formatCommaNumber(service.price_at_booking)} THB`"></div>
                   </template>
-                </select>
-                <button @click="removeService(day, serviceIndex)" class="ml-2 text-red-600 dark:text-red-400">Remove</button>
-                <template x-if="service.price_at_booking !== service.price">
-                  <div class="ml-2 text-yellow-600 dark:text-yellow-400" x-text="`**Previous Price: ${formatCommaNumber(service.price_at_booking)} THB`"></div>
-                </template>
+                  <div 
+                    x-show="open && service.type" 
+                    class="absolute z-[99999] w-full bg-white border rounded-md shadow-lg dark:bg-gray-700 max-h-60 overflow-y-auto mb-1"
+                    style="position: absolute; bottom: calc(100% + 4px); left: 0;"
+                    @click.away="open = false"
+                  >
+                    <template x-for="(option, index) in filteredServices()" :key="option.id">
+                      <div 
+                        @click="service.name = String(option.id); updateService(day, service); open = false; search = ''; selectedIndex = -1;"
+                        class="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        :class="{
+                          'bg-gray-100 dark:bg-gray-600': String(service.name) === String(option.id),
+                          'bg-blue-100 dark:bg-blue-800': selectedIndex === index
+                        }"
+                      >
+                        <div x-text="option.name + ' (' + formatCommaNumber(option.price) + ' THB)'"></div>
+                      </div>
+                    </template>
+                    <div 
+                      x-show="!filteredServices().length"
+                      class="p-2 text-gray-500 dark:text-gray-400"
+                    >
+                      No services found
+                    </div>
+                  </div>
+                </div>
+                </div>
+                <div class="md:col-span-2">
+                <button @click="removeService(day, serviceIndex)" class="w-full flex items-center justify-center p-2 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 rounded transition-colors duration-200 bg-red-100 dark:bg-red-900/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span class="hidden md:inline">Delete</span>
+                </button>
+                </div>
+                </div>
               </div>
+
+
               <div class="mt-2">
                 <template x-if="!service.type">
                   <span class="mr-2 text-red-500">Please select a service type.</span>
@@ -601,12 +679,13 @@
 
     <div class="mb-4" x-data="{ displayValue: formatCommaNumber(commission_rate_hotel), actualValue: commission_rate_hotel }">
       <label for="commission_rate_hotel" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Hotel Commission Rate</label>
-      <input type="text"
-             x-model="displayValue"
-             @input="actualValue = unformatCommaNumber($event.target.value);
-                     commission_rate_hotel = actualValue;
-                     displayValue = formatCommaNumber(actualValue);"
-                     class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+      <input 
+        type="text"
+        x-model="displayValue"
+        @input="actualValue = unformatCommaNumber($event.target.value);
+                commission_rate_hotel = actualValue;
+                displayValue = formatCommaNumber(actualValue);"
+        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
     </div>
 
     <div class="mb-4">

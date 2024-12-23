@@ -861,7 +861,7 @@ window.tourPackage = function () {
 
         // Scroll when near the top or bottom of the viewport
       const scrollMargin = 300; // Pixels from the edge to trigger scroll
-      const scrollSpeed = 20; // Speed of scrolling
+      const scrollSpeed = 10; // Speed of scrolling
 
 
       if (event.clientY < scrollMargin) {

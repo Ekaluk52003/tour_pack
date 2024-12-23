@@ -749,7 +749,7 @@
             const cost = hotelCosts[i];
             console.log('Checking day', i + 1, 'price:', cost.price);
             if (!cost.price || parseFloat(cost.price) <= 0) {
-                if (confirm(`Warning: Price per night for day ${i + 1} is not valid. Price: ${cost.price} THB. Click OK to save anyway or Cancel.`)) {
+                if (confirm(`⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔ ⚠️❗ Warning : Price per night for day ${i + 1} is not valid. Price: ${cost.price} THB. Click OK to save anyway or Cancel.❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗`)) {
                     saveTourPackage();
                 }
                 return;

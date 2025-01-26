@@ -191,7 +191,7 @@ window.tourPackage = function () {
             name: hotelInfo.name,
             type: hotelInfo.type || (existingCost ? existingCost.type : ''),
             nights: 1,
-            room: existingCost ? existingCost.room : "1",
+            room: existingCost ? existingCost.room : "0",
             price: existingCost ? existingCost.price : "0",
             extraBedPrice: existingCost ? existingCost.extraBedPrice : "0"
           };

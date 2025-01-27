@@ -218,7 +218,7 @@
        <div class="mb-4">
           <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Services</h3>
           <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
-            <div class="flex flex-col p-2 mb-2 bg-white border rounded dark:bg-gray-600 service-item relative">
+            <div class="relative flex flex-col p-2 mb-2 bg-white border rounded dark:bg-gray-600 service-item">
               <div class="flex flex-col p-4 mb-4 bg-white dark:bg-gray-800 dark:border-gray-700">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
                 <div class="md:col-span-2">
@@ -238,16 +238,16 @@
                 </div>
 
                 <div class="md:col-span-8">
-                <div class="relative flex flex-col flex-grow" x-data="{ 
-                  open: false, 
+                <div class="relative flex flex-col flex-grow" x-data="{
+                  open: false,
                   search: '',
                   selectedIndex: -1,
                   filteredServices() {
                     return getServiceNames(day, service.type)?.filter(s => s.name.toLowerCase().includes(this.search.toLowerCase())) || [];
                   }
                 }" :key="dayIndex + '-' + serviceIndex">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     x-model="search"
                     @click="open = true"
                     @click.away="open = false"
@@ -285,20 +285,20 @@
                       const serviceObj = getServiceNames(day, service.type)?.find(s => String(s.id) === String(service.name));
                       return serviceObj ? `${serviceObj.name} (${formatCommaNumber(serviceObj.price)} THB)` : 'Search service...';
                     })()"
-                    class="w-full p-2 text-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white placeholder-gray-900 dark:placeholder-gray-300"
+                    class="w-full p-2 text-gray-900 placeholder-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
                     :class="{'border-red-500': service.type && !service.name}"
                   >
                   <template x-if="service.price_at_booking !== undefined && service.price_at_booking !== service.price">
-                    <div class="text-yellow-600 dark:text-yellow-400 text-sm mt-1" x-text="`**Previous Price: ${formatCommaNumber(service.price_at_booking)} THB`"></div>
+                    <div class="mt-1 text-sm text-yellow-600 dark:text-yellow-400" x-text="`**Previous Price: ${formatCommaNumber(service.price_at_booking)} THB`"></div>
                   </template>
-                  <div 
-                    x-show="open && service.type" 
+                  <div
+                    x-show="open && service.type"
                     class="absolute z-[99999] w-full bg-white border rounded-md shadow-lg dark:bg-gray-700 max-h-60 overflow-y-auto mb-1"
                     style="position: absolute; bottom: calc(100% + 4px); left: 0;"
                     @click.away="open = false"
                   >
                     <template x-for="(option, index) in filteredServices()" :key="option.id">
-                      <div 
+                      <div
                         @click="service.name = String(option.id); updateService(day, service); open = false; search = ''; selectedIndex = -1;"
                         class="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         :class="{
@@ -308,7 +308,7 @@
                         <div x-text="option.name + ' (' + formatCommaNumber(option.price) + ' THB)'"></div>
                       </div>
                     </template>
-                    <div 
+                    <div
                       x-show="!filteredServices().length"
                       class="p-2 text-gray-500 dark:text-gray-400"
                     >
@@ -318,8 +318,8 @@
                 </div>
                 </div>
                 <div class="md:col-span-2">
-                <button @click="removeService(day, serviceIndex)" class="w-full flex items-center justify-center p-2 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 rounded transition-colors duration-200 bg-red-100 dark:bg-red-900/20">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button @click="removeService(day, serviceIndex)" class="flex items-center justify-center w-full p-2 text-red-600 transition-colors duration-200 bg-red-100 rounded dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 dark:bg-red-900/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   <span class="hidden md:inline">Delete</span>
@@ -709,7 +709,7 @@
 
     <div class="mb-4" x-data="{ displayValue: formatCommaNumber(commission_rate_hotel), actualValue: commission_rate_hotel }">
       <label for="commission_rate_hotel" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Hotel Commission Rate</label>
-      <input 
+      <input
         type="text"
         x-model="displayValue"
         @input="actualValue = unformatCommaNumber($event.target.value);
@@ -743,21 +743,26 @@
       <p x-text="`${formatCommaNumber((parseFloat(calculateGrandTotal().commission_amount_hotel) + parseFloat(calculateGrandTotal().commission_amount_services)).toFixed(2))} THB`" class="text-xl font-bold text-green-600 dark:text-green-400"></p>
   </div>
 </div>
-  <button 
-    @click="(() => {
-        for (let i = 0; i < hotelCosts.length; i++) {
-            const cost = hotelCosts[i];
-            console.log('Checking day', i + 1, 'price:', cost.price);
-            if (!cost.price || parseFloat(cost.price) <= 0) {
-                if (confirm(`⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔ ⚠️❗ Warning : Price per night for day ${i + 1} is not valid. Price: ${cost.price} THB. Click OK to save anyway or Cancel.❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗❗`)) {
-                    saveTourPackage();
-                }
-                return;
+  <button
+  @click="(() => {
+    for (let i = 0; i < hotelCosts.length; i++) {
+        const cost = hotelCosts[i];
+        console.log('Checking day', i + 1, 'cost:', cost);
+
+        // Calculate total cost
+        const totalCost = ((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) +
+                          (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2);
+
+        if (!cost.price || parseFloat(totalCost) <= 0) {
+            if (confirm(`⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔ ⚠️❗ Warning : The total cost for day ${i + 1} is not valid. Total: ${formatCommaNumber(totalCost)} THB. Click OK to save anyway or Cancel to review.`)) {
+                saveTourPackage();
             }
+            return;
         }
-        saveTourPackage();
-    })" 
-    class="px-3 py-2 mt-4 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50" 
+    }
+    saveTourPackage();
+})"
+    class="px-3 py-2 mt-4 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
     x-text="packageReference ? 'Update Package' : 'Create Package'">
 </button>
   </div>

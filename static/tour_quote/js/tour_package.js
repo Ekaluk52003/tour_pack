@@ -456,7 +456,7 @@ window.tourPackage = function () {
       date: "",
       name: "",
       type: "",
-      room: "1",
+      room: "0",
       nights: "1",
       price: null,
       extraBedPrice: null,
@@ -1030,7 +1030,7 @@ window.tourPackage = function () {
       this.hotelCosts.push({
         name: "",
         type: "",
-        room: 1,
+        room: 0,
         nights: 1,
         price: 0,
         extraBedPrice: "",

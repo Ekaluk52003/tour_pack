@@ -1,13 +1,27 @@
 {$DOMAIN} {
-  handle_path /static/* {
-    root * /app/staticfiles  # Changed path to match the volume mount
-    file_server
-  }
+    # Static files
+    handle /static/* {
+        uri strip_prefix /static
+        root * /app/staticfiles
+        file_server
+    }
 
-  handle_path /media/* {
-    root * /app/media  # Changed path to match the volume mount
-    file_server
-  }
+    # Media files
+    handle /media/* {
+        uri strip_prefix /media
+        root * /app/media
+        file_server
+    }
 
-  reverse_proxy web:8000
+    # Reverse proxy
+    handle {
+        reverse_proxy web:8000
+    }
+
+    # Enable logs for debugging
+    log {
+        output stdout
+        format json
+        level DEBUG
+    }
 }

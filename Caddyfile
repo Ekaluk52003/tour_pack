@@ -18,10 +18,4 @@
         reverse_proxy web:8000
     }
 
-    # Enable logs for debugging
-    log {
-        output stdout
-        format json
-        level DEBUG
-    }
 }

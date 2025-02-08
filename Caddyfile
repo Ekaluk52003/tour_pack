@@ -1,14 +1,12 @@
-
 {$DOMAIN} {
-
   handle_path /static/* {
-		root * ./staticfiles/
-		file_server
+    root * /app/staticfiles  # Changed path to match the volume mount
+    file_server
   }
 
   handle_path /media/* {
-		root * ./media/
-		file_server
+    root * /app/media  # Changed path to match the volume mount
+    file_server
   }
 
   reverse_proxy web:8000

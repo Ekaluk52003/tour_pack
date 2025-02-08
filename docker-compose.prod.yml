@@ -33,9 +33,11 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
+      - static_volume:/app/staticfiles  # Add this line
+      - media_volume:/app/media         # Add this line
     environment:
       - DOMAIN=${DOMAIN}
-      
+
     depends_on:
       - web
 

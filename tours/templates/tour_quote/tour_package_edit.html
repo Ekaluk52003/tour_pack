@@ -57,25 +57,25 @@
 
   <div class="mb-4">
     <label for="package-name" class="block mb-2 text-gray-900 dark:text-white">Package Name</label>
-    <input type="text" id="package-name" x-model="name" :disabled="!isSuperUser" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
+    <input type="text" id="package-name" x-model="name" :disabled="!isSuperUser" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
     <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.name" x-text="errors.name"></p>
 
   </div>
 
   <div class="mb-4">
     <label for="customer-name" class="block mb-2 text-gray-900 dark:text-white">Customer Name</label>
-    <input type="text" id="customer-name" x-model="customerName"  :disabled="!isSuperUser" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
+    <input type="text" id="customer-name" x-model="customerName"  :disabled="!isSuperUser" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
     <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.customerName" x-text="errors.customerName"></p>
   </div>
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark</label>
-    <textarea id="remark" x-model="remark"  :disabled="!isSuperUser" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
+    <textarea id="remark" x-model="remark"  :disabled="!isSuperUser" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
 </div>
 
 
 <div class="mb-4" x-show="isSuperUser">
   <label for="tourPackType" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tour Package Type</label>
-  <select id="tourPackType" x-model="tourPackType" @change="updateServicesForPackageType()"  class="h-12 border border-gray-300 text-gray-600 dark:text-gray-300 text-base rounded-lg block w-full py-2.5 px-4 focus:outline-none bg-white dark:bg-gray-700"
+  <select id="tourPackType" x-model="tourPackType" @change="updateServicesForPackageType()"  class="block px-4 py-2.5 w-full h-12 text-base text-gray-600 bg-white rounded-lg border border-gray-300 dark:text-gray-300 focus:outline-none dark:bg-gray-700"
           :class="{'border-red-500': !tourPackType}">
       <option value="">Select Tour Package Type</option>
       {% for pack_type in tour_pack_types %}
@@ -88,7 +88,7 @@
 
 
 <div class="items-center mb-2 md:flex" x-show="isSuperUser">
-  <select x-model="selectedPredefinedQuote" class="h-12 border border-gray-300 text-gray-600 dark:text-gray-300 text-base rounded-lg block  py-2.5 px-4 focus:outline-none bg-white dark:bg-gray-700">
+  <select x-model="selectedPredefinedQuote" class="block px-4 py-2.5 h-12 text-base text-gray-600 bg-white rounded-lg border border-gray-300 dark:text-gray-300 focus:outline-none dark:bg-gray-700">
     <option value="">Select a predefined quote</option>
     {% for quote in predefined_quotes %}
         <option value="{{ quote.id }}">{{ quote.name }}</option>
@@ -107,22 +107,22 @@
 
   <div class="space-y-2" x-show="isSuperUser">
     <template x-for="(day, index) in days" :key="index">
-      <div class="p-4 mb-4 bg-white border rounded-lg dark:bg-gray-700"
+      <div class="p-4 mb-4 bg-white rounded-lg border dark:bg-gray-700"
            draggable="true"
            @dragstart="dragStart($event, index)"
            @dragend="dragEnd"
            @dragover="dragOver($event)"
            @dragover.prevent
            @drop="drop($event, index)">
-           <div class="flex items-center justify-between mb-2">
+           <div class="flex justify-between items-center mb-2">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white" x-text="`Day ${index + 1}`"></h2>  <div class="flex items-center">
             <span class="mr-2 text-gray-500 dark:text-gray-400">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
               </svg>
             </span>
-            <button @click="removeDay(index)" class="px-3 py-1 text-white transition duration-150 ease-in-out bg-red-500 rounded hover:bg-red-600">Remove Day</button>
-            <button @click="copyDay(index)" class="flex px-3 py-1 ml-2 text-white duration-150 bg-blue-600 rounded al">
+            <button @click="removeDay(index)" class="px-3 py-1 text-white bg-red-500 rounded transition duration-150 ease-in-out hover:bg-red-600">Remove Day</button>
+            <button @click="copyDay(index)" class="flex px-3 py-1 ml-2 text-white bg-blue-600 rounded duration-150 al">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
               </svg>
@@ -131,101 +131,106 @@
           </div>
            </div>
 
-  <div class="relative"
-     x-data="datePicker(day, index)"
-     @first-day-changed.window="handleFirstDayDateChange()">
-  <input type="text"
-         :value="dateValue ? formatDateForDisplay(dateValue) : ''"
-         @click="showDatepicker = !showDatepicker"
-         readonly
-         class="w-full px-3 py-2 text-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white"
-         :class="{'border-red-500': !dateValue}"
-         placeholder="Select Date">
+      <div class="grid grid-cols-1 gap-2 mb-4 md:grid-cols-6 dark:text-gray-300">        
+              
+        <div class="relative"
+          x-data="datePicker(day, index)"
+          @first-day-changed.window="handleFirstDayDateChange()">
+          <label class="block mb-2 text-gray-900 dark:text-white">Date</label>
+        <input type="text"
+              :value="dateValue ? formatDateForDisplay(dateValue) : ''"
+              @click="showDatepicker = !showDatepicker"
+              readonly
+              class="px-3 py-2 w-full text-gray-900 bg-white rounded border cursor-pointer dark:bg-gray-700 dark:text-white"
+              :class="{'border-red-500': !dateValue}"
+              placeholder="Select Date">
 
-         <div x-show="showDatepicker"
-         class="absolute z-50 w-64 p-4 mt-2 bg-white rounded-lg shadow-lg dark:bg-gray-800"
-         @click.away="showDatepicker = false"
-         x-transition>
-      <div class="flex items-center justify-between mb-2">
-        <div>
-          <span x-text="MONTH_NAMES[month]" class="text-lg font-bold"></span>
-          <span x-text="year" class="ml-1 text-lg font-bold"></span>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button @click="decrementMonth" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-            </svg>
-          </button>
-          <button @click="incrementMonth" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-            </svg>
-          </button>
-        </div>
-      </div>
+              <div x-show="showDatepicker"
+              class="absolute z-50 p-4 mt-2 w-64 bg-white rounded-lg shadow-lg dark:bg-gray-800"
+              @click.away="showDatepicker = false"
+              x-transition>
+            <div class="flex justify-between items-center mb-2">
+              <div>
+                <span x-text="MONTH_NAMES[month]" class="text-lg font-bold"></span>
+                <span x-text="year" class="ml-1 text-lg font-bold"></span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button @click="decrementMonth" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </button>
+                <button @click="incrementMonth" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-      <div class="grid grid-cols-7 gap-1 mb-2">
-        <template x-for="day in DAYS" :key="day">
-          <div x-text="day" class="text-sm text-center text-gray-600 dark:text-gray-400"></div>
-        </template>
-      </div>
+            <div class="grid grid-cols-7 gap-1 mb-2">
+              <template x-for="day in DAYS" :key="day">
+                <div x-text="day" class="text-sm text-center text-gray-600 dark:text-gray-400"></div>
+              </template>
+            </div>
 
-      <div class="grid grid-cols-7 gap-1">
-        <template x-for="(date, dateIndex) in days" :key="dateIndex">
-          <div x-show="date !== ''"
-               @click="date && selectDate(date)"
-               x-text="date"
-               class="p-1 text-center rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
-               :class="{
-                'bg-blue-600 text-white hover:bg-blue-700': isSelected(date),
-                 'text-blue-600 dark:text-blue-400 font-semibold': isToday(date) && !isSelected(date),
-                 'cursor-not-allowed': !date,
-                 'hover:bg-blue-100 dark:hover:bg-blue-900': date && !isSelected(date)
-               }">
+            <div class="grid grid-cols-7 gap-1">
+              <template x-for="(date, dateIndex) in days" :key="dateIndex">
+                <div x-show="date !== ''"
+                    @click="date && selectDate(date)"
+                    x-text="date"
+                    class="p-1 text-center rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
+                    :class="{
+                      'bg-blue-600 text-white hover:bg-blue-700': isSelected(date),
+                      'text-blue-600 dark:text-blue-400 font-semibold': isToday(date) && !isSelected(date),
+                      'cursor-not-allowed': !date,
+                      'hover:bg-blue-100 dark:hover:bg-blue-900': date && !isSelected(date)
+                    }">
+                </div>
+              </template>
+            </div>
           </div>
-        </template>
-      </div>
-    </div>
-          </div>
-        <div class="mb-2">
-          <label class="block mb-2 text-gray-900 dark:text-white">City</label>
-          <select x-model="day.city"
-                  @change="updateCityServices(day); day.hotel = '';"
-                  class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
-                  :class="{'border-red-500': !day.city}">
-            <option value="">Select City</option>
-            {% for city in cities %}
-              <option value="{{ city.id }}">{{ city.name }}</option>
-            {% endfor %}
-          </select>
-          <p class="mt-1 text-sm text-red-500" x-show="!day.city">Please select a city.</p>
-        </div>
+                </div>
+              <div class="mb-2 md:col-span-2">
+                <label class="block mb-2 text-gray-900 dark:text-white">City</label>
+                <select x-model="day.city"
+                        @change="updateCityServices(day); day.hotel = '';"
+                        class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
+                        :class="{'border-red-500': !day.city}">
+                  <option value="">Select City</option>
+                  {% for city in cities %}
+                    <option value="{{ city.id }}">{{ city.name }}</option>
+                  {% endfor %}
+                </select>
+                <p class="mt-1 text-sm text-red-500" x-show="!day.city">Please select a city.</p>
+              </div>
 
-        <div class="mb-2">
-          <label class="block mb-2 text-gray-900 dark:text-white">Hotel</label>
-          <select x-model="day.hotel"
-                  class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
-                  :class="{'border-red-500': !day.hotel}">
-            <option value="">Select Hotel</option>
-            <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
-              <option :value="hotel.id" x-text="hotel.name" :selected="day.hotel == hotel.id"></option>
-            </template>
-          </select>
-          <p class="mt-1 text-sm text-red-500" x-show="!day.hotel">Please select a hotel.</p>
-        </div>
+              <div class="mb-2 md:col-span-3">
+                <label class="block mb-2 text-gray-900 dark:text-white">Hotel</label>
+                <select x-model="day.hotel"
+                        class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
+                        :class="{'border-red-500': !day.hotel}">
+                  <option value="">Select Hotel</option>
+                  <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
+                    <option :value="hotel.id" x-text="hotel.name" :selected="day.hotel == hotel.id"></option>
+                  </template>
+                </select>
+                <p class="mt-1 text-sm text-red-500" x-show="!day.hotel">Please select a hotel.</p>
+              </div>
+
+      </div>
 
        <div class="mb-4">
           <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Services</h3>
           <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
-            <div class="relative flex flex-col p-2 mb-2 bg-white border rounded dark:bg-gray-600 service-item">
+            <div class="flex relative flex-col p-2 mb-2 bg-white rounded border dark:bg-gray-600 service-item">
               <div class="flex flex-col p-4 mb-4 bg-white dark:bg-gray-800 dark:border-gray-700">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
                 <div class="md:col-span-2">
                 <select
                   x-model="service.type"
                   @change="service.name = ''"
-                  class="w-full p-2 text-sm text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
+                  class="p-2 w-full text-sm text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
                   :class="{'border-red-500': !service.type}"
                 >
                   <option value="">Select Service Type</option>
@@ -238,7 +243,7 @@
                 </div>
 
                 <div class="md:col-span-8">
-                <div class="relative flex flex-col flex-grow" x-data="{
+                <div class="flex relative flex-col flex-grow" x-data="{
                   open: false,
                   search: '',
                   selectedIndex: -1,
@@ -285,7 +290,7 @@
                       const serviceObj = getServiceNames(day, service.type)?.find(s => String(s.id) === String(service.name));
                       return serviceObj ? `${serviceObj.name} (${formatCommaNumber(serviceObj.price)} THB)` : 'Search service...';
                     })()"
-                    class="w-full p-2 text-gray-900 placeholder-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
+                    class="p-2 w-full placeholder-gray-900 text-gray-900 bg-white rounded border cursor-pointer dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
                     :class="{'border-red-500': service.type && !service.name}"
                   >
                   <template x-if="service.price_at_booking !== undefined && service.price_at_booking !== service.price">
@@ -318,8 +323,8 @@
                 </div>
                 </div>
                 <div class="md:col-span-2">
-                <button @click="removeService(day, serviceIndex)" class="flex items-center justify-center w-full p-2 text-red-600 transition-colors duration-200 bg-red-100 rounded dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 dark:bg-red-900/20">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button @click="removeService(day, serviceIndex)" class="flex justify-center items-center p-2 w-full text-red-600 bg-red-100 rounded transition-colors duration-200 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 dark:bg-red-900/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   <span class="hidden md:inline">Delete</span>
@@ -352,11 +357,11 @@
                 <input type="text"
                        :value="formatCommaNumber(service.price) + ' THB'"
                        disabled
-                       class="w-full px-3 py-2 text-right bg-gray-100 border rounded-md dark:bg-gray-700 dark:text-white">
+                       class="px-3 py-2 w-full text-right bg-gray-100 rounded-md border dark:bg-gray-700 dark:text-white">
             </div>
 
               <!-- Delete Button - 1 column -->
-              <div class="flex items-center justify-center md:col-span-1">
+              <div class="flex justify-center items-center md:col-span-1">
                   <button @click="removeService(day, serviceIndex)"
                           class="text-red-500 hover:text-red-700">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -381,7 +386,7 @@
               <template x-if="guideService.price_at_booking !== guideService.price">
                 <div class="text-red-500" x-text="`*Previous Price: ${formatCommaNumber(guideService.price_at_booking)} THB`"></div>
               </template>
-              <select x-model="guideService.name" @change="updateGuideService(guideService)" class="w-3/4 px-3 py-2 mr-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
+              <select x-model="guideService.name" @change="updateGuideService(guideService)" class="px-3 py-2 mr-2 w-3/4 text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
                 <option value="">Select Guide Service</option>
                 <template x-for="option in guideServices" :key="option.id">
                   <option :value="String(option.id)" x-text="`${option.name} (${formatCommaNumber(option.price)} THB)`" :selected="guideService.name == option.id"></option>
@@ -403,7 +408,7 @@
          <!-- Plus button to add day between (except after the last day) -->
          <template x-if="index < days.length - 1">
           <button @click="insertDayBelow(index)"
-                  class="flex items-center justify-center w-full px-4 py-1 mb-2 text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 dark:text-blue-200"
+                  class="flex justify-center items-center px-4 py-1 mb-2 w-full text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 dark:text-blue-200"
                   title="Insert day here">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -419,8 +424,8 @@
 
     <!-- Add Day button at the end -->
     <button @click="insertDayBelow(days.length - 1)"
-            class="flex items-center justify-center w-full px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600">
-      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            class="flex justify-center items-center px-4 py-2 w-full font-bold text-white bg-blue-500 rounded hover:bg-blue-600">
+      <svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
       </svg>
       Add Day
@@ -435,7 +440,7 @@
 <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Hotel Costs</h2>
 
 
-<div class="mb-8 overflow-x-auto">
+<div class="overflow-x-auto mb-8">
   <table class="w-full border-collapse">
     <tbody>
       <template x-for="(cost, index) in hotelCosts" :key="index">
@@ -445,12 +450,12 @@
             <div class="flex w-full" :data-hotel-index="index">
               <table class="w-full">
                 <tr class="bg-gray-100 border-b dark:border-gray-600 dark:bg-gray-900">
-                  <td class="w-56 p-2">
+                  <td class="p-2 w-56">
                     <label class="block mb-1 text-xs text-gray-500">Date In/Out</label>
                     <input
                       type="text"
                       x-model="cost.date"
-                      class="w-full p-2 whitespace-pre-line border rounded dark:bg-gray-700"
+                      class="p-2 w-full whitespace-pre-line rounded border dark:bg-gray-700"
                       placeholder="e.g., 25-27-Nov-24"
                     />
                   </td>
@@ -460,7 +465,7 @@
                     <input
                       type="text"
                       x-model="cost.name"
-                      class="w-full p-2 border rounded dark:bg-gray-700"
+                      class="p-2 w-full rounded border dark:bg-gray-700"
                       placeholder="Enter hotel name"
                     />
                   </td>
@@ -469,11 +474,11 @@
                     <input
                       type="text"
                       x-model="cost.type"
-                      class="w-full p-2 border rounded dark:bg-gray-700"
+                      class="p-2 w-full rounded border dark:bg-gray-700"
                       placeholder="Enter hotel Type"
                     />
                   </td>
-                  <td class="w-24 p-2">
+                  <td class="p-2 w-24">
                     <button class="px-4 py-2 text-white bg-red-500 rounded hover:bg-red-600" @click="removeHotelCost(index)">
                       Delete
                     </button>
@@ -491,7 +496,7 @@
                         <input
                           type="number"
                           x-model="cost.room"
-                          class="w-20 p-2 text-center border rounded dark:bg-gray-700"
+                          class="p-2 w-20 text-center rounded border dark:bg-gray-700"
                           min="1"
                           placeholder="0"
                         />
@@ -502,7 +507,7 @@
                         </label>
                         <input
                           type="number"
-                          class="w-20 p-2 text-center border rounded dark:bg-gray-700"
+                          class="p-2 w-20 text-center rounded border dark:bg-gray-700"
                           min="1"
                           x-model="cost.nights"
                           placeholder="0"
@@ -513,7 +518,7 @@
                         <label class="block w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
                           Price/Night:
                         </label>
-                        <input type="text" class="w-32 px-2 py-1 text-right border rounded dark:bg-gray-700"
+                        <input type="text" class="px-2 py-1 w-32 text-right rounded border dark:bg-gray-700"
                         x-bind:value="formatCommaNumber(cost.price || 0)"
                         @input="cost.price = unformatCommaNumber($event.target.value); calculateHotelCostTotal()">
                       </div>
@@ -526,7 +531,7 @@
                         type="text"
                         :value="cost.extraBedPrice === null ? '' : formatCommaNumber(cost.extraBedPrice)"
                         @input="cost.extraBedPrice = unformatCommaNumber($event.target.value) || null"
-                        class="p-2 text-center border rounded w-25 dark:bg-gray-700"
+                        class="p-2 text-center rounded border w-25 dark:bg-gray-700"
                         placeholder="0"
                       />
                       </div>
@@ -544,9 +549,9 @@
 
             <!-- Insert button row - appears after each hotel cost except the last one -->
             <template x-if="index < hotelCosts.length - 1">
-              <div class="w-full py-2">
+              <div class="py-2 w-full">
                 <button @click="insertHotelCostBelow(index)"
-                        class="flex items-center justify-center w-full px-4 py-2 space-x-2 text-blue-600 transition-colors duration-200 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-800">
+                        class="flex justify-center items-center px-4 py-2 space-x-2 w-full text-blue-600 bg-blue-100 rounded-lg border border-blue-200 transition-colors duration-200 hover:bg-blue-200 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-800">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                   </svg>
@@ -583,7 +588,7 @@
 <div class="mt-2 text-gray-900 dark:text-white">
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark hotels</label>
-    <textarea rows="8" id="remark_of_hotels" x-model="remark_of_hotels"   class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
+    <textarea rows="8" id="remark_of_hotels" x-model="remark_of_hotels"   class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
   </div>
 </div>
 
@@ -604,7 +609,7 @@
         <template x-for="(extraCost, index) in extraCosts" :key="index">
           <tr>
             <td class="px-2 border">
-              <input type="text" x-model="extraCost.item" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
+              <input type="text" x-model="extraCost.item" class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
             </td>
 
 
@@ -614,7 +619,7 @@
                      @input="actualValue = unformatCommaNumber($event.target.value);
                              extraCost.amount = actualValue;
                              displayValue = formatCommaNumber(actualValue);"
-                     class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
+                     class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
             </td>
 
             <td class="px-4 py-2 border">
@@ -649,7 +654,7 @@
         <template x-for="(discount, index) in discounts" :key="index">
           <tr>
             <td class="px-2 border">
-              <input type="text" x-model="discount.item" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
+              <input type="text" x-model="discount.item" class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
             </td>
 
 
@@ -659,7 +664,7 @@
                      @input="actualValue = unformatCommaNumber($event.target.value);
                              discount.amount = actualValue;
                              displayValue = formatCommaNumber(actualValue);"
-                     class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
+                     class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
             </td>
 
 
@@ -685,7 +690,7 @@
 <div class="mt-8 mb-4">
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2 (Only Superuser is allowed to edit)</label>
-    <textarea id="remark2" x-model="remark2" :disabled="!isSuperUser" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
+    <textarea id="remark2" x-model="remark2" :disabled="!isSuperUser" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
   </div>
 
   <div class="p-4 mb-4 bg-blue-100 rounded-lg dark:bg-blue-900">
@@ -715,12 +720,12 @@
         @input="actualValue = unformatCommaNumber($event.target.value);
                 commission_rate_hotel = actualValue;
                 displayValue = formatCommaNumber(actualValue);"
-        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+        class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
     </div>
 
     <div class="mb-4">
       <label for="commission_rate_services" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Services Commission(%)</label>
-      <input type="number" id="commission_rate_services" x-model="commission_rate_services" step="1" min="0" max="100"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+      <input type="number" id="commission_rate_services" x-model="commission_rate_services" step="1" min="0" max="100"  class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
     </div>
 
   </div>

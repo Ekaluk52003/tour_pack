@@ -28,8 +28,9 @@
                
                 <div class="grid grid-cols-1 gap-4 mb-4 md:grid-cols-3 dark:text-gray-300">
                     <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Day {{ forloop.counter }} - {{ day.date|date:"Y-m-d" }}</h3>
-                    <p><strong>City:</strong> {{ day.city.name }}</p>
-                    <p><strong>Hotel:</strong> {{ day.hotel.name }}</p>
+                    <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">City: {{ day.city.name }}</h3>
+                    <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Hotel:{{ day.hotel.name }}</h3>
+                 
                 </div>
 
                 <h4 class="mt-2 mb-1 text-lg font-semibold dark:text-gray-200">Services:</h4>

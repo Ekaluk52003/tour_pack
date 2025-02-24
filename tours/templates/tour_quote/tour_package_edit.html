@@ -141,7 +141,7 @@
               :value="dateValue ? formatDateForDisplay(dateValue) : ''"
               @click="showDatepicker = !showDatepicker"
               readonly
-              class="px-3 py-2 w-full text-gray-900 bg-white rounded border cursor-pointer dark:bg-gray-700 dark:text-white"
+              class="font-extrabold px-3 py-2 w-full text-gray-900 bg-white rounded border cursor-pointer dark:bg-gray-700 dark:text-white"
               :class="{'border-red-500': !dateValue}"
               placeholder="Select Date">
 
@@ -195,7 +195,7 @@
                 <label class="block mb-2 text-gray-900 dark:text-white">City</label>
                 <select x-model="day.city"
                         @change="updateCityServices(day); day.hotel = '';"
-                        class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
+                        class="font-extrabold px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
                         :class="{'border-red-500': !day.city}">
                   <option value="">Select City</option>
                   {% for city in cities %}
@@ -208,7 +208,7 @@
               <div class="mb-2 md:col-span-3">
                 <label class="block mb-2 text-gray-900 dark:text-white">Hotel</label>
                 <select x-model="day.hotel"
-                        class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
+                        class="font-extrabold px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
                         :class="{'border-red-500': !day.hotel}">
                   <option value="">Select Hotel</option>
                   <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">

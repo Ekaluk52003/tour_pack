@@ -759,8 +759,10 @@
         const totalCost = ((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) +
                           (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2);
 
-        if (!cost.price || parseFloat(cost.room) === 0 || parseFloat(totalCost) <= 0) {
-            modalMessage = `<p>The total cost for day ${i + 1} is not valid. ${parseFloat(cost.room) === 0 ? '<strong>Number of rooms is 0.</strong> ' : ''}</p>
+        if ( parseFloat(cost.price) === 0 || parseFloat(cost.room) === 0 || parseFloat(totalCost) <= 0) {
+            modalMessage = `<p>The total cost for day ${i + 1} is not valid due to followings</p>
+            ${parseFloat(cost.room) === 0 ? '<p><strong>Number of rooms is 0</strong></p>' : ''}
+            ${parseFloat(cost.price) === 0 ? '<p><strong>Price is 0.</strong></p>' : ''}
             <p>Total: <strong>${formatCommaNumber(totalCost)} THB</strong>.</p>
             <p class='mt-2'>Click <strong>Proceed Anyway</strong> to save or <strong>Cancel</strong> to review.</p>`;
             confirmAction = () => saveTourPackage();
@@ -776,20 +778,23 @@
   </div>
 
   <!-- Custom modal component -->
-  <div x-show="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" x-cloak>
+  <div x-show="showModal" class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50" x-cloak>
     <div class="p-6 max-w-md bg-white rounded-lg shadow-xl dark:bg-gray-800">
-      <div class="flex items-center mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+      <div class="flex flex-col justify-center items-center text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto w-32 h-32 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         <h3 class="text-lg font-bold text-red-600 dark:text-red-400">Warning</h3>
       </div>
+   
+      
       <div class="mb-4" x-html="modalMessage"></div>
-      <div class="flex justify-end space-x-3">
-        <button @click="showModal = false" class="px-4 py-2 text-gray-600 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+      <div class="flex justify-center space-x-3">
+        <button @click="showModal = false" class="px-4 py-2 w-full text-gray-600 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
           Cancel
         </button>
-        <button @click="if(confirmAction) { confirmAction(); showModal = false; }" class="px-4 py-2 text-white bg-red-600 rounded hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">
+        <button @click="if(confirmAction) { confirmAction(); showModal = false; }" class="w-full text-white bg-red-600 rounded hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">
           Proceed Anyway
         </button>
       </div>

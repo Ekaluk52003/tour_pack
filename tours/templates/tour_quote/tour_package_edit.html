@@ -132,8 +132,8 @@
           </div>
            </div>
 
-      <div class="grid grid-cols-1 gap-2 mb-4 md:grid-cols-6 dark:text-gray-300">        
-              
+      <div class="grid grid-cols-1 gap-2 mb-4 md:grid-cols-6 dark:text-gray-300">
+
         <div class="relative"
           x-data="datePicker(day, index)"
           @first-day-changed.window="handleFirstDayDateChange()">
@@ -641,7 +641,7 @@
 
 <!-- Discounts Section -->
 <div class="mb-4" >
-  <h2 class="mb-2 text-xl font-semibold text-green-600 dark:text-white">Discounts</h2>
+  <h2 class="mb-2 text-xl font-extrabold text-red-600 dark:text-white">Discounts</h2>
   <div class="overflow-x-auto">
     <table class="w-full table-auto">
       <thead>
@@ -678,7 +678,7 @@
       </tbody>
     </table>
   </div>
-  <button @click="addDiscount" class="px-3 py-2 mt-2 text-white bg-blue-500 rounded">Add Discount</button>
+  <button @click="addDiscount" class="px-3 py-2 mt-2 text-white bg-red-500 rounded">Add Discount</button>
   <div class="mt-2 text-right text-gray-900 dark:text-white">
     <strong>Total Discounts: </strong>
     <span x-text="formatCommaNumber(calculateTotalDiscounts()) + ' THB'"></span>
@@ -787,8 +787,8 @@
         </svg>
         <h3 class="text-lg font-bold text-red-600 dark:text-red-400">Warning</h3>
       </div>
-   
-      
+
+
       <div class="mb-4" x-html="modalMessage"></div>
       <div class="flex justify-center space-x-3">
         <button @click="showModal = false" class="px-4 py-2 w-full text-gray-600 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">

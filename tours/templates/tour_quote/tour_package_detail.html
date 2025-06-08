@@ -25,12 +25,12 @@
             <h2 class="mb-4 text-2xl font-semibold dark:text-gray-200">Itinerary</h2>
             {% for day in ordered_tour_days %}
             <div class="p-4 mb-6 bg-gray-100 rounded-lg dark:bg-gray-700">
-               
+
                 <div class="grid grid-cols-1 gap-4 mb-4 md:grid-cols-3 dark:text-gray-300">
                     <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Day {{ forloop.counter }} - {{ day.date|date:"Y-m-d" }}</h3>
                     <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">City: {{ day.city.name }}</h3>
                     <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Hotel:{{ day.hotel.name }}</h3>
-                 
+
                 </div>
 
                 <h4 class="mt-2 mb-1 text-lg font-semibold dark:text-gray-200">Services:</h4>
@@ -118,7 +118,7 @@
 
 
             <div class="mt-8">
-                <h3 class="mb-2 text-xl font-semibolddark:text-gray-200">Additional Costs</h3>
+                <h3 class="mb-2 text-xl font-semibolddark:text-gray-200 text-blue-600">Additional Costs</h3>
                 <table class="w-full">
                     <thead class="bg-gray-200 dark:bg-gray-700">
                         <tr>
@@ -153,7 +153,7 @@
 
             <!-- Discounts -->
             <div class="mb-6">
-                <h3 class="mb-2 text-xl font-semibold text-green-600 dark:text-gray-200">Discounts</h3>
+                <h3 class="mb-2 text-xl font-extrabold text-red-500 dark:text-gray-200">Discounts</h3>
                 <table class="w-full">
                     <thead class="bg-gray-200 dark:bg-gray-700">
                         <tr>

@@ -135,13 +135,13 @@
                         {% empty %}
 
                         <tr>
-                            <td colspan="2" class="p-2 text-center">No extra cost</td>
+                            <td colspan="2" class="p-2 text-center text-blue-600">No extra cost</td>
                         </tr>
                         {% endfor %}
                     </tbody>
 
                     {% if extra_costs %}
-                    <tfoot class="font-bold dark:text-gray-200">
+                    <tfoot class="font-bold text-blue-600 dark:text-gray-200">
                         <tr>
                             <td class="p-2">Total Additional Costs</td>
                             <td class="p-2 text-right">{{ total_extra_cost|intcomma }} THB</td>
@@ -174,7 +174,7 @@
                         {% endfor %}
                     </tbody>
                     {% if discounts %}
-                    <tfoot class="font-bold dark:text-gray-200">
+                    <tfoot class="font-bold text-red-500 dark:text-gray-200">
                         <tr>
                             <td class="p-2">Total Discount</td>
                             <td class="p-2 text-right">{{ total_discount|intcomma }} THB</td>

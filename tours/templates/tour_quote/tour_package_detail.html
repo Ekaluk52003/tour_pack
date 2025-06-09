@@ -69,7 +69,7 @@
             <div class="mb-6">
                 <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Hotel Costs</h3>
                 <div class="overflow-x-auto">
-                    <table class="mb-4 w-full">
+                    <table class="w-full mb-4">
                         <thead class="bg-gray-200 dark:bg-gray-700">
                             <tr>
                                 <th class="p-2 text-left dark:text-gray-200">Date</th>
@@ -118,19 +118,19 @@
 
 
             <div class="mt-8">
-                <h3 class="mb-2 text-xl font-semibolddark:text-gray-200 text-blue-600">Additional Costs</h3>
+                <h3 class="mb-2 text-xl text-blue-600 font-semibolddark:text-gray-200">Additional Costs</h3>
                 <table class="w-full">
                     <thead class="bg-gray-200 dark:bg-gray-700">
                         <tr>
-                            <th class="p-2 text-left dark:text-gray-200">Item</th>
-                            <th class="p-2 text-right dark:text-gray-200">Amount</th>
+                            <th class="p-2 text-left text-blue-600 dark:text-gray-200">Item</th>
+                            <th class="p-2 text-right text-blue-600 dark:text-gray-200">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for extra_cost in extra_costs %}
                         <tr>
-                            <td class="p-2 border-b dark:border-gray-600">{{ extra_cost.item }}</td>
-                            <td class="p-2 text-right border-b dark:border-gray-600">{{ extra_cost.amount|intcomma }} THB</td>
+                            <td class="p-2 text-blue-600 border-b dark:border-gray-600">{{ extra_cost.item }}</td>
+                            <td class="p-2 text-right text-blue-600 border-b dark:border-gray-600">{{ extra_cost.amount|intcomma }} THB</td>
                         </tr>
                         {% empty %}
 
@@ -157,15 +157,15 @@
                 <table class="w-full">
                     <thead class="bg-gray-200 dark:bg-gray-700">
                         <tr>
-                            <th class="p-2 text-left dark:text-gray-200">Item</th>
-                            <th class="p-2 text-right dark:text-gray-200">Amount</th>
+                            <th class="p-2 text-left text-red-500 dark:text-gray-200">Item</th>
+                            <th class="p-2 text-right text-red-500 dark:text-gray-200">Amount</th>
                         </tr>
                     </thead>
                     <tbody class="dark:text-gray-300">
                         {% for discount in discounts %}
                         <tr>
-                            <td class="p-2 border-b dark:border-gray-600">{{ discount.item }}</td>
-                            <td class="p-2 text-right border-b dark:border-gray-600">{{ discount.amount|intcomma }} THB</td>
+                            <td class="p-2 text-red-500 border-b dark:border-gray-600">{{ discount.item }}</td>
+                            <td class="p-2 text-right text-red-500 border-b dark:border-gray-600">{{ discount.amount|intcomma }} THB</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -217,14 +217,14 @@
     </div>
 
     <div class="flex flex-col mt-8 space-y-4 md:flex-row md:space-x-4 md:space-y-0">
-        <a href="{% url 'tour_package_edit' package.package_reference %}" class="px-6 py-3 font-semibold text-center text-white bg-blue-500 rounded-lg transition duration-300 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
+        <a href="{% url 'tour_package_edit' package.package_reference %}" class="px-6 py-3 font-semibold text-center text-white transition duration-300 bg-blue-500 rounded-lg hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
           Edit Package
         </a>
-        <a href="{% url 'tour_package_pdf' package.id %}" class="px-6 py-3 font-semibold text-center text-white bg-green-500 rounded-lg transition duration-300 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700" target="_blank">
+        <a href="{% url 'tour_package_pdf' package.id %}" class="px-6 py-3 font-semibold text-center text-white transition duration-300 bg-green-500 rounded-lg hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700" target="_blank">
           Print PDF
         </a>
         {% if user.is_superuser %}
-        <a href="{% url 'duplicate_tour_package' package.package_reference %}" class="px-6 py-3 font-semibold text-center text-white bg-purple-500 rounded-lg transition duration-300 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700">
+        <a href="{% url 'duplicate_tour_package' package.package_reference %}" class="px-6 py-3 font-semibold text-center text-white transition duration-300 bg-purple-500 rounded-lg hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700">
             Duplicate Package
         </a>
         {% endif %}
@@ -239,15 +239,15 @@
           @ajax:before="loading = true"
         >
           {% csrf_token %}
-          <input type="email" name="cc_email" placeholder="CC Email (optional)" class="px-3 py-2 w-full rounded border md:w-auto dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600" id="cc_email">
+          <input type="email" name="cc_email" placeholder="CC Email (optional)" class="w-full px-3 py-2 border rounded md:w-auto dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600" id="cc_email">
           <button
             type="submit"
-            class="flex justify-center items-center px-6 py-3 w-full font-semibold text-white bg-yellow-500 rounded-lg transition duration-300 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 md:w-auto"
+            class="flex items-center justify-center w-full px-6 py-3 font-semibold text-white transition duration-300 bg-yellow-500 rounded-lg hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 md:w-auto"
             :disabled="loading"
           >
             <span x-show="!loading">Send Email</span>
             <span x-show="loading" class="flex items-center">
-              <svg class="mr-3 -ml-1 w-5 h-5 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 mr-3 -ml-1 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>

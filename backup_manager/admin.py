@@ -3,6 +3,7 @@ from django.urls import path
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.conf import settings
 import os
 from io import StringIO
@@ -71,23 +72,42 @@ class BackupManagementAdmin(admin.ModelAdmin):
 
     @method_decorator(csrf_protect)
     def upload_backup_view(self, request):
-        if request.method == 'POST' and request.FILES.get('backup_file'):
+        if request.method == 'POST':
+            if 'backup_file' not in request.FILES:
+                messages.error(request, "No file was uploaded. Please select a file.")
+                return render(request, 'admin/upload_backup.html')
+                
             uploaded_file = request.FILES['backup_file']
+            
+            # Validate file extension
             if not uploaded_file.name.endswith('.psql'):
                 messages.error(request, "Only .psql files are allowed.")
-                return redirect('..')
+                return render(request, 'admin/upload_backup.html')
 
-            backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']
+            try:
+                # Ensure backup directory exists
+                backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']
+                os.makedirs(backup_dir, exist_ok=True)
 
-            os.makedirs(backup_dir, exist_ok=True)
-
-            fs = FileSystemStorage(location=backup_dir)
-
-            filename = fs.save(uploaded_file.name, uploaded_file)
-
-            messages.success(request, f"Backup file '{uploaded_file.name}' uploaded successfully.")
-            return redirect('..')
+                # Save the file
+                fs = FileSystemStorage(location=backup_dir)
+                filename = fs.save(uploaded_file.name, uploaded_file)
+                file_path = os.path.join(backup_dir, filename)
+                
+                # Verify the file was saved correctly
+                if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                    messages.success(request, f"Backup file '{uploaded_file.name}' uploaded successfully.")
+                else:
+                    messages.error(request, f"Failed to save backup file. Please try again.")
+                    
+            except Exception as e:
+                messages.error(request, f"Error uploading backup: {str(e)}")
+                import traceback
+                print(f"Backup upload error: {traceback.format_exc()}")
+                
+            return redirect('admin:backup_manager_backupmanagement_changelist')
         
+        # GET request - show the upload form
         return render(request, 'admin/upload_backup.html')
 
     def create_backup_view(self, request):
@@ -139,22 +159,34 @@ class BackupManagementAdmin(admin.ModelAdmin):
             return redirect('..')
 
         backup_file = os.path.join(settings.DBBACKUP_STORAGE_OPTIONS['location'], filename)
+        
+        if not os.path.exists(backup_file):
+            messages.error(request, f"Backup file {filename} not found.")
+            return redirect('admin:backup_manager_backupmanagement_changelist')
 
         try:
+            # Use our custom restore command that handles role filtering
             output = StringIO()
-            call_command('dbrestore', '--noinput', '--input-filename', filename, stdout=output, stderr=output)
+            call_command('custom_restore', filename=filename, stdout=output, stderr=output)
             output_str = output.getvalue()
-
+            
+            # Log the output for debugging
+            print(f"Restore output: {output_str}")
+            
             # Verify database state
             if self.verify_database_state():
-                messages.success(request, f'Database restored successfully from {filename}. Database contains tables.')
+                messages.success(request, f'Database restored successfully from {filename}.')
             else:
                 messages.warning(request, f'Restore command executed, but the database appears to be empty. Please verify the database state.')
 
         except CommandError as e:
             messages.error(request, f'Error restoring database: {str(e)}')
+            import traceback
+            print(f"Restore error: {traceback.format_exc()}")
         except Exception as e:
             messages.error(request, f'Unexpected error during database restore: {str(e)}')
+            import traceback
+            print(f"Restore error: {traceback.format_exc()}")
 
         return redirect('admin:backup_manager_backupmanagement_changelist')
 

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Import Tour Package{% endblock %}
+
+{% block content %}
+<div class="container px-4 py-8 mx-auto">
+    <div class="p-6 mx-auto max-w-2xl bg-white rounded-lg shadow-md dark:bg-gray-800">
+        <h1 class="mb-6 text-2xl font-bold dark:text-gray-200">Import Tour Package from JSON</h1>
+        
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+                <div class="p-4 mb-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200{% else %}bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            <div>
+                <label for="json_file" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Select JSON File
+                </label>
+                <input 
+                    type="file" 
+                    name="json_file" 
+                    id="json_file" 
+                    accept=".json" 
+                    required 
+                    class="px-3 py-2 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Please upload a JSON file exported from the Tour Package system
+                </p>
+            </div>
+            
+            <div class="flex justify-between items-center">
+                <button 
+                    type="submit" 
+                    class="px-6 py-3 font-semibold text-white bg-blue-500 rounded-lg shadow-md transition duration-300 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 dark:bg-blue-600 dark:hover:bg-blue-700"
+                >
+                    Import Package
+                </button>
+                <a 
+                    href="{% url 'tour_packages' %}" 
+                    class="px-6 py-3 font-semibold text-gray-700 bg-gray-200 rounded-lg shadow-md transition duration-300 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                >
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

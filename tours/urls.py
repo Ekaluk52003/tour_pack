@@ -6,7 +6,6 @@ urlpatterns = [
     # put save-tour-package as it may match to tour_package_detail or other route
     path('save-tour-package/', views.save_tour_package, name='save_tour_package'),
     path('save-tour-package/<int:package_reference>/', views.save_tour_package, name='update_tour_package'),
-    path('old-list', views.tour_package_list, name='tour_package_list'),
     path('create/', views.tour_package_quote, name='tour_package_quote'),
     path('<int:package_reference>/', views.tour_package_detail, name='tour_package_detail'),
     path('<int:package_reference>/edit/', views.tour_package_edit, name='tour_package_edit'),
@@ -22,5 +21,8 @@ urlpatterns = [
     path('get-service-prices/<int:service_id>/', views.get_service_prices, name='get_service_prices'),
     path('save-service-prices/', views.save_service_prices, name='save_service_prices'),
     path('service-list/', views.service_list, name='service_list'),
+    
+    path('tour-package/<int:pk>/export-json/', views.export_tour_package_json, name='export_tour_package_json'),
+    path('tour-package/import-json/', views.import_tour_package_json, name='import_tour_package_json'),
 ]
 

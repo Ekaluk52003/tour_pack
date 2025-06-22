@@ -26,6 +26,7 @@ from io import BytesIO
 from django.contrib import messages
 import os
 import base64
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -423,10 +424,6 @@ def send_tour_package_email(request, pk):
         return render(request, 'tour_quote/notification.html', context)
 
 
-@login_required
-def tour_package_list(request):
-    packages = TourPackageQuote.objects.all().order_by('-created_at')
-    return render(request, 'tour_quote/tour_package_list.html', {'packages': packages})
 
 
 @login_required
@@ -998,3 +995,183 @@ def service_list(request):
         'services': services
     }
     return render(request, 'tour_quote/service_list.html', context)
+
+@login_required
+def export_tour_package_json(request, pk):
+    """
+    Exports a single TourPackageQuote and all its related data into a JSON file.
+    This view manually constructs a dictionary to ensure all related data (days, hotels, costs)
+    is included in a clean, nested format.
+    """
+    # Retrieve the specific tour package or return a 404 error if not found
+    tour_package = get_object_or_404(TourPackageQuote, pk=pk)
+
+    # Manually build the dictionary with all the required data
+    package_data = {
+        "id": tour_package.id,
+        "name": tour_package.name,
+        "customer_name": tour_package.customer_name,
+        "created_at": tour_package.created_at.isoformat(),
+        "package_reference": tour_package.package_reference,
+        "grand_total_cost": str(tour_package.grand_total_cost),  # Use string to avoid float precision issues
+        "service_grand_total": str(tour_package.service_grand_total),
+        "hotel_grand_total": str(tour_package.hotel_grand_total),
+        "remark": tour_package.remark,
+        "remark2": tour_package.remark2,
+        "remark_of_hotels": tour_package.remark_of_hotels,
+        "tour_pack_type": tour_package.tour_pack_type.name if tour_package.tour_pack_type else None,
+        "hotel_costs": tour_package.hotel_costs,
+        "discounts": tour_package.discounts,
+        "extra_costs": tour_package.extra_costs,
+        "commission_info": {
+            "hotel_rate": str(tour_package.commission_rate_hotel),
+            "hotel_amount": str(tour_package.commission_amount_hotel),
+            "services_rate": str(tour_package.commission_rate_services),
+            "services_amount": str(tour_package.commission_amount_services),
+            "total": str(tour_package.commission_amount_hotel + tour_package.commission_amount_services)
+        },
+        "tour_days": []
+    }
+
+    # Add related tour days to the dictionary
+    for day in tour_package.tour_days.all():
+        day_data = {
+            "date": day.date.isoformat(),
+            "city": day.city.name,
+            "hotel": day.hotel.name,
+            "services": [],
+            "guide_services": []
+        }
+        
+        # Add services for this day
+        for service in day.services.all():
+            day_data["services"].append({
+                "name": service.service.name,
+                "service_type": service.service.service_type.name,
+                "price_at_booking": str(service.price_at_booking)
+            })
+            
+        # Add guide services for this day
+        for guide_service in day.guide_services.all():
+            day_data["guide_services"].append({
+                "name": guide_service.guide_service.name,
+                "price_at_booking": str(guide_service.price_at_booking)
+            })
+            
+        package_data["tour_days"].append(day_data)
+
+    # Create a JSON response. The `Content-Disposition` header tells the
+    # browser to treat the response as a file download.
+    response = JsonResponse(package_data, json_dumps_params={'indent': 2})
+    response['Content-Disposition'] = f'attachment; filename="tour_package_{tour_package.pk}.json"'
+
+    return response
+
+@login_required
+def import_tour_package_json(request):
+    """
+    Import a tour package from a JSON file and create a new TourPackageQuote.
+    """
+    if request.method == 'POST' and request.FILES.get('json_file'):
+        try:
+            # Read the uploaded JSON file
+            json_file = request.FILES['json_file']
+            json_data = json.loads(json_file.read().decode('utf-8'))
+            
+            # Extract basic package information
+            with transaction.atomic():
+                # Create the tour package
+                tour_package = TourPackageQuote(
+                    name=json_data.get('name', 'Imported Package'),
+                    customer_name=json_data.get('customer_name', 'Imported Customer'),
+                    remark=json_data.get('remark'),
+                    remark2=json_data.get('remark2'),
+                    remark_of_hotels=json_data.get('remark_of_hotels'),
+                    hotel_costs=json_data.get('hotel_costs', []),
+                    discounts=json_data.get('discounts', []),
+                    extra_costs=json_data.get('extra_costs', []),
+                    grand_total_cost=Decimal(json_data.get('grand_total_cost', '0')),
+                    service_grand_total=Decimal(json_data.get('service_grand_total', '0')),
+                    hotel_grand_total=Decimal(json_data.get('hotel_grand_total', '0')),
+                    commission_rate_hotel=Decimal(json_data.get('commission_info', {}).get('hotel_rate', '0')),
+                    commission_amount_hotel=Decimal(json_data.get('commission_info', {}).get('hotel_amount', '0')),
+                    commission_rate_services=Decimal(json_data.get('commission_info', {}).get('services_rate', '0')),
+                    commission_amount_services=Decimal(json_data.get('commission_info', {}).get('services_amount', '0'))
+                )
+                
+                # Set tour pack type if it exists
+                if json_data.get('tour_pack_type'):
+                    tour_pack_type, _ = TourPackType.objects.get_or_create(
+                        name=json_data.get('tour_pack_type')
+                    )
+                    tour_package.tour_pack_type = tour_pack_type
+                
+                # Save the package to generate a reference ID
+                tour_package.save()
+                
+                # Process tour days if they exist
+                if json_data.get('tour_days'):
+                    for day_data in json_data['tour_days']:
+                        # Get or create city
+                        city, _ = City.objects.get_or_create(name=day_data.get('city'))
+                        
+                        # Get or create hotel
+                        hotel, _ = Hotel.objects.get_or_create(
+                            name=day_data.get('hotel'),
+                            city=city
+                        )
+                        
+                        # Create tour day
+                        tour_day = TourDay.objects.create(
+                            tour_package=tour_package,
+                            date=datetime.fromisoformat(day_data.get('date')).date(),
+                            city=city,
+                            hotel=hotel
+                        )
+                        
+                        # Add services
+                        if day_data.get('services'):
+                            for service_data in day_data['services']:
+                                # Get or create service type
+                                service_type, _ = ServiceType.objects.get_or_create(
+                                    name=service_data.get('service_type', 'General')
+                                )
+                                
+                                # Get or create service
+                                service, _ = Service.objects.get_or_create(
+                                    name=service_data.get('name'),
+                                    service_type=service_type
+                                )
+                                service.cities.add(city)
+                                
+                                # Create tour day service
+                                TourDayService.objects.create(
+                                    tour_day=tour_day,
+                                    service=service,
+                                    price_at_booking=Decimal(service_data.get('price_at_booking', '0'))
+                                )
+                        
+                        # Add guide services
+                        if day_data.get('guide_services'):
+                            for guide_service_data in day_data['guide_services']:
+                                # Get or create guide service
+                                guide_service, _ = GuideService.objects.get_or_create(
+                                    name=guide_service_data.get('name')
+                                )
+                                
+                                # Create tour day guide service
+                                TourDayGuideService.objects.create(
+                                    tour_day=tour_day,
+                                    guide_service=guide_service,
+                                    price_at_booking=Decimal(guide_service_data.get('price_at_booking', '0'))
+                                )
+            
+            messages.success(request, f"Successfully imported tour package: {tour_package.name}")
+            return redirect('tour_package_detail', package_reference=tour_package.package_reference)
+            
+        except json.JSONDecodeError:
+            messages.error(request, "Invalid JSON file. Please upload a valid JSON file.")
+        except Exception as e:
+            messages.error(request, f"Error importing tour package: {str(e)}")
+    
+    return render(request, 'tour_quote/import_tour_package.html')

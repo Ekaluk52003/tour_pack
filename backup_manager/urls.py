@@ -16,4 +16,5 @@ urlpatterns += [
     path('admin/backup_manager/backupmanagement/create_backup/', admin.site.admin_view(backup_management_admin.create_backup_view), name='backup_manager_backupmanagement_create_backup'),
     path('admin/backup_manager/backupmanagement/restore_db/<str:filename>/', admin.site.admin_view(backup_management_admin.restore_db_view), name='backup_manager_backupmanagement_restore_db'),
     path('admin/backup_manager/backupmanagement/confirm_restore_db/<str:filename>/', admin.site.admin_view(backup_management_admin.confirm_restore_db_view), name='backup_manager_backupmanagement_confirm_restore_db'),
+    path('admin/backup_manager/backupmanagement/upload_backup/', admin.site.admin_view(backup_management_admin.upload_backup_view), name='backup_manager_backupmanagement_upload_backup'),
 ]

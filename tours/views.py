@@ -27,6 +27,9 @@ from django.contrib import messages
 import os
 import base64
 from datetime import datetime
+import uuid
+import csv
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -860,10 +863,19 @@ def service_price_edit(request):
     """
     services = Service.objects.all().select_related('service_type')
     tour_pack_types = TourPackType.objects.all()
-
+    
+    # Convert services to JSON for safe handling of special characters
+    services_list = [{
+        'id': service.id,
+        'name': service.name,
+        'service_type': service.service_type.name if service.service_type else ''
+    } for service in services]
+    services_json = json.dumps(services_list)
+    
     context = {
         'services': services,
         'tour_pack_types': tour_pack_types,
+        'services_json': services_json,
     }
     return render(request, 'tour_quote/service_price_edit.html', context)
 

@@ -2,6 +2,11 @@
 {% load static %}
 {% block content %}
 
+<!-- Store all service data in a JSON object -->
+<script type="application/json" id="services-data">
+  {{ services_json|safe }}
+</script>
+
 <div class="container px-4 py-8 mx-auto">
   <div class="p-8 mx-auto bg-white rounded shadow-lg dark:bg-gray-800">
       <div class="p-6"
@@ -13,6 +18,19 @@
               message: '',
               messageType: '',
               loading: false,
+              services: [],
+              
+              // Load services from JSON data
+              loadServices() {
+                  try {
+                      const servicesData = document.getElementById('services-data');
+                      if (servicesData) {
+                          this.services = JSON.parse(servicesData.textContent);
+                      }
+                  } catch (error) {
+                      console.error('Error loading services:', error);
+                  }
+              },
 
               initializePrices() {
                   {% for type in tour_pack_types %}
@@ -31,17 +49,22 @@
                   }
               },
 
-              async fetchServicePrices(serviceId, serviceName, serviceType) {
+              async fetchServicePrices(serviceId) {
                   try {
                       this.loading = true;
                       const response = await fetch(`/get-service-prices/${serviceId}/`);
                       const data = await response.json();
-                      this.selectedService = {
-                          id: serviceId,
-                          name: serviceName,
-                          type: serviceType
-                      };
-                      this.serviceSearchText = serviceName;
+                      
+                      // Find the service in the services array
+                      const service = this.services.find(s => s.id.toString() === serviceId.toString());
+                      if (service) {
+                          this.selectedService = {
+                              id: serviceId,
+                              name: service.name,
+                              type: service.service_type
+                          };
+                          this.serviceSearchText = service.name;
+                      }
 
                       this.initializePrices();
 
@@ -128,19 +151,18 @@
               },
 
               getFilteredServices() {
-                  return Array.from(document.querySelectorAll('[data-service-id]'))
-                      .filter(service => {
-                          const serviceName = service.getAttribute('data-service-name').toLowerCase();
-                          const serviceType = service.getAttribute('data-service-type').toLowerCase();
-                          const searchText = this.serviceSearchText.toLowerCase();
-                          return serviceName.includes(searchText) || serviceType.includes(searchText);
-                      });
+                  return this.services.filter(service => {
+                      const searchText = this.serviceSearchText.toLowerCase();
+                      return service.name.toLowerCase().includes(searchText) || 
+                             service.service_type.toLowerCase().includes(searchText);
+                  });
               }
           }"
-          x-init="initializePrices()"
-          @click.away="showServiceDropdown = false">
+          x-init="loadServices(); initializePrices()"
+          @click.away="showServiceDropdown = false"
+          @select-service.window="fetchServicePrices($event.detail.id)">
 
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-300">Edit Service Prices</h1>
             </div>
 
@@ -154,7 +176,7 @@
                             x-model="serviceSearchText"
                             @focus="showServiceDropdown = true"
                             @input="selectedService = null"
-                            class="w-full px-3 py-2 text-gray-900 placeholder-gray-400 bg-white border border-gray-300 rounded-md dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 dark:placeholder-gray-500"
+                            class="px-3 py-2 w-full placeholder-gray-400 text-gray-900 bg-white rounded-md border border-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 dark:placeholder-gray-500"
                             placeholder="Search for a service...">
                         <!-- Clear Selection Button -->
                         <button
@@ -171,7 +193,7 @@
 
                     <div
                         x-show="selectedService"
-                        class="p-3 mt-2 border border-blue-200 rounded-md dark:bg-blue-900/50 dark:border-blue-800">
+                        class="p-3 mt-2 rounded-md border border-blue-200 dark:bg-blue-900/50 dark:border-blue-800">
                         <div class="font-medium text-blue-800 dark:text-blue-200" x-text="selectedService?.name"></div>
                         <div class="text-sm text-blue-600 dark:text-blue-300" x-text="selectedService?.type"></div>
                     </div>
@@ -179,22 +201,18 @@
                     <!-- Service Dropdown -->
                     <div
                         x-show="showServiceDropdown && !selectedService"
-                        class="absolute z-10 w-full mt-1 overflow-auto bg-white border border-gray-200 rounded-md shadow-lg dark:bg-gray-700 dark:border-gray-600 max-h-60">
-                        {% for service in services %}
+                        class="overflow-auto absolute z-10 mt-1 w-full max-h-60 bg-white rounded-md border border-gray-200 shadow-lg dark:bg-gray-700 dark:border-gray-600">
+                        <template x-for="service in services" :key="service.id">
                             <div
-                                class="hidden"
-                                data-service-id="{{ service.id }}"
-                                data-service-name="{{ service.name }}"
-                                data-service-type="{{ service.service_type }}">
+                                class="px-4 py-2 text-gray-900 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-100"
+                                x-show="serviceSearchText === '' || 
+                                        service.name.toLowerCase().includes(serviceSearchText.toLowerCase()) || 
+                                        service.service_type.toLowerCase().includes(serviceSearchText.toLowerCase())"
+                                @click="$dispatch('select-service', { id: service.id })">
+                                <div class="font-medium" x-text="service.name"></div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400" x-text="service.service_type"></div>
                             </div>
-                            <div
-                                 class="px-4 py-2 text-gray-900 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-100"
-                                x-show="getFilteredServices().some(s => s.dataset.serviceId === '{{ service.id }}')"
-                                @click="fetchServicePrices('{{ service.id }}', '{{ service.name }}', '{{ service.service_type }}')">
-                                <div class="font-medium">{{ service.name }}</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ service.service_type }}</div>
-                            </div>
-                        {% endfor %}
+                        </template>
                     </div>
                 </div>
             </div>
@@ -205,7 +223,7 @@
 
               <div class="mb-6 space-y-4">
                   {% for type in tour_pack_types %}
-                  <div class="flex items-center justify-between p-4 border rounded-lg">
+                  <div class="flex justify-between items-center p-4 rounded-lg border">
                       <div class="flex-1">
                         <h3 class="font-medium text-gray-900 dark:text-white">{{ type.name }}</h3>
                           {% if type.description %}
@@ -214,7 +232,7 @@
                       </div>
                       <div class="w-48">
                           <div class="relative rounded-md">
-                              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                              <div class="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
                                 <span class="text-gray-500 dark:text-gray-400">฿</span>
                               </div>
                               <input
@@ -222,10 +240,10 @@
                                   step="any"
                                   :value="prices['{{ type.id }}']?.price"
                                   @input="updatePrice('{{ type.id }}', $event.target.value)"
-                                  class="block w-full py-2 pr-12 text-gray-900 placeholder-gray-400 bg-white border border-gray-300 rounded-md pl-7 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 dark:placeholder-gray-500"
+                                  class="block py-2 pr-12 pl-7 w-full placeholder-gray-400 text-gray-900 bg-white rounded-md border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 dark:placeholder-gray-500"
 
                               >
-                              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                              <div class="flex absolute inset-y-0 right-0 items-center pr-3 pointer-events-none">
                                   <span class="text-gray-500 sm:text-sm">THB</span>
                               </div>
                           </div>
@@ -265,8 +283,8 @@
             <!-- Loading Overlay -->
             <div
                 x-show="loading"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div class="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50">
+                <div class="w-12 h-12 rounded-full border-t-2 border-b-2 border-white animate-spin"></div>
             </div>
         </div>
     </div>

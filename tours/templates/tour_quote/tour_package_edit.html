@@ -61,8 +61,8 @@
         // Initialize drag and drop functionality with auto-scrolling
         $nextTick(() => {
           let autoScrollInterval = null;
-          const scrollSpeed = 10;
-          const scrollThreshold = 100; // pixels from edge to trigger scrolling
+          const scrollSpeed = 25;
+          const scrollThreshold = 300; // pixels from edge to trigger scrolling
           
           // Auto-scroll function for drag and drop
           document.addEventListener('dragover', function(e) {

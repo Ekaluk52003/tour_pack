@@ -28,6 +28,19 @@
     .restore-button:hover {
         background-color: #417690;
     }
+    .download-button {
+        background-color: #5cb85c;
+        color: #fff !important;
+        padding: 5px 10px;
+        text-decoration: none;
+        border-radius: 4px;
+        margin-left: 10px;
+        font-size: 12px;
+        transition: background-color 0.3s;
+    }
+    .download-button:hover {
+        background-color: #449d44;
+    }
 </style>
 {% endblock %}
 
@@ -49,6 +62,9 @@
                 <li class="backup-item">
                     <span>{{ backup }}</span>
                     <div>
+                        <a href="{% url 'admin:backup_manager_backupmanagement_download_backup' filename=backup %}" class="download-button">
+                            Download
+                        </a>
                         <a href="{% url 'admin:backup_manager_backupmanagement_restore_db' filename=backup %}" class="restore-button">
                             Restore
                         </a>

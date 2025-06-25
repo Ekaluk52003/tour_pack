@@ -11,21 +11,40 @@
   {{ guide_services_json|safe }}
 </script>
 <style>
+  /* Drag and drop styling */
+  .drop-zone {
+    border: 2px solid #e5e7eb; /* Normal border */
+    position: relative;
+    margin-bottom: 10px; /* Spacing between days */
+    cursor: grab;
+    border-radius: 8px;
+    background-color: #ffffff; /* Explicit white background */
+  }
+  .drop-zone:active {
+    cursor: grabbing;
+  }
+  .drop-zone-active {
+    background-color: #cce4ff !important; /* Darker blue background with !important */
+  }
   .dragging {
-    opacity: 0.75; /* Reduced opacity */
-    background-color: rgba(255, 255, 255, 0.9); /* Light background for contrast */
-    border: 2px dashed green; /* Highlight border for the dragged item */
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Slight shadow for emphasis */
-    transform: scale(1.05); /* Enlarge slightly */
-    transition: all 0.2s ease; /* Smooth transition */
-}
+    opacity: 0.7;
+    z-index: 100; /* Ensure dragged item is on top */
+  }
+  /* Drag handle for better usability */
+  .drag-handle {
+    cursor: grab;
+    padding: 5px;
+  }
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+  /* Other styles */
   .service-item {
     transition: all 0.2s ease-in-out;
   }
   .service-item:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
-
 </style>
 <div class="p-8 mx-auto bg-white rounded shadow-lg dark:bg-gray-800"
      x-data="tourPackage()"
@@ -37,6 +56,63 @@
         $data.showModal = false;
         $data.modalMessage = '';
         $data.confirmAction = null;
+        $data.draggedDayIndex = null;
+        
+        // Initialize drag and drop functionality with auto-scrolling
+        $nextTick(() => {
+          let autoScrollInterval = null;
+          const scrollSpeed = 10;
+          const scrollThreshold = 100; // pixels from edge to trigger scrolling
+          
+          // Auto-scroll function for drag and drop
+          document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            
+            // Clear any existing interval
+            if (autoScrollInterval) {
+              clearInterval(autoScrollInterval);
+              autoScrollInterval = null;
+            }
+            
+            // Get viewport dimensions
+            const viewportHeight = window.innerHeight;
+            const viewportTop = window.scrollY;
+            const viewportBottom = viewportTop + viewportHeight;
+            
+            // Calculate distance from edges
+            const distanceFromTop = e.clientY;
+            const distanceFromBottom = viewportHeight - e.clientY;
+            
+            // Auto-scroll if near edges
+            if (distanceFromTop < scrollThreshold) {
+              // Near top - scroll up
+              autoScrollInterval = setInterval(() => {
+                window.scrollBy(0, -scrollSpeed);
+              }, 20);
+            } else if (distanceFromBottom < scrollThreshold) {
+              // Near bottom - scroll down
+              autoScrollInterval = setInterval(() => {
+                window.scrollBy(0, scrollSpeed);
+              }, 20);
+            }
+          });
+          
+          // Stop auto-scrolling when drag ends
+          document.addEventListener('dragend', function() {
+            if (autoScrollInterval) {
+              clearInterval(autoScrollInterval);
+              autoScrollInterval = null;
+            }
+          });
+          
+          // Also stop auto-scrolling when drop occurs
+          document.addEventListener('drop', function() {
+            if (autoScrollInterval) {
+              clearInterval(autoScrollInterval);
+              autoScrollInterval = null;
+            }
+          });
+        });
      ">
   <h1 class="mb-6 text-3xl font-bold text-gray-900 dark:text-white">Editing Reference ID: {{ package.package_reference }}</h1>
 
@@ -108,13 +184,34 @@
 
   <div class="space-y-2" x-show="isSuperUser">
     <template x-for="(day, index) in days" :key="index">
-      <div class="p-4 mb-4 bg-white rounded-lg border dark:bg-gray-700"
+      <div class="p-4 rounded-lg border dark:bg-gray-700 drop-zone"
            draggable="true"
-           @dragstart="dragStart($event, index)"
-           @dragend="dragEnd"
-           @dragover="dragOver($event)"
-           @dragover.prevent
-           @drop="drop($event, index)">
+           @dragstart="
+             $event.dataTransfer.setData('application/json', JSON.stringify({index: index}));
+             $event.dataTransfer.effectAllowed = 'move';
+             draggedDayIndex = index;
+           "
+           @dragend="
+             draggedDayIndex = null;
+             document.querySelectorAll('.drop-zone-active').forEach(el => el.classList.remove('drop-zone-active'));
+           "
+           @dragover.prevent="
+             if(draggedDayIndex !== null && draggedDayIndex !== index) {
+               $event.currentTarget.classList.add('drop-zone-active');
+             }
+           "
+           @dragleave="$event.currentTarget.classList.remove('drop-zone-active')"
+           @drop="
+             $event.preventDefault();
+             const sourceIndex = draggedDayIndex;
+             const targetIndex = index;
+             if(sourceIndex !== null && sourceIndex !== targetIndex) {
+               const draggedDay = days[sourceIndex];
+               days.splice(sourceIndex, 1);
+               days.splice(targetIndex, 0, draggedDay);
+             }
+             document.querySelectorAll('.drop-zone-active').forEach(el => el.classList.remove('drop-zone-active'));
+           ">
            <div class="flex justify-between items-center mb-2">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white" x-text="`Day ${index + 1}`"></h2>  <div class="flex items-center">
             <span class="mr-2 text-gray-500 dark:text-gray-400">
@@ -272,6 +369,8 @@
                         open = false;
                         search = '';
                         selectedIndex = -1;
+                      } else {
+                        open = true;
                       }
                     "
                     @keydown.down.prevent="
@@ -405,6 +504,8 @@
           </template>
           <button @click="addGuideService(day)" class="px-3 py-2 text-white bg-blue-500 rounded">Add Guide Service</button>
         </div>
+
+
 
          <!-- Plus button to add day between (except after the last day) -->
          <template x-if="index < days.length - 1">

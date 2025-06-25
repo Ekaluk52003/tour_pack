@@ -36,9 +36,9 @@ RUN pip install --upgrade pip && \
 
 # RUN npm run build
 
-# COPY ./entrypoint.sh .
-# RUN chmod +x /app/entrypoint.sh
+COPY ./entrypoint.sh .
+RUN chmod +x /app/entrypoint.sh
 
-# COPY . .
+COPY . .
 
-# ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]

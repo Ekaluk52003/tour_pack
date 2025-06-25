@@ -6,7 +6,6 @@ services:
     command: >
       sh -c "service cron start &&
              python manage.py crontab add &&
-             python manage.py migrate &&
              python manage.py runserver 0.0.0.0:${DJANGO_PORT}"
     volumes:
       - .:/app
@@ -47,8 +46,8 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - "${POSTGRES_PORT}:5435"
-    command: -p 5435
+      - "${POSTGRES_PORT}:5432"
+    command: -p 5432
     env_file:
       - .env
 

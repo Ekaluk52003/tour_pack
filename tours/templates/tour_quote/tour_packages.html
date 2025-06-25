@@ -4,9 +4,10 @@
 <div class="container px-4 py-6 mx-auto">
     <h1 class="mb-6 text-3xl font-bold text-gray-800 dark:text-gray-200">Tour Packages</h1>
     <div class="flex justify-between items-center mb-4">
-    
-        <div class="space-x-2">
+        <div>
             <a href="{% url 'tour_package_quote' %}" class="px-4 py-2 font-semibold text-white bg-blue-500 rounded transition duration-300 hover:bg-blue-600">Create New</a>
+        </div>
+        <div>
             <a href="{% url 'import_tour_package_json' %}" class="px-4 py-2 font-semibold text-white bg-yellow-500 rounded transition duration-300 hover:bg-yellow-600">Import JSON</a>
         </div>
     </div>

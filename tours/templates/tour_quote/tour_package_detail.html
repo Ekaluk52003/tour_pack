@@ -223,6 +223,9 @@
         <a href="{% url 'tour_package_pdf' package.id %}" class="px-6 py-3 font-semibold text-center text-white bg-green-500 rounded-lg transition duration-300 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700" target="_blank">
           Print PDF
         </a>
+        <a href="{% url 'tour_package_pdf_no_cost' package.id %}" class="px-6 py-3 font-semibold text-center text-white bg-purple-500 rounded-lg transition duration-300 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700" target="_blank">
+          Export PDF without cost
+        </a>
         <a href="{% url 'export_tour_package_json' pk=package.id %}" class="px-6 py-3 font-semibold text-center text-white bg-yellow-500 rounded-lg transition duration-300 hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700" target="_blank">
           Export to JSON
         </a>

@@ -291,6 +291,104 @@ def tour_package_pdf(request, pk):
 
     return response
 
+
+@login_required
+def tour_package_pdf_no_cost(request, pk):
+    package = get_object_or_404(TourPackageQuote, pk=pk)
+
+    # Define the image path based on your project structure
+    logo_data_uri = None
+
+    # Try multiple possible paths for Docker environment
+    possible_paths = [
+      os.path.join(settings.BASE_DIR, 'static', 'image', 'rsz_animo1.png')        # Add more paths if needed
+    ]
+
+    # Try to find and load the image
+    for logo_path in possible_paths:
+        if os.path.exists(logo_path):
+            try:
+                with open(logo_path, 'rb') as f:
+                    logo_binary = f.read()
+                    logo_base64 = base64.b64encode(logo_binary).decode('utf-8')
+                    logo_data_uri = f'data:image/png;base64,{logo_base64}'
+                    break
+            except Exception as e:
+                print(f"Error reading file at {logo_path}: {str(e)}")  # Debug print
+
+    if not logo_data_uri:
+        print("Could not find or load the logo image")  # Debug print
+
+    # We still need the hotel costs structure but without prices for the template
+    hotel_costs_with_total = []
+    for cost in package.hotel_costs:
+        cost_with_total = cost.copy()
+        # Keep structure but zero out costs
+        cost_with_total['room_cost'] = 0
+        cost_with_total['extra_bed_cost'] = 0
+        cost_with_total['total'] = 0
+        hotel_costs_with_total.append(cost_with_total)
+
+    # We keep the structure but zero out all costs
+    discounts = package.discounts
+    extra_costs = package.extra_costs
+    
+    remark2 = package.remark2.replace(
+        '\n', '<br>') if package.remark2 is not None else ''
+    remark_of_hotels = package.remark_of_hotels.replace(
+        '\n', '<br>') if package.remark_of_hotels is not None else ''
+    
+    ordered_tour_days = package.tour_days.all().order_by('date')
+    
+    html_string = render_to_string('tour_quote/tour_package_pdf_no_cost.html', {
+        'package': package,
+        'ordered_tour_days': ordered_tour_days,
+        'tour_pack_type': package.tour_pack_type,
+        'hotel_costs_with_total': hotel_costs_with_total,
+        'base_url': request.build_absolute_uri('/'),
+        'discounts': discounts,
+        'extra_costs': extra_costs,
+        'static_url': settings.STATIC_URL,
+        'remark2': remark2,
+        'remark_of_hotels': remark_of_hotels,
+        'logo_data_uri': logo_data_uri,
+        'hide_costs': True  # Flag to hide costs in template
+    })
+    
+    # Create response and set filename
+    response = HttpResponse(content_type='application/pdf')
+    package_name = package.name if package.name else 'unknown'
+    reference = package.package_reference if package.package_reference else str(package.id)
+    package_name = ''.join(e for e in package_name if e.isalnum() or e in ['-', '_','(', ')']).strip()
+    reference = ''.join(e for e in reference if e.isalnum() or e in ['-', '_']).strip()
+    filename = f"{package_name}_{reference}_no_cost.pdf"
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    
+    # Generate PDF with custom styles
+    HTML(
+        string=html_string,
+        base_url=request.build_absolute_uri()
+    ).write_pdf(
+        response,
+        stylesheets=[CSS(string='''
+            @page {
+                size: A4;
+                margin: 2cm;
+                @bottom-right {
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 10px;
+                    color: #666;
+                }
+            }
+            body {
+                font-family: sans-serif;
+            }
+        ''')]
+    )
+    
+    return response
+
+
 @login_required
 @require_http_methods(["POST"])
 def send_tour_package_email(request, pk):

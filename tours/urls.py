@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:package_reference>/edit/', views.tour_package_edit, name='tour_package_edit'),
     path('get-city-services/<int:city_id>/', views.get_city_services, name='get_city_services'),
     path('tour-package/<int:pk>/pdf/', views.tour_package_pdf, name='tour_package_pdf'),
+    path('tour-package/<int:pk>/pdf-no-cost/', views.tour_package_pdf_no_cost, name='tour_package_pdf_no_cost'),
     path('', views.tour_packages, name='tour_packages'),
     path('get-predefined-tour-quote/<int:quote_id>/', views.get_predefined_tour_quote, name='get_predefined_tour_quote'),
     path('tour-package/<int:pk>/send-email/', views.send_tour_package_email, name='send_tour_package_email'),

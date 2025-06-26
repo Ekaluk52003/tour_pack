@@ -1,0 +1,373 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tour Package PDF</title>
+    <style>
+        @page {
+            margin: 1cm;
+            @bottom-left {
+                content: element(footer);
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            line-height: 1.4;
+        }
+        h1, h2, h3 {
+            color: #2C3E50;
+            margin-top: 0;
+        }
+
+        .header-container {
+            position: relative;
+            margin-bottom: 20px;
+            padding-right: 1cm; /* Compensate for page margin */
+        }
+
+        .company-header {
+            width: 200px;
+            display: flex;
+            align-items: center;
+        }
+        .company-header img {
+            width: 60px;
+            margin-right: 15px;
+        }
+        .company-header h1 {
+            font-size: 14px;
+            color: #2980B9;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .package-info {
+            position: absolute;
+            top: 0;
+            right: 0;
+            text-align: left;
+            width: 60%;
+        }
+
+        .package-info-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 5px;
+        }
+        .package-info-item {
+            flex: 1;
+        }
+        .package-info-item {
+            margin-left: 20px;
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #2980B9;
+            padding: 0px 0;
+            margin-bottom: 2px;
+        }
+        .day-header h2 {
+            margin: 0;
+            font-size: 12px;
+        }
+
+        .day-info {
+            text-align: right;
+            font-size: 12px;
+        }
+
+        .services h3, .guide-services h3 {
+            color: #2980B9;
+            font-size: 12px;
+        }
+
+        .remark2 h3 {
+            color: #2980B9;
+            font-size: 12px;
+            margin-bottom: 1px;
+        }
+
+        .remarkTwo h3 {
+            color: #8a0707;
+            font-size: 12px;
+            margin-bottom: 1px;
+        }
+
+        .remarkTwo {
+            color: #8a0707;
+            font-size: 12px;
+            margin-bottom: 1px;
+        }
+
+        .services h3 {
+            margin-top: 5px; /* Added a small top margin */
+            margin-bottom: 5px; /* Reduced bottom margin */
+        }
+
+        .service-item {
+            display: flex;
+            line-height: 0.8rem; /* Increased line height */
+            justify-content: space-between;
+            align-items: flex-start; /* Changed from baseline to flex-start */
+            margin-bottom: 5px; /* Added margin between items */
+        }
+
+        .remark2-items {
+            padding-left: 2px;
+            line-height: 0.9rem;
+        }
+        .service-name {
+            flex-grow: 1;
+            margin-right: 10px;
+            word-wrap: break-word; /* Allow long words to break */
+            max-width: 80%; /* Limit width to prevent overlapping */
+        }
+
+        .list {
+            padding-left: 15px;
+            margin: 0;
+        }
+        .list li {
+            margin-bottom: 10px;
+        }
+        .cost-section {
+            margin-bottom: 15px;
+        }
+
+        .cost-section .hotel{
+            margin-bottom: 1px;
+        }
+        .grand-section h2 {
+            color: #023e8a;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .subject-service {
+            color: #2980B9;
+            padding-left: 4px;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+
+        .guide {
+            font-size: 14px;
+            font-weight: bold;
+            color: #0077b6;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+        .table th, .table td {
+            border: 0.15px  solid #dee2e6;
+            padding: 4px;
+            text-align: left;
+            font-size: 10px;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            font-weight:bold;
+            color: #0077b6;
+        }
+
+        .table tr {
+            page-break-inside: avoid;
+        }
+
+        /* Rooms column Nights column */
+        .table th:nth-child(4),
+        .table td:nth-child(4) {
+            text-align: center;
+            padding-left: 2px;
+            padding-right: 0px;
+        }
+        
+        .table th:nth-child(5),
+        .table td:nth-child(5) {
+            text-align: center;
+            padding-left: 2px;
+            padding-right: 0px;
+        }                    /* Add these new styles for the date column */
+
+        .table td:first-child {
+                 /* Fixed width for date column */
+               /* Ensures minimum width */
+                width: 90px;
+                min-width: 90px;
+                max-width: 90px;  /* Ensures maximum width */
+                padding-left: 1px;
+                padding-right: 0px;
+        }
+
+        /* price columns */
+        .table th:nth-child(2),
+        .table td:nth-child(2) {
+            padding-left: 2px;
+            padding-right: 0px;
+        }
+
+        .quotation-header {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<div class="content">
+    <div class="header-container">
+        <div class="company-header">
+            <div class="logo">
+                {% if logo_data_uri %}
+                    <img src="{{ logo_data_uri }}" alt="Animo Tours Logo">
+                {% endif %}
+            </div>
+            <h1>Animo Tours</h1>
+        </div>
+
+        <div class="quotation-header">QUOTATION</div>
+        <div class="package-info">
+            <div class="package-info-row">
+                <div class="package-info-item">
+                    <span class="package-info-label"><strong>Mo no.:</strong></span>
+                    <span class="package-info-value"> {{ package.package_reference }}</span>
+                </div>
+                <div class="package-info-item">
+                    <span class="package-info-label"><strong>Package:</strong></span>
+                    <span class="package-info-value">{{ package.name }}</span>
+                </div>
+            </div>
+            <div class="package-info-row">
+                <div class="package-info-item">
+                    <span class="package-info-label"><strong>Customer:</strong></span>
+                    <span class="package-info-value">{{ package.customer_name }}</span>
+                </div>
+                <div class="package-info-item">
+                    <span class="package-info-label"><strong>Remark:</strong></span>
+                    <span class="package-info-label"><strong>{{ package.remark }}</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% for day in ordered_tour_days %}
+    <div class="day-section">
+        <div class="day-header">
+            <h2>Day {{ forloop.counter }} - {{ day.date|date:"d-M-Y" }}</h2>
+            <div class="day-info">
+                <span><strong>City:</strong> {{ day.city.name }}</span>
+                <span style="margin-left: 10px;"><strong>Hotel:</strong> {{ day.hotel.name }}</span>
+            </div>
+        </div>
+
+        <div class="services">
+            <h3>Services:</h3>
+            <ul class="list">
+                {% for service in day.services.all %}
+                <li class="service-item">
+                    <span class="service-name">{{ service.service.name }}</span>
+                </li>
+                {% endfor %}
+
+                {% if day.guide_services.all %}
+                    {% for guide_service in day.guide_services.all %}
+                    <li class="service-item">
+                        <span class="service-name"><span class="guide">Guide</span> {{ guide_service.guide_service.name }}</span>
+                    </li>
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if hotel_costs_with_total %}
+    <div class="cost-section">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Hotel Name</th>
+                    <th>Room type</th>
+                    <th>Rooms</th>
+                    <th>Nights</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hotel_cost in hotel_costs_with_total %}
+                <tr>
+                    <td>
+                        {{ hotel_cost.date }}
+                    </td>
+                    <td></strong>{{ hotel_cost.name }}</td>
+                    <td>{{ hotel_cost.type }}</td>
+                    <td>{{ hotel_cost.room }}</td>
+                    <td>{{hotel_cost.nights}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="cost-section hotel">
+        <div class="remark2"><h3>Remark hotels</h3></div>
+        <div style="white-space: pre-wrap;"><div class="remark2-items">{{ remark_of_hotels|safe }}</div></div>
+        <br>
+        <div class="remark2"><h3>* Breakfast is included in the room rate for all occupants</h3></div>
+    </div>
+    {% endif %}
+
+    {% if extra_costs %}
+    <div class="extra">
+        <h3>Additional Items:</h3>
+        <ul class="list">
+            {% for extra_cost in extra_costs %}
+            <li class="service-item">
+                <span class="service-name">{{ extra_cost.item }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if discounts %}
+    <div class="discount">
+        <h3>Discounts:</h3>
+        <ul class="list">
+            {% for discount in discounts %}
+            <li class="service-item">
+                <span class="service-name">{{ discount.item }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="subject-service"><strong>***This quotation is subject to availability of all mentioned services.</strong></div>
+
+    {% if remark2 and remark2|length > 0 %}
+    <div class="remarkTwo"><h3>Remark2:</h3></div>
+    <div style="white-space: pre-wrap;"><div class="remarkTwo">{{ remark2|safe }}</div></div>
+    {% endif %}
+</div>
+</body>
+</html>

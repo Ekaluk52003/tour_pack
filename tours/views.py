@@ -81,26 +81,37 @@ def save_tour_package(request, package_reference=None):
                 package = get_object_or_404(TourPackageQuote, package_reference=package_reference)
                 is_new = False
             else:
-                if request.user.is_superuser:
+                # Check if user can create packages (superuser or assistance group)
+                can_create = request.user.is_superuser or request.user.groups.filter(name='assistance').exists()
+                if can_create:
                     package = TourPackageQuote()
+                    package.prepare_by_user = request.user
                     is_new = True
                 else:
                     return JsonResponse({'status': 'error', 'message': 'You do not have permission to create new packages'}, status=403)
 
-            if request.user.is_superuser:
-                # Superusers can edit everything, and new packages can be created with all fields
+            # Check if user can edit basic fields (superuser or assistance group)
+            can_edit = request.user.is_superuser or request.user.groups.filter(name='assistance').exists()
+            if can_edit:
+                # Users with edit permissions can edit basic fields
                 package.name = data['name']
                 package.customer_name = data['customer_name']
                 package.remark = data.get('remark', '')
                 package.remark2 = data.get('remark2', '')
                 package.tour_pack_type_id = data['tour_pack_type']
-                package.commission_rate_hotel = data.get(
-                    'commission_rate_hotel', 0)
-                package.commission_rate_services = data.get(
-                    'commission_rate_services', 0)
+                
+                # Only superusers can edit commission rates
+                if request.user.is_superuser:
+                    package.commission_rate_hotel = data.get(
+                        'commission_rate_hotel', 0)
+                    package.commission_rate_services = data.get(
+                        'commission_rate_services', 0)
+                
+                # Note: prepare_by_user is only set during creation, never during updates
+                # This field is immutable after the tour quote is created
 
 
-            # Both superusers and non-superusers can edit hotel costs
+            # all login users can update these field
             package.hotel_costs = data['hotelCosts']
             package.remark_of_hotels = data.get('remark_of_hotels', '')
             package.discounts = data.get('discounts', [])
@@ -109,7 +120,7 @@ def save_tour_package(request, package_reference=None):
             # Save the package to get a primary key
             package.save()
 
-            if request.user.is_superuser or is_new:
+            if can_edit or is_new:
                 # Clear existing days and services if it's an update
                 if not is_new:
                     package.tour_days.all().delete()
@@ -564,6 +575,9 @@ def tour_package_detail(request, package_reference):
     # remark2 = package.remark2.replace('\n', '<br>')
 
     comission_total = package.commission_amount_hotel + package.commission_amount_services
+    # Check if user should see commission info (not in assistance group)
+    show_commission = not request.user.groups.filter(name='assistance').exists()
+    
     context = {
         'package': package,
         # Pass hotel costs with total calculation
@@ -575,7 +589,8 @@ def tour_package_detail(request, package_reference):
         'total_extra_cost': total_extra_cost,
         'remark2': remark2,
         'comission_total': comission_total,
-        'ordered_tour_days': ordered_tour_days
+        'ordered_tour_days': ordered_tour_days,
+        'show_commission': show_commission,
     }
 
     return render(request, 'tour_quote/tour_package_detail.html', context)
@@ -649,6 +664,11 @@ def tour_package_edit(request, package_reference):
 
     }
 
+    # Check if user should see commission info (not in assistance group)
+    show_commission = not request.user.groups.filter(name='assistance').exists()
+    # Check if user can edit (superuser or assistance group)
+    can_edit = request.user.is_superuser or request.user.groups.filter(name='assistance').exists()
+    
     context = {
         'package': package,
         'cities': cities,
@@ -656,6 +676,8 @@ def tour_package_edit(request, package_reference):
         'package_json': json.dumps(package_data, cls=DjangoJSONEncoder),
         'predefined_quotes': predefined_quotes,
         'tour_pack_types': tour_pack_types,
+        'show_commission': show_commission,
+        'can_edit': can_edit,
     }
 
     return render(request, 'tour_quote/tour_package_edit.html', context)
@@ -684,6 +706,7 @@ def tour_package_quote(request):
         'guide_services_json': json.dumps(guide_services, cls=DjangoJSONEncoder),
         'predefined_quotes': predefined_quotes,
         'tour_pack_types': tour_pack_types,
+        'is_superuser': request.user.is_superuser,
     }
 
     return render(request, 'tour_quote/tour_package_quote.html', context)
@@ -858,7 +881,8 @@ def duplicate_tour_package(request, package_reference):
         commission_rate_services=original_package.commission_rate_services,
         hotel_costs=original_package.hotel_costs,
         discounts=original_package.discounts,
-        extra_costs=original_package.extra_costs
+        extra_costs=original_package.extra_costs,
+        prepare_by_user=request.user
     )
 
     # Copy tour days and their associated services
@@ -1206,7 +1230,8 @@ def import_tour_package_json(request):
                     commission_rate_hotel=Decimal(json_data.get('commission_info', {}).get('hotel_rate', '0')),
                     commission_amount_hotel=Decimal(json_data.get('commission_info', {}).get('hotel_amount', '0')),
                     commission_rate_services=Decimal(json_data.get('commission_info', {}).get('services_rate', '0')),
-                    commission_amount_services=Decimal(json_data.get('commission_info', {}).get('services_amount', '0'))
+                    commission_amount_services=Decimal(json_data.get('commission_info', {}).get('services_amount', '0')),
+                    prepare_by_user=request.user
                 )
                 
                 # Set tour pack type if it exists

@@ -52,6 +52,10 @@
         let packageData = JSON.parse(document.getElementById('package-data').textContent);
         let guideServicesData = JSON.parse(document.getElementById('guide-services-data').textContent);
         initEditForm(packageData, {{ request.user.is_superuser|yesno:'true,false' }});
+        // Set commission visibility flag
+        $data.showCommission = {{ show_commission|yesno:'true,false' }};
+        // Set edit permissions flag (superuser or assistance group)
+        $data.canEdit = {{ can_edit|yesno:'true,false' }};
         guideServices = guideServicesData;
         $data.showModal = false;
         $data.modalMessage = '';
@@ -144,6 +148,13 @@
     <input type="text" id="customer-name" x-model="customerName"  :disabled="!isSuperUser" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
     <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.customerName" x-text="errors.customerName"></p>
   </div>
+
+  <div class="mb-4">
+    <label class="block mb-2 text-gray-900 dark:text-white">Prepared by</label>
+    <div class="px-3 py-2 text-gray-700 bg-gray-100 rounded border dark:bg-gray-600 dark:text-gray-300">
+      {% if package.prepare_by_user %}{{ package.prepare_by_user.username }}{% else %}N/A{% endif %}
+    </div>
+  </div>
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark</label>
     <textarea id="remark" x-model="remark"  :disabled="!isSuperUser" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
@@ -177,12 +188,12 @@
 
 
 
-<div class="mb-4" x-show="!isSuperUser">
+<div class="mb-4" x-show="!canEdit">
   {% include "tour_quote/non_super_user.html" %}
 </div>
 
 
-  <div class="space-y-2" x-show="isSuperUser">
+  <div class="space-y-2" x-show="canEdit">
     <template x-for="(day, index) in days" :key="index">
       <div class="p-4 rounded-lg border dark:bg-gray-700 drop-zone"
            draggable="true"
@@ -809,7 +820,7 @@
 
 
 <!-- Add this inside your form, where appropriate -->
-<div class="p-4 mt-8 bg-gray-100 rounded-lg dark:bg-gray-700" x-show="isSuperUser">
+<div class="p-4 mt-8 bg-gray-100 rounded-lg dark:bg-gray-700" x-show="showCommission">
   <h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Commission Summary</h2>
   <div class="grid grid-cols-2 gap-4">
 

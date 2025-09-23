@@ -7,6 +7,7 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
 
 class City(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -139,6 +140,7 @@ class TourPackageQuote(models.Model):
     commission_amount_hotel = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     commission_rate_services = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     commission_amount_services = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    prepare_by_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='prepared_tour_packages')
 
 
     def __str__(self):
@@ -148,6 +150,14 @@ class TourPackageQuote(models.Model):
         if not self.package_reference:
             # Fetch the reference from the Reference table (explained below)
             self.package_reference = ReferenceID.get_next_reference()
+        
+        # Protect prepare_by_user from being changed after creation
+        if self.pk is not None:  # This is an update, not a new record
+            # Get the original record from database
+            original = TourPackageQuote.objects.get(pk=self.pk)
+            # Preserve the original prepare_by_user value
+            self.prepare_by_user = original.prepare_by_user
+        
         super().save(*args, **kwargs)
 
 class TourDay(models.Model):

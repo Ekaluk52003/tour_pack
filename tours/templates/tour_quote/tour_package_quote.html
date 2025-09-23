@@ -685,6 +685,8 @@ Add Day
 </div>
 
 
+<!-- Commission Section - Only visible to superusers -->
+{% if is_superuser %}
 <div class="p-4 mt-8 bg-gray-100 rounded-lg dark:bg-gray-700">
 <h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Commission Summary</h2>
 <div class="grid grid-cols-2 gap-4">
@@ -722,6 +724,7 @@ Add Day
   <p x-text="`${formatCommaNumber((parseFloat(calculateGrandTotal().commission_amount_hotel) + parseFloat(calculateGrandTotal().commission_amount_services)).toFixed(2))} THB`" class="text-xl font-bold text-green-600 dark:text-green-400"></p>
 </div>
 </div>
+{% endif %}
 <button @click="saveTourPackage" class="px-3 py-2 mt-4 text-white bg-green-500 rounded" x-text="packageReference ? 'Update Package' : 'Create Package'"></button>
 </div>
 </div>

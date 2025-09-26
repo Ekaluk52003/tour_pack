@@ -138,14 +138,14 @@
 
   <div class="mb-4">
     <label for="package-name" class="block mb-2 text-gray-900 dark:text-white">Package Name</label>
-    <input type="text" id="package-name" x-model="name" :disabled="!isSuperUser" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+    <input type="text" id="package-name" x-model="name" :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
     <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.name" x-text="errors.name"></p>
 
   </div>
 
   <div class="mb-4">
     <label for="customer-name" class="block mb-2 text-gray-900 dark:text-white">Customer Name</label>
-    <input type="text" id="customer-name" x-model="customerName"  :disabled="!isSuperUser" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+    <input type="text" id="customer-name" x-model="customerName"  :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
     <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.customerName" x-text="errors.customerName"></p>
   </div>
 
@@ -157,11 +157,11 @@
   </div>
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark</label>
-    <textarea id="remark" x-model="remark"  :disabled="!isSuperUser" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
+    <textarea id="remark" x-model="remark"  :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
 </div>
 
 
-<div class="mb-4" x-show="isSuperUser">
+<div class="mb-4" x-show="canEdit">
   <label for="tourPackType" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tour Package Type</label>
   <select id="tourPackType" x-model="tourPackType" @change="updateServicesForPackageType()"  class="block px-4 py-2.5 w-full h-12 text-base text-gray-600 bg-white rounded-lg border border-gray-300 dark:text-gray-300 focus:outline-none dark:bg-gray-700"
           :class="{'border-red-500': !tourPackType}">
@@ -175,7 +175,7 @@
 
 
 
-<div class="items-center mb-2 md:flex" x-show="isSuperUser">
+<div class="items-center mb-2 md:flex" x-show="canEdit">
   <select x-model="selectedPredefinedQuote" class="block px-4 py-2.5 h-12 text-base text-gray-600 bg-white rounded-lg border border-gray-300 dark:text-gray-300 focus:outline-none dark:bg-gray-700">
     <option value="">Select a predefined quote</option>
     {% for quote in predefined_quotes %}
@@ -802,8 +802,8 @@
 <!-- Grand Total Section -->
 <div class="mt-8 mb-4">
   <div class="mb-4">
-    <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2 (Only Superuser is allowed to edit)</label>
-    <textarea id="remark2" x-model="remark2" :disabled="!isSuperUser" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
+    <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2 (Only Superuser/Assitance are allowed to edit)</label>
+    <textarea id="remark2" x-model="remark2" :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
   </div>
 
   <div class="p-4 mb-4 bg-blue-100 rounded-lg dark:bg-blue-900">

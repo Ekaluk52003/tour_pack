@@ -20,15 +20,15 @@
     </div>
 
     <!-- Packages Table -->
-    <div class="overflow-x-auto">
         <table class="overflow-hidden min-w-full rounded-lg border shadow-md">
             <thead>
                 <tr class="border">
                     <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Reference</th>
                     <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Name</th>
-                    <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Pack</th>
+                    <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Type</th>
                     <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Customer</th>
                     <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Created At</th>
+                    <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Prepared By</th>
                     <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Actions</th>
                 </tr>
             </thead>
@@ -39,7 +39,14 @@
                     <td class="px-6 py-4 whitespace-nowrap">{{ package.name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ package.tour_pack_type }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ package.customer_name }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ package.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ package.created_at|date:"dMy H:i" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if package.prepare_by_user %}
+                            {{ package.prepare_by_user.username }}
+                        {% else %}
+                            <span class="text-gray-400">N/A</span>
+                        {% endif %}
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <a href="{% url 'tour_package_detail' package.package_reference %}" class="text-blue-500 hover:underline">View</a>
                         <a href="{% url 'tour_package_edit' package.package_reference %}" class="ml-4 text-green-500 hover:underline">Edit</a>
@@ -47,7 +54,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">No packages found.</td>
+                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">No packages found.</td>
                 </tr>
                 {% endfor %}
             </tbody>

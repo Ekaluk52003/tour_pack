@@ -1,26 +1,31 @@
 {% extends "base.html" %}
-
 {% block extra_head %}
 <script>
     // Define guide services data globally
     window.guideServicesData = JSON.parse('{{ guide_services_json|escapejs }}');
 </script>
 <style>
+  /* Hide elements with x-cloak until Alpine.js loads */
+  [x-cloak] {
+    display: none !important;
+  }
+  
   .dragging {
-    opacity: 0.75; /* Reduced opacity */
-    background-color: rgba(255, 255, 255, 0.9); /* Light background for contrast */
-    border: 2px dashed green; /* Highlight border for the dragged item */
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Slight shadow for emphasis */
-    transform: scale(1.05); /* Enlarge slightly */
-    transition: all 0.2s ease; /* Smooth transition */
-}
+    opacity: 0.75;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 2px dashed green;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+    transition: all 0.2s ease;
+  }
+  
   .service-item {
     transition: all 0.2s ease-in-out;
   }
+  
   .service-item:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
-
 </style>
 
 {% endblock %}
@@ -33,6 +38,149 @@
     <div class="mb-4" x-show="errors.days">
       <p class="text-sm text-red-500 dark:text-red-400" x-text="errors.days"></p>
     </div>
+
+<!-- AI Email Parser Button (Only for Superusers) -->
+{% if can_use_ai %}
+<div class="p-4 mb-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-300 dark:from-gray-700 dark:to-gray-700 dark:border-blue-500">
+  <div class="flex justify-between items-center">
+    <div class="flex-1">
+      <h3 class="mb-1 text-lg font-bold text-blue-900 dark:text-blue-300">
+        ✨ Quick Start with AI
+      </h3>
+      <p class="text-sm text-blue-700 dark:text-gray-300">
+        Paste a customer email and let AI automatically extract tour details, match hotels & services
+      </p>
+    </div>
+    <button 
+      @click="showAIDialog = true"
+      class="px-6 py-3 ml-4 text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl hover:scale-105 dark:from-blue-700 dark:to-purple-700">
+      <span class="flex items-center font-semibold">
+        <svg class="mr-2 w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/>
+        </svg>
+        Open AI Parser
+      </span>
+    </button>
+  </div>
+</div>
+
+
+<!-- AI Email Parser Dialog/Modal -->
+<div 
+  x-show="showAIDialog" 
+  x-cloak
+  class="overflow-y-auto fixed inset-0 z-50"
+  @keydown.escape.window="showAIDialog = false">
+  
+  <!-- Backdrop -->
+  <div 
+    class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+    @click="showAIDialog = false"></div>
+  
+  <!-- Dialog -->
+  <div class="flex justify-center items-center p-4 min-h-screen">
+    <div 
+      class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+      @click.stop>
+      
+      <!-- Header -->
+      <div class="sticky top-0 px-6 py-4 text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-lg">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xl font-semibold">🤖 AI Email Parser <span class="text-sm font-normal opacity-90">(Superuser Only)</span></h3>
+          <button 
+            @click="showAIDialog = false"
+            class="text-white transition-colors hover:text-gray-200">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Content -->
+      <div class="p-6">
+        <!-- Guidelines -->
+        <div class="p-4 mb-4 bg-blue-50 rounded-lg border border-blue-200 dark:bg-gray-700 dark:border-gray-600">
+          <p class="mb-2 text-sm font-semibold text-blue-800 dark:text-blue-300">📋 What AI Extracts:</p>
+          <ul class="space-y-1 text-xs list-disc list-inside text-blue-700 dark:text-gray-300">
+            <li><strong class="dark:text-white">Number of people</strong> - Required! ("I", "we", "2 people", "family of 4")</li>
+            <li><strong class="dark:text-white">Destinations</strong> - Thailand cities only (Bangkok, Chiang Mai, Phuket, etc.)</li>
+            <li><strong class="dark:text-white">Travel dates</strong> - Month or specific dates ("December", "Dec 15-28")</li>
+            <li><strong class="dark:text-white">Duration</strong> - Trip length ("2 weeks", "10 days")</li>
+            <li><strong class="dark:text-white">Hotels & Activities</strong> - Any mentions in the email</li>
+          </ul>
+          <p class="mt-2 text-xs text-blue-600 dark:text-blue-400">💡 Tip: Email should clearly state number of travelers for accurate pricing (1pax, 2pax, 4pax)</p>
+        </div>
+        
+        <!-- Email Input -->
+        <div class="mb-4">
+          <label for="email-content-dialog" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Customer Email Content 
+            <span class="text-xs font-normal text-gray-500">
+              (<span x-text="emailContent.length"></span>/2000 characters)
+            </span>
+          </label>
+          <textarea 
+            id="email-content-dialog" 
+            x-model="emailContent"
+            maxlength="2000"
+            rows="8"
+            class="px-3 py-2 w-full text-gray-900 bg-white rounded-lg border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Paste customer email here (max 2000 characters)...&#10;&#10;Example:&#10;We are a couple planning 10 days in Thailand for December.&#10;Cities: Bangkok, Chiang Mai, Phuket&#10;Activities: temples, cooking class, beach&#10;Hotel: Prefer Marriott or similar&#10;&#10;Note: Must mention number of people for accurate pricing!"></textarea>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex items-center mb-4 space-x-3">
+          <button 
+            @click="parseEmailWithAI()"
+            :disabled="!emailContent || isParsingEmail"
+            class="px-6 py-2 text-white bg-blue-600 rounded-lg shadow-md transition-colors hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            :class="{'animate-pulse': isParsingEmail}">
+            <span x-show="!isParsingEmail">🧠 Parse with AI</span>
+            <span x-show="isParsingEmail">🔄 Analyzing...</span>
+          </button>
+          
+          <button 
+            @click="clearEmailContent()"
+            class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg transition-colors hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500">
+            Clear
+          </button>
+        </div>
+        
+        <!-- AI Analysis Results -->
+        <div x-show="aiAnalysisResult" class="p-4 bg-green-50 rounded-lg border border-green-200 dark:bg-gray-700 dark:border-green-600">
+          <h4 class="mb-3 text-sm font-semibold text-green-800 dark:text-green-400">✅ AI Analysis Complete</h4>
+          <div class="text-sm text-green-700 dark:text-gray-300">
+            <p class="mb-2 font-semibold dark:text-white">Extracted Information:</p>
+            <ul class="ml-4 space-y-1 list-disc">
+              <li x-show="aiAnalysisResult?.customer_name" x-text="`Customer Name: ${aiAnalysisResult?.customer_name}`"></li>
+              <li x-show="aiAnalysisResult?.number_of_people" x-text="`Number of People: ${aiAnalysisResult?.number_of_people}`"></li>
+              <li x-show="aiAnalysisResult?.destinations" x-text="`Destinations: ${aiAnalysisResult?.destinations?.join(', ')}`"></li>
+              <li x-show="aiAnalysisResult?.duration_days" x-text="`Duration: ${aiAnalysisResult?.duration_days} days`"></li>
+              <li x-show="aiAnalysisResult?.raw_hotel_mentions" x-text="`Hotels Mentioned: ${aiAnalysisResult?.raw_hotel_mentions}`"></li>
+              <li x-show="aiAnalysisResult?.raw_activity_mentions" x-text="`Activities Mentioned: ${aiAnalysisResult?.raw_activity_mentions}`"></li>
+              <li x-show="aiAnalysisResult?.travel_months && aiAnalysisResult?.travel_months.length > 0" x-text="`Travel Months: ${aiAnalysisResult?.travel_months?.join(', ')}`"></li>
+            </ul>
+            <button 
+              @click="applyAIResults(); showAIDialog = false"
+              :disabled="isApplyingResults"
+              class="px-6 py-2 mt-4 text-white bg-green-600 rounded-lg shadow-md transition-colors hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-green-700 dark:hover:bg-green-600">
+              <span x-show="!isApplyingResults">✨ Apply to Form</span>
+              <span x-show="isApplyingResults">🔄 Applying...</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Error Display -->
+        <div x-show="aiParsingError" class="p-4 bg-red-50 rounded-lg border border-red-200 dark:bg-red-900/20 dark:border-red-700">
+          <h4 class="mb-2 text-sm font-semibold text-red-800 dark:text-red-200">❌ Parsing Error</h4>
+          <p class="text-sm text-red-700 dark:text-red-300" x-text="aiParsingError"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
     <div class="mb-4">
       <label for="package-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Package Name</label>
@@ -53,7 +201,6 @@
   <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2</label>
   <textarea id="remark2" x-model="remark2" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
 </div>
-
 
 <div class="mb-4">
   <label for="tourPackType" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tour Package Type</label>

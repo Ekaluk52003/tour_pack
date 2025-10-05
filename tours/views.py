@@ -15,7 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 import traceback
 from decimal import Decimal, InvalidOperation
 import json
@@ -700,6 +700,12 @@ def tour_package_quote(request):
 
     print("Guide Services:", guide_services)
 
+    # Check if user can use AI email parser
+    # can_use_ai = request.user.is_superuser or request.user.groups.filter(name='assistance').exists()
+    
+    # only superuser can use AI email parser
+    can_use_ai = request.user.is_superuser
+    
     context = {
         'cities': cities,
         'service_types': service_types,
@@ -707,6 +713,7 @@ def tour_package_quote(request):
         'predefined_quotes': predefined_quotes,
         'tour_pack_types': tour_pack_types,
         'is_superuser': request.user.is_superuser,
+        'can_use_ai': can_use_ai,
     }
 
     return render(request, 'tour_quote/tour_package_quote.html', context)
@@ -1310,3 +1317,767 @@ def import_tour_package_json(request):
             messages.error(request, f"Error importing tour package: {str(e)}")
     
     return render(request, 'tour_quote/import_tour_package.html')
+
+@login_required
+def parse_email_with_ai(request):
+    """
+    Parse customer email using AI to extract tour information.
+    Only accessible by superusers or users in 'assistance' group.
+    """
+    # Check if user is superuser or in assistance group
+    can_use_ai = request.user.is_superuser or request.user.groups.filter(name='assistance').exists()
+    if not can_use_ai:
+        return JsonResponse({'error': 'Permission denied. Only authorized users can use AI email parsing.'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        email_content = data.get('email_content', '').strip()
+        
+        if not email_content:
+            return JsonResponse({'error': 'Email content is required'}, status=400)
+        
+        # Limit email content to prevent token bloat (2000 chars ≈ 500 tokens)
+        MAX_EMAIL_LENGTH = 2000
+        if len(email_content) > MAX_EMAIL_LENGTH:
+            return JsonResponse({
+                'error': f'Email content too long. Maximum {MAX_EMAIL_LENGTH} characters allowed (current: {len(email_content)})'
+            }, status=400)
+        
+        # Step-by-step AI analysis
+        analysis_result = analyze_email_step_by_step(email_content)
+        
+        # Query Django models to match extracted data
+        matched_data = match_extracted_data_with_models(analysis_result)
+        
+        return JsonResponse({
+            'success': True,
+            'analysis': analysis_result,
+            'matched_data': matched_data
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': f'Error processing email: {str(e)}'}, status=500)
+
+def analyze_email_step_by_step(email_content):
+    """
+    STEP 1: Extract basic information from email (cities, people, duration).
+    """
+    from django.conf import settings
+    from datetime import datetime
+    import openai
+    import json
+    
+    # Initialize OpenAI client
+    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+    
+    # Get available cities from database for context
+    available_cities = list(City.objects.values_list('name', flat=True))
+
+    
+    # Get current date for context
+    from datetime import datetime as dt
+    current_date = dt.now()
+    current_date_str = current_date.strftime('%B %d, %Y')  # e.g., "October 04, 2025"
+    current_month = current_date.month
+    current_year = current_date.year
+    
+    # STEP 1 PROMPT: Extract basic info only
+    prompt = f"""
+You are a Thailand tour specialist analyzing customer emails to extract tour information.
+
+**CURRENT DATE: {current_date_str}** (Month: {current_month}, Year: {current_year})
+
+Available Thailand cities in our system: {', '.join(available_cities)}
+
+Thailand is divided into regions (for tour routing):
+- Central: Bangkok, Ayutthaya, Pattaya, Hua Hin (start here)
+- North: Chiang Mai, Chiang Rai (go here after central)
+- South: Phuket, Krabi, Koh Samui (beach destinations)
+
+Customer Email:
+{email_content}
+
+Extract ONLY the following BASIC information as JSON:
+{{
+    "customer_name": "customer name if mentioned (e.g., from signature, 'My name is...', 'I am...')",
+    "number_of_people": "number of travelers - extract NUMBER (1 for solo/'I', 2 for couple/'we', 4 for family, etc.)",
+    "destinations": ["cities mentioned - ONLY from available cities list, ordered by region: Central->North->South"],
+    "days_per_city": {{
+        "Bangkok": 2,
+        "Chiang Mai": 5,
+        "Phuket": 7
+    }},
+    "travel_months": ["months mentioned like December, January, February"],
+    "travel_start_date": "specific start date if mentioned (format: YYYY-MM-DD). IMPORTANT: Use correct year based on current date - if month is AFTER current month use CURRENT year, if month is BEFORE current month use NEXT year",
+    "travel_timing": "time of month if mentioned: 'early', 'mid', 'end', 'late', 'beginning' (e.g., 'end of November' → 'end')",
+    "duration_days": "total trip duration in days (e.g., 7 for 1 week, 14 for 2 weeks, 2 for 2 days)",
+    "raw_hotel_mentions": "any hotel names or brands mentioned in the email (exact text)",
+    "raw_activity_mentions": "any activities or interests mentioned (exact text)"
+}}
+
+IMPORTANT RULES:
+1. **NUMBER OF PEOPLE**: 
+   - "I" or "alone" = 1 person
+   - "we" or "couple" or "my wife and I" = 2 people
+   - "family" = 4 people (default)
+   - ALWAYS extract a number, never leave as None
+2. For destinations: ONLY use cities from the available cities list
+3. **DESTINATION ORDER**: ALWAYS order by Thailand regions: Central (Bangkok) → North (Chiang Mai) → South (Phuket/Krabi)
+   - This is the logical travel sequence regardless of time spent in each city
+4. If a city is not in the list, find the closest match
+5. ALL cities must be in Thailand only
+6. **YEAR LOGIC**: 
+   - Current date is {current_date_str}
+   - If travel month is AFTER current month ({current_month}) → use {current_year}
+   - If travel month is BEFORE or EQUAL to current month → use {current_year + 1}
+   - Example: Today is Oct (month 10). "Dec" (month 12) → {current_year}, "Sep" (month 9) → {current_year + 1}
+7. DURATION: Extract trip duration from phrases like "2 weeks", "10 days", "1 week" (convert weeks to days: 1 week = 7 days, 2 weeks = 14 days)
+8. For raw_hotel_mentions and raw_activity_mentions: Extract the EXACT text from the email, don't interpret or modify
+9. **DAYS PER CITY**: 
+   - If customer specifies days per city (e.g., "7 days in Phuket and 2 nights in Bangkok"), extract those exact numbers
+   - Pay attention to phrases like "stay for X days", "spend X nights", "X days in [city]"
+   - Calculate total duration by ADDING all days mentioned
+   - If NOT specified, use your knowledge to recommend realistic days based on:
+     * Bangkok (transit hub): 2-3 days typical
+     * Chiang Mai (cultural): 3-5 days typical (more activities, temples, nature)
+     * Phuket/Krabi (beach): 4-7 days typical (relaxation destination)
+     * Total should match duration_days if specified
+   - Example: "7 days beach + 2 nights Bangkok" → Phuket: 7, Bangkok: 2, Total: 9 days
+   - Include ALL cities mentioned in email in days_per_city
+"""
+
+    try:
+        # Call OpenAI API
+        response = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a Thailand tour specialist. Extract only factual information from emails. Always respond with valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.2,  # Low temperature for consistent extraction
+            max_tokens=800
+        )
+        
+        # Parse the response
+        ai_response = response.choices[0].message.content.strip()
+        
+        # Clean up the response to ensure it's valid JSON
+        if ai_response.startswith('```json'):
+            ai_response = ai_response[7:]
+        if ai_response.endswith('```'):
+            ai_response = ai_response[:-3]
+        ai_response = ai_response.strip()
+        
+        analysis = json.loads(ai_response)
+        
+        # Log the STEP 1 extraction for debugging
+        print("=" * 50)
+        print("STEP 1 - BASIC EXTRACTION:")
+        print(f"Customer name: {analysis.get('customer_name')}")
+        print(f"Number of people: {analysis.get('number_of_people')}")
+        print(f"Destinations: {analysis.get('destinations')}")
+        print(f"Duration: {analysis.get('duration_days')}")
+        print(f"Days per city: {analysis.get('days_per_city')}")
+        print(f"Raw hotel mentions: {analysis.get('raw_hotel_mentions')}")
+        print(f"Raw activity mentions: {analysis.get('raw_activity_mentions')}")
+        print("=" * 50)
+        
+        # Ensure required fields exist
+        if 'customer_name' not in analysis:
+            analysis['customer_name'] = ''
+        if 'number_of_people' not in analysis:
+            analysis['number_of_people'] = None
+        if 'destinations' not in analysis:
+            analysis['destinations'] = []
+        if 'days_per_city' not in analysis:
+            analysis['days_per_city'] = {}
+        if 'travel_months' not in analysis:
+            analysis['travel_months'] = []
+        if 'travel_start_date' not in analysis:
+            analysis['travel_start_date'] = None
+        if 'travel_timing' not in analysis:
+            analysis['travel_timing'] = ''
+        if 'duration_days' not in analysis:
+            analysis['duration_days'] = None
+        if 'raw_hotel_mentions' not in analysis:
+            analysis['raw_hotel_mentions'] = ''
+        if 'raw_activity_mentions' not in analysis:
+            analysis['raw_activity_mentions'] = ''
+        
+        return analysis
+        
+    except Exception as e:
+        print(f"OpenAI API error in Step 1: {str(e)}")
+        # Return minimal structure on error
+        return {
+            'customer_name': '',
+            'number_of_people': None,
+            'destinations': [],
+            'days_per_city': {},
+            'travel_months': [],
+            'travel_start_date': None,
+            'travel_timing': '',
+            'duration_days': None,
+            'raw_hotel_mentions': '',
+            'raw_activity_mentions': '',
+            'error': str(e)
+        }
+
+def analyze_hotels_and_services_step2(basic_analysis, cities):
+    """
+    STEP 2: With selected cities, get available hotels and services from DB,
+    then ask AI to match with customer requirements.
+    """
+    from django.conf import settings
+    import openai
+    import json
+    
+    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+    
+    # Get tour pack type for pricing
+    num_people = basic_analysis.get('number_of_people')
+    tour_pack_type = None
+    if num_people:
+        pax_name = f"{num_people}pax"
+        tour_pack_type = TourPackType.objects.filter(name__iexact=pax_name).first()
+        print(f"Looking for tour pack type: {pax_name}, Found: {tour_pack_type.name if tour_pack_type else 'NOT FOUND'}")
+    
+    # Collect available hotels and services for each city
+    city_options = []
+    for city_data in cities:
+        city_id = city_data['id']
+        city_name = city_data['name']
+        
+        # Get hotels for this city
+        hotels = Hotel.objects.filter(city_id=city_id)
+        hotel_list = [{'id': h.id, 'name': h.name} for h in hotels]
+        
+        # Get services for this city
+        services = Service.objects.filter(cities__id=city_id)
+        print(f"Services for {city_name} (before price filter): {services.count()}")
+        
+        if tour_pack_type:
+            services = services.filter(prices__tour_pack_type=tour_pack_type).distinct()
+            print(f"Services for {city_name} (after {tour_pack_type.name} price filter): {services.count()}")
+        
+        service_list = []
+        for service in services:
+            price = None
+            if tour_pack_type:
+                price_obj = ServicePrice.objects.filter(
+                    service=service,
+                    tour_pack_type=tour_pack_type
+                ).first()
+                if price_obj:
+                    price = str(price_obj.price)
+            
+            service_list.append({
+                'id': service.id,
+                'name': service.name,
+                'type': service.service_type.name,
+                'price': price
+            })
+        
+        city_options.append({
+            'city': city_name,
+            'hotels': hotel_list,
+            'services': service_list
+        })
+    
+    # Debug: Log what we're sending to AI
+    print("=" * 50)
+    print("STEP 2 - CONTEXT FOR AI:")
+    print(f"Customer hotel mentions: {basic_analysis.get('raw_hotel_mentions', 'Not specified')}")
+    print(f"Customer activity mentions: {basic_analysis.get('raw_activity_mentions', 'Not specified')}")
+    for city_opt in city_options:
+        print(f"\nCity: {city_opt['city']}")
+        print(f"  Hotels available: {len(city_opt['hotels'])}")
+        print(f"  Services available: {len(city_opt['services'])}")
+        if city_opt['services']:
+            print(f"  Sample services: {[s['name'] for s in city_opt['services'][:3]]}")
+    print("=" * 50)
+    
+    # STEP 2 PROMPT: Match with available options
+    prompt = f"""
+You are a Thailand tour specialist. Based on customer requirements, select the best matching hotels and services from available options.
+
+Customer mentioned:
+- Hotels: {basic_analysis.get('raw_hotel_mentions', 'Not specified')}
+- Activities/Interests: {basic_analysis.get('raw_activity_mentions', 'Not specified')}
+
+Available options by city:
+{json.dumps(city_options, indent=2)}
+
+Return JSON with matched selections:
+{{
+    "matched_hotels": [
+        {{"city": "Bangkok", "hotel_id": 123, "hotel_name": "...", "match_reason": "customer mentioned Ibis"}},
+        {{"city": "Chiang Mai", "hotel_id": 456, "hotel_name": "...", "match_reason": "similar to customer preference"}},
+        {{"city": "Phuket", "hotel_id": 789, "hotel_name": "...", "match_reason": "beach resort matching preference"}}
+    ],
+    "matched_services": [
+        {{"city": "Bangkok", "service_id": 111, "service_name": "...", "match_reason": "matches shopping interest"}},
+        {{"city": "Bangkok", "service_id": 222, "service_name": "...", "match_reason": "matches cultural tours"}},
+        {{"city": "Chiang Mai", "service_id": 333, "service_name": "...", "match_reason": "matches cultural tours"}},
+        {{"city": "Chiang Mai", "service_id": 444, "service_name": "...", "match_reason": "matches activities"}},
+        {{"city": "Phuket", "service_id": 555, "service_name": "...", "match_reason": "matches beach time"}},
+        {{"city": "Phuket", "service_id": 666, "service_name": "...", "match_reason": "water activities"}}
+    ]
+}}
+
+CRITICAL RULES:
+1. **MUST select hotels for EVERY city** in the destinations list
+2. **MUST select AT LEAST 2-3 services per city** to cover multiple days
+3. Match hotel names even with spelling variations (e.g., "Ibis reviver side" → "Ibis Riverside")
+4. Match services based on activity keywords (e.g., "shopping" → shopping tour services, "cultural" → temple/palace tours, "beach" → island/water activities)
+5. Only select from the provided available options
+6. Provide match_reason to explain why you selected each item
+7. Prioritize variety - select different types of services for each city
+"""
+    
+    try:
+        response = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a hotel and service matching expert. Always respond with valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.2,
+            max_tokens=1000
+        )
+        
+        ai_response = response.choices[0].message.content.strip()
+        
+        # Clean JSON
+        if ai_response.startswith('```json'):
+            ai_response = ai_response[7:]
+        if ai_response.endswith('```'):
+            ai_response = ai_response[:-3]
+        ai_response = ai_response.strip()
+        
+        matches = json.loads(ai_response)
+        
+        print("=" * 50)
+        print("STEP 2 - HOTEL & SERVICE MATCHING:")
+        print(f"Matched hotels: {matches.get('matched_hotels')}")
+        print(f"Matched services: {matches.get('matched_services')}")
+        print("=" * 50)
+        
+        return matches
+        
+    except Exception as e:
+        print(f"OpenAI API error in Step 2: {str(e)}")
+        return {
+            'matched_hotels': [],
+            'matched_services': [],
+            'error': str(e)
+        }
+
+def match_extracted_data_with_models(analysis_result):
+    """
+    Match extracted data with Django models following the manual import pattern.
+    Returns structured data ready for tour package creation.
+    """
+    from datetime import datetime, timedelta
+    
+    matched_data = {
+        'tour_pack_type': None,  # Single tour pack type based on number of people
+        'cities': [],
+        'tour_days': [],  # Structured tour days ready for form
+        'package_name_suggestion': '',
+        'customer_name_suggestion': ''
+    }
+    
+    # 1. Match Tour Pack Type based on number of people
+    num_people = analysis_result.get('number_of_people')
+    if num_people:
+        # Convert to pax format (e.g., 2 -> "2pax")
+        pax_name = f"{num_people}pax"
+        pack_type = TourPackType.objects.filter(name__iexact=pax_name).first()
+        if pack_type:
+            matched_data['tour_pack_type'] = {
+                'id': pack_type.id,
+                'name': pack_type.name
+            }
+    
+    # 2. Match cities (already ordered by AI: Central -> North -> South)
+    for destination in analysis_result.get('destinations', []):
+        city = City.objects.filter(name__iexact=destination).first()
+        if city:
+            matched_data['cities'].append({
+                'id': city.id,
+                'name': city.name
+            })
+    
+    # 2.5 STEP 2: Get AI to match hotels and services from available options
+    step2_matches = analyze_hotels_and_services_step2(analysis_result, matched_data['cities'])
+    
+    # 3. Create tour days - distribute intelligently across cities based on duration
+    # Start date: Use specific date > travel month > tomorrow
+    start_date = datetime.now().date() + timedelta(days=1)
+    
+    # Priority 1: Use specific start date if provided
+    travel_start_date = analysis_result.get('travel_start_date')
+    if travel_start_date:
+        try:
+            from datetime import datetime as dt
+            parsed_date = dt.strptime(travel_start_date, '%Y-%m-%d').date()
+            
+            # If the date is in the past, move it to next year
+            today = datetime.now().date()
+            if parsed_date < today:
+                # Move to next year
+                parsed_date = parsed_date.replace(year=today.year + 1)
+                print(f"Date was in past, moved to next year: {parsed_date}")
+            
+            start_date = parsed_date
+            print(f"Using specific start date: {start_date}")
+        except Exception as e:
+            print(f"Error parsing start date '{travel_start_date}': {e}")
+    
+    # Priority 2: Use travel month if no specific date
+    if not travel_start_date:
+        travel_months = analysis_result.get('travel_months', [])
+        raw_activity = analysis_result.get('raw_activity_mentions', '').lower()
+        raw_hotel = analysis_result.get('raw_hotel_mentions', '').lower()
+        
+        if travel_months:
+            try:
+                import calendar
+                
+                month_name = travel_months[0]
+                current_year = datetime.now().year
+                
+                # Parse month name to month number
+                month_num = None
+                for i in range(1, 13):
+                    if calendar.month_name[i].lower() == month_name.lower():
+                        month_num = i
+                        break
+                
+                if month_num:
+                    # If month is in the past, use next year
+                    if month_num < datetime.now().month:
+                        current_year += 1
+                    
+                    # Determine day based on travel_timing
+                    day = 1  # Default to first day
+                    travel_timing = analysis_result.get('travel_timing', '').lower()
+                    
+                    if travel_timing in ['end', 'late']:
+                        # End of month: use 20th
+                        day = 20
+                        print(f"Detected '{travel_timing}' of {month_name} → Using day {day}")
+                    elif travel_timing in ['early', 'beginning', 'start']:
+                        # Early month: use 1st
+                        day = 1
+                        print(f"Detected '{travel_timing}' {month_name} → Using day {day}")
+                    elif travel_timing in ['mid', 'middle']:
+                        # Mid month: use 15th
+                        day = 15
+                        print(f"Detected '{travel_timing}' {month_name} → Using day {day}")
+                    
+                    start_date = datetime(current_year, month_num, day).date()
+                    print(f"Using travel month {month_name} → Start date: {start_date}")
+            except Exception as e:
+                print(f"Error parsing travel month: {e}, using tomorrow as start date")
+    
+    duration_days = analysis_result.get('duration_days')
+    days_per_city_ai = analysis_result.get('days_per_city', {})
+    tour_pack_type_id = matched_data['tour_pack_type']['id'] if matched_data['tour_pack_type'] else None
+    
+    # Get matched hotels and services from Step 2
+    matched_hotels_by_city = {}
+    for hotel_match in step2_matches.get('matched_hotels', []):
+        city_name = hotel_match.get('city')
+        matched_hotels_by_city[city_name] = hotel_match
+    
+    matched_services_by_city = {}
+    for service_match in step2_matches.get('matched_services', []):
+        city_name = service_match.get('city')
+        if city_name not in matched_services_by_city:
+            matched_services_by_city[city_name] = []
+        matched_services_by_city[city_name].append(service_match)
+    
+    # Convert duration to integer if it's a string
+    if isinstance(duration_days, str):
+        try:
+            duration_days = int(duration_days)
+        except:
+            duration_days = None
+    
+    # Calculate how many days per city
+    num_cities = len(matched_data['cities'])
+    if num_cities == 0:
+        return matched_data
+    
+    # Use AI-recommended days per city if available
+    city_day_distribution = []
+    if days_per_city_ai:
+        print(f"Using AI-recommended days per city: {days_per_city_ai}")
+        for city_data in matched_data['cities']:
+            city_name = city_data['name']
+            num_days = days_per_city_ai.get(city_name, 1)  # Default to 1 if not specified
+            city_day_distribution.append((city_data, num_days))
+    elif duration_days and duration_days > 0:
+        # Fallback: Distribute days evenly across cities
+        days_per_city = max(1, duration_days // num_cities)
+        remaining_days = duration_days % num_cities
+        
+        for idx, city_data in enumerate(matched_data['cities']):
+            # Give extra days to later cities (beach destinations get more time)
+            extra_day = 1 if idx >= (num_cities - remaining_days) else 0
+            num_days_in_city = days_per_city + extra_day
+            city_day_distribution.append((city_data, num_days_in_city))
+    else:
+        # Default: 1 day per city
+        city_day_distribution = [(city_data, 1) for city_data in matched_data['cities']]
+    
+    # Recalculate total duration from AI recommendations
+    if days_per_city_ai:
+        duration_days = sum(days for _, days in city_day_distribution)
+    
+    # Now create tour days based on distribution
+    current_day = 0
+    for city_data, num_days_in_city in city_day_distribution:
+        city_id = city_data['id']
+        city_name = city_data['name']
+        
+        # Create multiple days for this city
+        for day_in_city in range(num_days_in_city):
+            # Calculate date for this day
+            day_date = start_date + timedelta(days=current_day)
+            is_first_day_in_city = (day_in_city == 0)
+            is_last_day_in_city = (day_in_city == num_days_in_city - 1)
+            is_first_day_overall = (current_day == 0)
+            is_last_day_overall = (current_day == (duration_days - 1) if duration_days else False)
+        
+            # 3.1 Find hotel for this city using Step 2 AI matches
+            hotel = None
+            if city_name in matched_hotels_by_city:
+                hotel_match = matched_hotels_by_city[city_name]
+                hotel_id = hotel_match.get('hotel_id')
+                if hotel_id:
+                    hotel = Hotel.objects.filter(id=hotel_id).first()
+                    print(f"Using AI-matched hotel: {hotel.name if hotel else 'Not found'} (Reason: {hotel_match.get('match_reason')})")
+            
+            # Fallback: get first hotel from database for this city
+            if not hotel:
+                hotel = Hotel.objects.filter(city_id=city_id).first()
+                print(f"Using fallback hotel: {hotel.name if hotel else 'No hotel available'}")
+            
+            # 3.2 Find services for this city using Step 2 AI matches
+            suggested_services = []
+            
+            # Add AI-matched services (activities) - ONE service per day to avoid duplicates
+            if city_name in matched_services_by_city:
+                available_services = matched_services_by_city[city_name]
+                
+                # Use round-robin to distribute services across days in this city
+                if available_services and day_in_city < len(available_services):
+                    service_match = available_services[day_in_city]
+                    service_id = service_match.get('service_id')
+                    if service_id:
+                        service = Service.objects.filter(id=service_id).first()
+                        if service:
+                            # Get the price for this tour pack type
+                            price = None
+                            if tour_pack_type_id:
+                                price_obj = ServicePrice.objects.filter(
+                                    service=service,
+                                    tour_pack_type_id=tour_pack_type_id
+                                ).first()
+                                if price_obj:
+                                    price = str(price_obj.price)
+                            
+                            suggested_services.append({
+                                'id': service.id,
+                                'name': service.name,
+                                'service_type': service.service_type.name,
+                                'price': price,
+                                'activity_match': service_match.get('match_reason', '')
+                            })
+                            print(f"Day {current_day + 1} - Using AI-matched service: {service.name} (Reason: {service_match.get('match_reason')})")
+                elif available_services:
+                    # If we have more days than services, cycle through services
+                    service_match = available_services[day_in_city % len(available_services)]
+                    service_id = service_match.get('service_id')
+                    if service_id:
+                        service = Service.objects.filter(id=service_id).first()
+                        if service:
+                            price = None
+                            if tour_pack_type_id:
+                                price_obj = ServicePrice.objects.filter(
+                                    service=service,
+                                    tour_pack_type_id=tour_pack_type_id
+                                ).first()
+                                if price_obj:
+                                    price = str(price_obj.price)
+                            
+                            suggested_services.append({
+                                'id': service.id,
+                                'name': service.name,
+                                'service_type': service.service_type.name,
+                                'price': price,
+                                'activity_match': service_match.get('match_reason', '')
+                            })
+                            print(f"Day {current_day + 1} - Using AI-matched service (cycled): {service.name}")
+            
+            # 3.3 Add inter-city transfer when changing cities
+            if is_first_day_in_city and not is_first_day_overall:
+                # This is the first day in a new city (not the first day of trip)
+                # Need transfer from previous city to this city
+                prev_city_idx = matched_data['cities'].index(city_data) - 1
+                if prev_city_idx >= 0:
+                    prev_city_name = matched_data['cities'][prev_city_idx]['name']
+                    
+                    # Search for train/bus transfer FROM previous city TO current city
+                    # Look in PREVIOUS city's services for transfers going TO current city
+                    prev_city_id = matched_data['cities'][prev_city_idx]['id']
+                    
+                    # Strategy 1: Exact route match (e.g., "Bangkok to Chiang Mai")
+                    transfer = Service.objects.filter(
+                        service_type__name__icontains='transfer',
+                        cities__id=prev_city_id
+                    ).filter(
+                        name__icontains=prev_city_name
+                    ).filter(
+                        name__icontains=city_name
+                    ).exclude(
+                        name__icontains='Bangkok'  # Exclude if going TO Bangkok (wrong direction)
+                    ).first() if city_name != 'Bangkok' else Service.objects.filter(
+                        service_type__name__icontains='transfer',
+                        cities__id=prev_city_id,
+                        name__icontains=prev_city_name
+                    ).filter(
+                        name__icontains=city_name
+                    ).first()
+                    
+                    # Strategy 2: Transfer mentioning destination city (flight/train/bus)
+                    if not transfer:
+                        transfer = Service.objects.filter(
+                            service_type__name__icontains='transfer',
+                            cities__id=prev_city_id
+                        ).filter(
+                            name__icontains=city_name  # Must mention destination
+                        ).filter(
+                            Q(name__icontains='flight') | Q(name__icontains='train') | Q(name__icontains='bus')
+                        ).first()
+                    
+                    # Strategy 3: Generic transfer with destination keyword
+                    if not transfer:
+                        # For long distances (e.g., Chiang Mai to Phuket), prefer flight
+                        if (prev_city_name == 'Chiang Mai' and city_name == 'Phuket') or \
+                           (prev_city_name == 'Phuket' and city_name == 'Chiang Mai'):
+                            transfer = Service.objects.filter(
+                                service_type__name__icontains='transfer',
+                                cities__id=prev_city_id,
+                                name__icontains='flight'
+                            ).first()
+                        
+                        # For shorter distances, train/bus is fine
+                        if not transfer:
+                            transfer = Service.objects.filter(
+                                service_type__name__icontains='transfer',
+                                cities__id=prev_city_id
+                            ).filter(
+                                Q(name__icontains='train') | Q(name__icontains='bus')
+                            ).first()
+                    
+                    if transfer and tour_pack_type_id:
+                        price_obj = ServicePrice.objects.filter(
+                            service=transfer,
+                            tour_pack_type_id=tour_pack_type_id
+                        ).first()
+                        if price_obj:
+                            suggested_services.insert(0, {
+                                'id': transfer.id,
+                                'name': transfer.name,
+                                'service_type': transfer.service_type.name,
+                                'price': str(price_obj.price),
+                                'activity_match': f'transfer_{prev_city_name}_to_{city_name}'
+                            })
+                            print(f"Day {current_day + 1} - Added inter-city transfer: {transfer.name}")
+            
+            # 3.4 Add arrival transfer for first day of trip
+            if is_first_day_overall:
+                # Search for transfer services with 'airport' AND city name
+                transfer = Service.objects.filter(
+                    service_type__name__icontains='transfer',
+                    cities__id=city_id
+                ).filter(
+                    name__icontains='airport'
+                ).filter(
+                    name__icontains=city_name
+                ).first()
+                
+                if transfer and tour_pack_type_id:
+                    price_obj = ServicePrice.objects.filter(
+                        service=transfer,
+                        tour_pack_type_id=tour_pack_type_id
+                    ).first()
+                    if price_obj:
+                        suggested_services.insert(0, {
+                            'id': transfer.id,
+                            'name': transfer.name,
+                            'service_type': transfer.service_type.name,
+                            'price': str(price_obj.price),
+                            'activity_match': 'arrival_transfer'
+                        })
+            
+            # 3.5 Add departure transfer for last day of trip
+            if is_last_day_overall:
+                # Search for transfer services with 'airport' AND city name
+                transfer = Service.objects.filter(
+                    service_type__name__icontains='transfer',
+                    cities__id=city_id
+                ).filter(
+                    name__icontains='airport'
+                ).filter(
+                    name__icontains=city_name
+                ).first()
+                
+                if transfer and tour_pack_type_id:
+                    price_obj = ServicePrice.objects.filter(
+                        service=transfer,
+                        tour_pack_type_id=tour_pack_type_id
+                    ).first()
+                    if price_obj:
+                        suggested_services.append({
+                            'id': transfer.id,
+                            'name': transfer.name,
+                            'service_type': transfer.service_type.name,
+                            'price': str(price_obj.price),
+                            'activity_match': 'departure_transfer'
+                        })
+            
+            # Build tour day object
+            tour_day = {
+                'date': day_date.isoformat(),
+                'city_id': city_id,
+                'city_name': city_name,
+                'hotel_id': hotel.id if hotel else None,
+                'hotel_name': hotel.name if hotel else 'No hotel available',
+                'services': suggested_services
+            }
+            
+            matched_data['tour_days'].append(tour_day)
+            current_day += 1
+    
+    # 4. Generate package name suggestion
+    if matched_data['cities']:
+        city_names = ' - '.join([c['name'] for c in matched_data['cities']])
+        pax_info = matched_data['tour_pack_type']['name'] if matched_data['tour_pack_type'] else ''
+        matched_data['package_name_suggestion'] = f"{city_names} Tour ({pax_info})"
+    
+    # 5. Customer name suggestion
+    customer_name = analysis_result.get('customer_name', '')
+    if customer_name:
+        matched_data['customer_name_suggestion'] = customer_name
+    
+    return matched_data

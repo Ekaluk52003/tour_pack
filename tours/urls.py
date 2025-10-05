@@ -3,6 +3,9 @@ from django.conf import settings
 from . import views
 
 urlpatterns = [
+    # AI email parsing endpoint - must be before other patterns
+    path('parse-email-ai/', views.parse_email_with_ai, name='parse_email_with_ai'),
+    
     # put save-tour-package as it may match to tour_package_detail or other route
     path('save-tour-package/', views.save_tour_package, name='save_tour_package'),
     path('save-tour-package/<int:package_reference>/', views.save_tour_package, name='update_tour_package'),

@@ -51,6 +51,15 @@ window.tourPackage = function () {
     packageId: null,
     packageReference: null,
     isSuperUser: false,
+    
+    // AI Email Parsing properties
+    showAIDialog: false,
+    emailContent: "",
+    isParsingEmail: false,
+    isApplyingResults: false,
+    aiAnalysisResult: null,
+    aiMatchedData: null,  // Cache matched data to avoid re-parsing
+    aiParsingError: null,
 
     async updateServicesForPackageType() {
       if (!this.tourPackType) {
@@ -1291,6 +1300,199 @@ window.tourPackage = function () {
         const nextDate = new Date(startDate);
         nextDate.setDate(startDate.getDate() + i);
         this.days[i].date = nextDate.toISOString().split('T')[0];
+      }
+    },
+
+    // AI Email Parsing Methods
+    async parseEmailWithAI() {
+      if (!this.emailContent.trim()) {
+        this.aiParsingError = "Please enter email content to parse.";
+        return;
+      }
+
+      this.isParsingEmail = true;
+      this.aiParsingError = null;
+      this.aiAnalysisResult = null;
+
+      try {
+        const response = await fetch('/parse-email-ai/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+            email_content: this.emailContent
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          this.aiAnalysisResult = data.analysis;
+          this.aiMatchedData = data.matched_data;  // Cache matched data
+          this.aiParsingError = null;
+          console.log('AI Analysis Result:', data);
+          console.log('Cached matched data for fast apply');
+        } else {
+          this.aiParsingError = data.error || 'Failed to parse email';
+        }
+      } catch (error) {
+        console.error('Error parsing email:', error);
+        this.aiParsingError = 'Network error occurred while parsing email';
+      } finally {
+        this.isParsingEmail = false;
+      }
+    },
+
+    clearEmailContent() {
+      this.emailContent = "";
+      this.aiAnalysisResult = null;
+      this.aiMatchedData = null;  // Clear cached data
+      this.aiParsingError = null;
+    },
+
+    async applyAIResults() {
+      if (!this.aiAnalysisResult) return;
+
+      this.isApplyingResults = true;
+      
+      try {
+        const analysis = this.aiAnalysisResult;
+        
+        // Use cached matched data instead of re-parsing
+        const matchedData = this.aiMatchedData || {};
+        // 1. Apply package name
+        if (matchedData.package_name_suggestion) {
+          this.name = matchedData.package_name_suggestion;
+        }
+
+        // 2. Apply customer name
+        if (matchedData.customer_name_suggestion) {
+          this.customerName = matchedData.customer_name_suggestion;
+        }
+
+        // 3. Apply tour package type (based on number of people)
+        if (matchedData.tour_pack_type) {
+          this.tourPackType = matchedData.tour_pack_type.id.toString();
+          console.log('Set tour pack type to:', this.tourPackType);
+          
+          // Wait a bit for Alpine to update
+          await new Promise(resolve => setTimeout(resolve, 100));
+          await this.updateServicesForPackageType();
+        }
+
+        // 4. Clear existing days and apply AI-generated tour days
+        this.days = [];
+        
+        if (matchedData.tour_days && matchedData.tour_days.length > 0) {
+          console.log('Creating', matchedData.tour_days.length, 'tour days');
+          
+          // Pre-load all unique city services in parallel (OPTIMIZATION)
+          const uniqueCityIds = [...new Set(matchedData.tour_days.map(d => d.city_id).filter(id => id))];
+          const cityServicesCache = {};
+          
+          console.log('Pre-loading services for', uniqueCityIds.length, 'unique cities...');
+          await Promise.all(uniqueCityIds.map(async (cityId) => {
+            try {
+              const response = await fetch(`/get-city-services/${cityId}/?tour_pack_type=${this.tourPackType}`);
+              cityServicesCache[cityId] = await response.json();
+            } catch (error) {
+              console.error(`Error loading services for city ${cityId}:`, error);
+              cityServicesCache[cityId] = { hotels: [], service_types: [] };
+            }
+          }));
+          console.log('City services pre-loaded!');
+          
+          for (const tourDay of matchedData.tour_days) {
+            console.log('Processing day:', tourDay.date, 'City:', tourDay.city_name);
+            
+            const newDay = {
+              date: tourDay.date,
+              city: tourDay.city_id ? tourDay.city_id.toString() : "",
+              hotel: tourDay.hotel_id ? tourDay.hotel_id.toString() : "",
+              services: [],
+              guideServices: [],
+              cityServices: cityServicesCache[tourDay.city_id] || {
+                hotels: [],
+                service_types: [],
+              }
+            };
+            
+            // Add suggested services
+            if (tourDay.services && tourDay.services.length > 0) {
+              for (const service of tourDay.services) {
+                // Find the service type from service_type name
+                const serviceTypeObj = newDay.cityServices.service_types.find(
+                  st => st.type.toLowerCase() === service.service_type.toLowerCase()
+                );
+                
+                if (serviceTypeObj) {
+                  const newService = {
+                    type: service.service_type.toLowerCase(),
+                    name: service.id.toString(),
+                    price: parseFloat(service.price) || 0,
+                    price_at_booking: parseFloat(service.price) || 0
+                  };
+                  
+                  newDay.services.push(newService);
+                  console.log('Added service:', service.name);
+                }
+              }
+            }
+            
+            this.days.push(newDay);
+          }
+          
+          console.log('Total days created:', this.days.length);
+        }
+
+        // 5. Apply remarks with extracted information
+        let remarkText = "AI Extracted Information:\n";
+        if (analysis.number_of_people) {
+          remarkText += `Number of People: ${analysis.number_of_people}\n`;
+        }
+        if (analysis.travel_months && analysis.travel_months.length > 0) {
+          remarkText += `Travel Months: ${analysis.travel_months.join(', ')}\n`;
+        }
+        if (analysis.activities && analysis.activities.length > 0) {
+          remarkText += `Activities: ${analysis.activities.join(', ')}\n`;
+        }
+        if (analysis.special_notes) {
+          remarkText += `Notes: ${analysis.special_notes}\n`;
+        }
+        
+        this.remark = remarkText;
+
+        alert('AI analysis has been applied to the form! Please review and adjust as needed.');
+        
+      } catch (error) {
+        console.error('Error applying AI results:', error);
+        alert('Error applying AI results. Please try again.');
+      } finally {
+        this.isApplyingResults = false;
+      }
+    },
+
+    async getMatchedData() {
+      // Get the matched data from the last AI analysis
+      try {
+        const response = await fetch('/parse-email-ai/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+            email_content: this.emailContent
+          })
+        });
+
+        const data = await response.json();
+        return data.matched_data || {};
+      } catch (error) {
+        console.error('Error getting matched data:', error);
+        return {};
       }
     },
 

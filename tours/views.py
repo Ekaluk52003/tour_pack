@@ -1324,8 +1324,8 @@ def parse_email_with_ai(request):
     Parse customer email using AI to extract tour information.
     Only accessible by superusers or users in 'assistance' group.
     """
-    # Check if user is superuser or in assistance group
-    can_use_ai = request.user.is_superuser or request.user.groups.filter(name='assistance').exists()
+    # Check if user is superuser
+    can_use_ai = request.user.is_superuser
     if not can_use_ai:
         return JsonResponse({'error': 'Permission denied. Only authorized users can use AI email parsing.'}, status=403)
     
@@ -1389,15 +1389,8 @@ def analyze_email_step_by_step(email_content):
     # STEP 1 PROMPT: Extract basic info only
     prompt = f"""
 You are a Thailand tour specialist analyzing customer emails to extract tour information.
-
 **CURRENT DATE: {current_date_str}** (Month: {current_month}, Year: {current_year})
-
 Available Thailand cities in our system: {', '.join(available_cities)}
-
-Thailand is divided into regions (for tour routing):
-- Central: Bangkok, Ayutthaya, Pattaya, Hua Hin (start here)
-- North: Chiang Mai, Chiang Rai (go here after central)
-- South: Phuket, Krabi, Koh Samui (beach destinations)
 
 Customer Email:
 {email_content}
@@ -1406,7 +1399,7 @@ Extract ONLY the following BASIC information as JSON:
 {{
     "customer_name": "customer name if mentioned (e.g., from signature, 'My name is...', 'I am...')",
     "number_of_people": "number of travelers - extract NUMBER (1 for solo/'I', 2 for couple/'we', 4 for family, etc.)",
-    "destinations": ["cities mentioned - ONLY from available cities list, ordered by region: Central->North->South"],
+    "destinations": ["cities mentioned - ONLY from available cities list],
     "days_per_city": {{
         "Bangkok": 2,
         "Chiang Mai": 5,
@@ -1427,30 +1420,29 @@ IMPORTANT RULES:
    - "family" = 4 people (default)
    - ALWAYS extract a number, never leave as None
 2. For destinations: ONLY use cities from the available cities list
-3. **DESTINATION ORDER**: ALWAYS order by Thailand regions: Central (Bangkok) → North (Chiang Mai) → South (Phuket/Krabi)
-   - This is the logical travel sequence regardless of time spent in each city
-4. If a city is not in the list, find the closest match
-5. ALL cities must be in Thailand only
-6. **YEAR LOGIC**: 
+3. If a city is not in the list, find the closest match
+4. **YEAR LOGIC**: 
    - Current date is {current_date_str}
    - If travel month is AFTER current month ({current_month}) → use {current_year}
    - If travel month is BEFORE or EQUAL to current month → use {current_year + 1}
    - Example: Today is Oct (month 10). "Dec" (month 12) → {current_year}, "Sep" (month 9) → {current_year + 1}
-7. DURATION: Extract trip duration from phrases like "2 weeks", "10 days", "1 week" (convert weeks to days: 1 week = 7 days, 2 weeks = 14 days)
-8. For raw_hotel_mentions and raw_activity_mentions: Extract the EXACT text from the email, don't interpret or modify
-9. **DAYS PER CITY**: 
+5. DURATION: Extract trip duration from phrases like "2 weeks", "10 days", "1 week" (convert weeks to days: 1 week = 7 days, 2 weeks = 14 days)
+6. For raw_hotel_mentions and raw_activity_mentions: Extract the EXACT text from the email, don't interpret or modify
+7. **DAYS PER CITY**: 
    - If customer specifies days per city (e.g., "7 days in Phuket and 2 nights in Bangkok"), extract those exact numbers
    - Pay attention to phrases like "stay for X days", "spend X nights", "X days in [city]"
    - Calculate total duration by ADDING all days mentioned
-   - If NOT specified, use your knowledge to recommend realistic days based on:
-     * Bangkok (transit hub): 2-3 days typical
-     * Chiang Mai (cultural): 3-5 days typical (more activities, temples, nature)
-     * Phuket/Krabi (beach): 4-7 days typical (relaxation destination)
-     * Total should match duration_days if specified
+   - If NOT specified, distribute days intelligently based on city type:
+     * Gateway cities (Bangkok): 2-3 days (arrival/shopping/temples)
+     * Cultural cities (Chiang Mai, Chiang Rai): 3-5 days (temples/activities/nature)
+     * Beach destinations (Phuket, Krabi, Koh Samui): 4-7 days (relaxation/beach time)
    - Example: "7 days beach + 2 nights Bangkok" → Phuket: 7, Bangkok: 2, Total: 9 days
    - Include ALL cities mentioned in email in days_per_city
-"""
 
+8. **CITY ORDER (IMPORTANT - Realistic Tour Routing)**:
+   - If customer specifies order (e.g., "start in Bangkok, then Chiang Mai, end in Phuket"), follow their order.
+   - If customer does NOT specify order, use this LOGICAL ROUTING based on Thailand geography and typical tour flow.
+"""
     try:
         # Call OpenAI API
         response = client.chat.completions.create(

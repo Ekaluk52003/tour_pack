@@ -2183,44 +2183,101 @@ def export_tourday_excel(request, pk):
     final_items = []
     
     for hotel_name, hotel_data in hotel_groups.items():
-        # Combine all services and guide services
-        all_services = hotel_data['services'] + hotel_data['guide_services']
+        # Get regular services only (not guide services)
+        regular_services = hotel_data['services']
+        guide_services = hotel_data['guide_services']
         
-        # Sort services by: sort_order (type), then date
-        all_services.sort(key=lambda x: (x['sort_order'], x['date']))
+        # Sort regular services by date only (preserve original order within same date)
+        regular_services.sort(key=lambda x: x['date'])
+        guide_services.sort(key=lambda x: x['date'])
         
-        # Separate transfers (sort_order=1) from other services
-        transfers = [svc for svc in all_services if svc['sort_order'] == 1]
-        other_services = [svc for svc in all_services if svc['sort_order'] != 1]
-        
-        # 1. Add transfers first (before hotel)
-        for svc in transfers:
-            final_items.append({
-                'arrival_date': svc['date'],
-                'departure_date': None,
-                'nights': None,
-                'service_name': svc['name'],
-                'price': svc['price'],
-            })
-        
-        # 2. Add hotel row
-        final_items.append({
+        # Hotel row data
+        hotel_row = {
             'arrival_date': hotel_data['arrival_date'],
             'departure_date': hotel_data['departure_date'],
             'nights': hotel_data['nights'],
             'service_name': hotel_name,
             'price': None,
-        })
+        }
         
-        # 3. Add other services (package, tour, custom, zero) after hotel
-        for svc in other_services:
-            final_items.append({
-                'arrival_date': svc['date'],
-                'departure_date': None,
-                'nights': None,
-                'service_name': svc['name'],
-                'price': svc['price'],
-            })
+        # Find the position to insert hotel:
+        # - If there are transfers or ** services, insert hotel after the LAST one
+        # - If no transfers or ** services, hotel goes first
+        
+        # Check if service should come before hotel (transfer type or ** in name)
+        def should_be_before_hotel(svc):
+            service_type = svc.get('service_type', '').lower()
+            service_name = svc.get('name', '')
+            return 'transfer' in service_type or '**' in service_name
+        
+        # Find the index of the last service that should be before hotel
+        last_before_hotel_idx = -1
+        for idx, svc in enumerate(regular_services):
+            if should_be_before_hotel(svc):
+                last_before_hotel_idx = idx
+        
+        if last_before_hotel_idx >= 0:
+            # Case 1: Has transfers or ** services
+            # Order: services before hotel -> hotel -> remaining services -> guide services
+            
+            # 1. Add services up to and including last_before_hotel_idx
+            for svc in regular_services[:last_before_hotel_idx + 1]:
+                final_items.append({
+                    'arrival_date': svc['date'],
+                    'departure_date': None,
+                    'nights': None,
+                    'service_name': svc['name'],
+                    'price': svc['price'],
+                })
+            
+            # 2. Add hotel row
+            final_items.append(hotel_row)
+            
+            # 3. Add remaining regular services after hotel
+            for svc in regular_services[last_before_hotel_idx + 1:]:
+                final_items.append({
+                    'arrival_date': svc['date'],
+                    'departure_date': None,
+                    'nights': None,
+                    'service_name': svc['name'],
+                    'price': svc['price'],
+                })
+            
+            # 4. Add guide services after remaining regular services
+            for svc in guide_services:
+                final_items.append({
+                    'arrival_date': svc['date'],
+                    'departure_date': None,
+                    'nights': None,
+                    'service_name': svc['name'],
+                    'price': svc['price'],
+                })
+        else:
+            # Case 2: No transfers or ** services
+            # Order: hotel -> regular services -> guide services
+            
+            # 1. Add hotel row first
+            final_items.append(hotel_row)
+            
+            # 2. Add all regular services after hotel
+            for svc in regular_services:
+                final_items.append({
+                    'arrival_date': svc['date'],
+                    'departure_date': None,
+                    'nights': None,
+                    'service_name': svc['name'],
+                    'price': svc['price'],
+                })
+            
+            # 3. Add guide services after regular services
+            for svc in guide_services:
+                final_items.append({
+                    'arrival_date': svc['date'],
+                    'departure_date': None,
+                    'nights': None,
+                    'service_name': svc['name'],
+                    'price': svc['price'],
+                })
     
     # Write data rows starting from row 3
     current_row = 3
@@ -2238,6 +2295,22 @@ def export_tourday_excel(request, pk):
         ws.cell(row=current_row, column=6, value=float(item['price']) if item['price'] else '')
         
         current_row += 1
+    
+    # Add extra_costs at the end
+    extra_costs = package.extra_costs or []
+    for extra_cost in extra_costs:
+        # extra_costs uses 'item' for name and 'amount' for cost
+        cost_name = extra_cost.get('item', '') or extra_cost.get('name', '')
+        cost_amount = extra_cost.get('amount', 0)
+        
+        if cost_name:  # Only add if there's a name
+            ws.cell(row=current_row, column=1, value='')
+            ws.cell(row=current_row, column=2, value='')
+            ws.cell(row=current_row, column=3, value='')
+            ws.cell(row=current_row, column=4, value='')
+            ws.cell(row=current_row, column=5, value=cost_name)
+            ws.cell(row=current_row, column=6, value=float(cost_amount) if cost_amount else '')
+            current_row += 1
     
     # Adjust column widths
     ws.column_dimensions['A'].width = 18

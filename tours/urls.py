@@ -28,5 +28,6 @@ urlpatterns = [
     
     path('tour-package/<int:pk>/export-json/', views.export_tour_package_json, name='export_tour_package_json'),
     path('tour-package/import-json/', views.import_tour_package_json, name='import_tour_package_json'),
+    path('tour-package/<int:pk>/export-excel/', views.export_tourday_excel, name='export_tourday_excel'),
 ]
 

@@ -30,6 +30,7 @@ config/settings/local.py
 # Ignore coverage reports
 htmlcov/
 .tox/
+*.csv
 .coverage
 coverage.xml
 *.cover

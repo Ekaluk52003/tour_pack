@@ -2073,3 +2073,197 @@ def match_extracted_data_with_models(analysis_result):
         matched_data['customer_name_suggestion'] = customer_name
     
     return matched_data
+
+
+@login_required
+@require_http_methods(["GET"])
+def export_tourday_excel(request, pk):
+    """
+    Export tour days and services to Excel file.
+    Format:
+    - Row 1: Headers
+    - Row 2: Tour pack type number + customer name
+    - Subsequent rows: Services grouped by hotel, ordered by type (transfer, hotels, package, tour, custom, zero)
+    - Hotels from TourDay are grouped (same hotel across multiple days shown once with date range)
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment
+    from collections import defaultdict, OrderedDict
+    from datetime import timedelta
+    import re
+    
+    package = get_object_or_404(TourPackageQuote, pk=pk)
+    
+    # Create workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Tour Days Export"
+    
+    # Headers
+    headers = ['Tour Package Type', 'Arrival Date', 'Departure Date', 'Night', 'Service Name', 'Service price']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True)
+    
+    # Row 2: Tour pack type + tour quote name
+    tour_pack_type_value = package.tour_pack_type.name if package.tour_pack_type else ''
+    
+    ws.cell(row=2, column=1, value=tour_pack_type_value)
+    ws.cell(row=2, column=2, value=package.name)  # Tour quote name
+    
+    # Service type priority order: transfer=1, hotels=2, package=3, tour=4, custom=5, zero=6
+    SERVICE_TYPE_ORDER = {
+        'transfer': 1,
+        'package': 3,
+        'tour': 4,
+        'custom': 5,
+        'zero': 6,
+    }
+    
+    def get_service_type_order(service_type_name):
+        """Get sort order for service type"""
+        name_lower = service_type_name.lower() if service_type_name else ''
+        for key, order in SERVICE_TYPE_ORDER.items():
+            if key in name_lower:
+                return order
+        return 99  # Unknown types go last
+    
+    # Get all tour days ordered by date
+    tour_days = list(package.tour_days.all().order_by('date'))
+    
+    # Group tour days by hotel to calculate hotel stays
+    # Structure: {hotel_name: {'arrival_date': date, 'departure_date': date, 'nights': int, 'services': []}}
+    hotel_groups = OrderedDict()
+    
+    for day in tour_days:
+        hotel_name = day.hotel.name if day.hotel else 'No Hotel'
+        
+        if hotel_name not in hotel_groups:
+            hotel_groups[hotel_name] = {
+                'arrival_date': day.date,
+                'departure_date': day.date + timedelta(days=1),  # Checkout is next day
+                'nights': 1,
+                'services': [],
+                'guide_services': [],
+            }
+        else:
+            # Extend the stay - update departure date and nights
+            hotel_groups[hotel_name]['departure_date'] = day.date + timedelta(days=1)
+            hotel_groups[hotel_name]['nights'] += 1
+        
+        # Collect services for this day under this hotel
+        for service in day.services.all():
+            service_type_name = service.service.service_type.name if service.service.service_type else ''
+            hotel_groups[hotel_name]['services'].append({
+                'date': day.date,
+                'service_type': service_type_name,
+                'sort_order': get_service_type_order(service_type_name),
+                'name': service.service.name,
+                'price': service.price_at_booking,
+            })
+        
+        # Collect guide services
+        for guide_service in day.guide_services.all():
+            hotel_groups[hotel_name]['guide_services'].append({
+                'date': day.date,
+                'service_type': 'custom',
+                'sort_order': 5,
+                'name': guide_service.guide_service.name,
+                'price': guide_service.price_at_booking,
+            })
+    
+    # Build export items grouped by hotel
+    export_items = []
+    
+    for hotel_name, hotel_data in hotel_groups.items():
+        # Combine all services and guide services
+        all_services = hotel_data['services'] + hotel_data['guide_services']
+        
+        # Sort services by: sort_order (type), then date
+        all_services.sort(key=lambda x: (x['sort_order'], x['date']))
+        
+        # Add hotel row (sort_order 2 for hotels)
+        export_items.append({
+            'sort_order': 2,
+            'hotel_name': hotel_name,
+            'arrival_date': hotel_data['arrival_date'],
+            'departure_date': hotel_data['departure_date'],
+            'nights': hotel_data['nights'],
+            'service_name': hotel_name,
+            'price': None,  # Hotel price not shown here
+            'is_hotel': True,
+        })
+        
+        # Add services under this hotel
+        for svc in all_services:
+            export_items.append({
+                'sort_order': svc['sort_order'],
+                'hotel_name': hotel_name,
+                'arrival_date': svc['date'],
+                'departure_date': None,
+                'nights': None,
+                'service_name': svc['name'],
+                'price': svc['price'],
+                'is_hotel': False,
+            })
+    
+    # Sort all items: by hotel order (preserve), then within each hotel by sort_order, then date
+    # Since we already built items in hotel order, we just need to sort within each hotel group
+    final_items = []
+    current_hotel = None
+    hotel_items = []
+    
+    for item in export_items:
+        if item.get('is_hotel'):
+            # Output previous hotel's sorted services first
+            if hotel_items:
+                # Sort: transfer first, then other services by type and date
+                hotel_items.sort(key=lambda x: (x['sort_order'], x['arrival_date'] or datetime.min.date()))
+                final_items.extend(hotel_items)
+            
+            # Add hotel row
+            final_items.append(item)
+            hotel_items = []
+            current_hotel = item['hotel_name']
+        else:
+            hotel_items.append(item)
+    
+    # Don't forget the last hotel's services
+    if hotel_items:
+        hotel_items.sort(key=lambda x: (x['sort_order'], x['arrival_date'] or datetime.min.date()))
+        final_items.extend(hotel_items)
+    
+    # Write data rows starting from row 3
+    current_row = 3
+    for item in final_items:
+        # Format dates as DD-MMM-YY (e.g., 07-Jul-26)
+        arrival_str = item['arrival_date'].strftime('%d-%b-%y') if item['arrival_date'] else ''
+        departure_str = item['departure_date'].strftime('%d-%b-%y') if item['departure_date'] else ''
+        nights_str = item['nights'] if item['nights'] else ''
+        
+        ws.cell(row=current_row, column=1, value='')  # Tour Package Type column empty for data rows
+        ws.cell(row=current_row, column=2, value=arrival_str)
+        ws.cell(row=current_row, column=3, value=departure_str)
+        ws.cell(row=current_row, column=4, value=nights_str)
+        ws.cell(row=current_row, column=5, value=item['service_name'])
+        ws.cell(row=current_row, column=6, value=float(item['price']) if item['price'] else '')
+        
+        current_row += 1
+    
+    # Adjust column widths
+    ws.column_dimensions['A'].width = 18
+    ws.column_dimensions['B'].width = 14
+    ws.column_dimensions['C'].width = 14
+    ws.column_dimensions['D'].width = 8
+    ws.column_dimensions['E'].width = 60
+    ws.column_dimensions['F'].width = 14
+    
+    # Create response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f"tourday_export_{package.package_reference}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb.save(response)
+    return response

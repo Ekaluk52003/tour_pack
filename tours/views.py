@@ -2120,8 +2120,14 @@ def export_tourday_excel(request, pk):
         'zero': 6,
     }
     
-    def get_service_type_order(service_type_name):
-        """Get sort order for service type"""
+    def get_service_type_order(service_type_name, service_name=''):
+        """Get sort order for service type.
+        Special case: any service with ** in name is treated as transfer (order=1) - appears before hotel
+        """
+        # Special case: any service with ** in name acts as transfer (before hotel)
+        if '**' in service_name:
+            return 1  # Same as transfer
+        
         name_lower = service_type_name.lower() if service_type_name else ''
         for key, order in SERVICE_TYPE_ORDER.items():
             if key in name_lower:
@@ -2154,11 +2160,12 @@ def export_tourday_excel(request, pk):
         # Collect services for this day under this hotel
         for service in day.services.all():
             service_type_name = service.service.service_type.name if service.service.service_type else ''
+            service_name = service.service.name
             hotel_groups[hotel_name]['services'].append({
                 'date': day.date,
                 'service_type': service_type_name,
-                'sort_order': get_service_type_order(service_type_name),
-                'name': service.service.name,
+                'sort_order': get_service_type_order(service_type_name, service_name),
+                'name': service_name,
                 'price': service.price_at_booking,
             })
         
@@ -2173,7 +2180,7 @@ def export_tourday_excel(request, pk):
             })
     
     # Build export items grouped by hotel
-    export_items = []
+    final_items = []
     
     for hotel_name, hotel_data in hotel_groups.items():
         # Combine all services and guide services
@@ -2182,56 +2189,38 @@ def export_tourday_excel(request, pk):
         # Sort services by: sort_order (type), then date
         all_services.sort(key=lambda x: (x['sort_order'], x['date']))
         
-        # Add hotel row (sort_order 2 for hotels)
-        export_items.append({
-            'sort_order': 2,
-            'hotel_name': hotel_name,
-            'arrival_date': hotel_data['arrival_date'],
-            'departure_date': hotel_data['departure_date'],
-            'nights': hotel_data['nights'],
-            'service_name': hotel_name,
-            'price': None,  # Hotel price not shown here
-            'is_hotel': True,
-        })
+        # Separate transfers (sort_order=1) from other services
+        transfers = [svc for svc in all_services if svc['sort_order'] == 1]
+        other_services = [svc for svc in all_services if svc['sort_order'] != 1]
         
-        # Add services under this hotel
-        for svc in all_services:
-            export_items.append({
-                'sort_order': svc['sort_order'],
-                'hotel_name': hotel_name,
+        # 1. Add transfers first (before hotel)
+        for svc in transfers:
+            final_items.append({
                 'arrival_date': svc['date'],
                 'departure_date': None,
                 'nights': None,
                 'service_name': svc['name'],
                 'price': svc['price'],
-                'is_hotel': False,
             })
-    
-    # Sort all items: by hotel order (preserve), then within each hotel by sort_order, then date
-    # Since we already built items in hotel order, we just need to sort within each hotel group
-    final_items = []
-    current_hotel = None
-    hotel_items = []
-    
-    for item in export_items:
-        if item.get('is_hotel'):
-            # Output previous hotel's sorted services first
-            if hotel_items:
-                # Sort: transfer first, then other services by type and date
-                hotel_items.sort(key=lambda x: (x['sort_order'], x['arrival_date'] or datetime.min.date()))
-                final_items.extend(hotel_items)
-            
-            # Add hotel row
-            final_items.append(item)
-            hotel_items = []
-            current_hotel = item['hotel_name']
-        else:
-            hotel_items.append(item)
-    
-    # Don't forget the last hotel's services
-    if hotel_items:
-        hotel_items.sort(key=lambda x: (x['sort_order'], x['arrival_date'] or datetime.min.date()))
-        final_items.extend(hotel_items)
+        
+        # 2. Add hotel row
+        final_items.append({
+            'arrival_date': hotel_data['arrival_date'],
+            'departure_date': hotel_data['departure_date'],
+            'nights': hotel_data['nights'],
+            'service_name': hotel_name,
+            'price': None,
+        })
+        
+        # 3. Add other services (package, tour, custom, zero) after hotel
+        for svc in other_services:
+            final_items.append({
+                'arrival_date': svc['date'],
+                'departure_date': None,
+                'nights': None,
+                'service_name': svc['name'],
+                'price': svc['price'],
+            })
     
     # Write data rows starting from row 3
     current_row = 3

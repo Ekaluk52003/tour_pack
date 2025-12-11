@@ -97,6 +97,7 @@ def save_tour_package(request, package_reference=None):
                 package.name = data['name']
                 package.customer_name = data['customer_name']
                 package.remark = data.get('remark', '')
+                package.connection_ref = data.get('connectionRef', '')
                 package.remark2 = data.get('remark2', '')
                 package.tour_pack_type_id = data['tour_pack_type']
                 
@@ -114,6 +115,7 @@ def save_tour_package(request, package_reference=None):
             # all login users can update these field
             package.hotel_costs = data['hotelCosts']
             package.remark_of_hotels = data.get('remark_of_hotels', '')
+            package.connection_ref = data.get('connectionRef', '')
             package.discounts = data.get('discounts', [])
             package.extra_costs = data.get('extraCosts', [])
 
@@ -612,6 +614,7 @@ def tour_package_edit(request, package_reference):
         'name': package.name,
         'customer_name': package.customer_name,
         'remark': package.remark,
+        'connectionRef': package.connection_ref,
         'remark2': package.remark2,
         'remark_of_hotels': package.remark_of_hotels,
         'tour_pack_type': package.tour_pack_type_id,
@@ -881,6 +884,7 @@ def duplicate_tour_package(request, package_reference):
         name=f"{original_package.name}_(copy)",
         customer_name=original_package.customer_name,
         remark=original_package.remark,
+        connection_ref=original_package.connection_ref,
         remark2=original_package.remark2,
         remark_of_hotels=original_package.remark_of_hotels,
         tour_pack_type=original_package.tour_pack_type,
@@ -1154,10 +1158,11 @@ def export_tour_package_json(request, pk):
         "customer_name": tour_package.customer_name,
         "created_at": tour_package.created_at.isoformat(),
         "package_reference": tour_package.package_reference,
-        "grand_total_cost": str(tour_package.grand_total_cost),  # Use string to avoid float precision issues
+        "grand_total_cost": str(tour_package.grand_total_cost),
         "service_grand_total": str(tour_package.service_grand_total),
         "hotel_grand_total": str(tour_package.hotel_grand_total),
         "remark": tour_package.remark,
+        "connection_ref": tour_package.connection_ref,
         "remark2": tour_package.remark2,
         "remark_of_hotels": tour_package.remark_of_hotels,
         "tour_pack_type": tour_package.tour_pack_type.name if tour_package.tour_pack_type else None,
@@ -1226,6 +1231,7 @@ def import_tour_package_json(request):
                     name=json_data.get('name', 'Imported Package'),
                     customer_name=json_data.get('customer_name', 'Imported Customer'),
                     remark=json_data.get('remark'),
+                    connection_ref=json_data.get('connection_ref'),
                     remark2=json_data.get('remark2'),
                     remark_of_hotels=json_data.get('remark_of_hotels'),
                     hotel_costs=json_data.get('hotel_costs', []),
@@ -2082,12 +2088,13 @@ def export_tourday_excel(request, pk):
     Export tour days and services to Excel file.
     Format:
     - Row 1: Headers
-    - Row 2: Tour pack type number + customer name
-    - Subsequent rows: Services grouped by hotel, ordered by type (transfer, hotels, package, tour, custom, zero)
-    - Hotels from TourDay are grouped (same hotel across multiple days shown once with date range)
+    - Row 2: First blank row
+    - Row 3: Second blank row with black background
+    - Row 4: Tour pack type + tour quote name
+    - Subsequent rows: Services grouped by hotel
     """
     from openpyxl import Workbook
-    from openpyxl.styles import Font, Alignment
+    from openpyxl.styles import Font, Alignment, PatternFill
     from collections import defaultdict, OrderedDict
     from datetime import timedelta
     import re
@@ -2099,19 +2106,61 @@ def export_tourday_excel(request, pk):
     ws = wb.active
     ws.title = "Tour Days Export"
     
-    # Headers
-    headers = ['Tour Package Type', 'Arrival Date', 'Departure Date', 'Night', 'Service Name', 'Service price']
+    # Row 1: Headers
+    headers = [
+        'Ref nr.', 'Pax', 'Arr.', 'Dep.', 'Nt', 'Detail', 'P.U.', 'P.U.Time', 'D.O.',
+        'Flight / Train / Boat / others', '', 'INVOICE NR & TOTAL', 'INVOICE to Connections',
+        'remarks', 'booking status \\ hotel cfrm nr', 'INVOICE by supplier \\ EXPENSES to guide',
+        'payment status', 'supplier \\ guide', 'PROFIT PER PRODUCT', 'PROFIT on file'
+    ]
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = Font(bold=True)
+        if header == 'remarks' or header == 'PROFIT PER PRODUCT' or header == 'PROFIT on file':
+             cell.alignment = Alignment(wrap_text=True)
+
+    # Row 2: First blank row (empty)
+    # Row 3: Second blank row with black background
+    black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')
+    for col in range(1, 21):
+        ws.cell(row=3, column=col).fill = black_fill
     
-    # Row 2: Tour pack type + tour quote name
+    # Freeze panes - freeze row 1 (header) so rows below scroll
+    ws.freeze_panes = 'A3'
+    
+    # Track current row for dynamic placement
+    current_info_row = 4
+
+    # Populate Mo no. at J4
+    mo_no_value = f"Mo no.:{package.package_reference}" if package.package_reference else "Mo no.:"
+    ws.cell(row=4, column=10, value=mo_no_value)
+    ws.cell(row=4, column=12, value="Invoice nr")
+    ws.cell(row=4, column=13, value="Bkg nr")
+    
+    # Add Remark 1 row only if remark exists
+    if package.remark:
+        ws.cell(row=current_info_row, column=3, value=package.remark)
+        current_info_row += 1
+    
+    # Connection Ref + Tour pack type + tour quote name (all in same row)
+    connection_ref_value = package.connection_ref if package.connection_ref else ''
     tour_pack_type_value = package.tour_pack_type.name if package.tour_pack_type else ''
+    ws.cell(row=current_info_row, column=1, value=connection_ref_value)  # Ref nr.
+    ws.cell(row=current_info_row, column=2, value=tour_pack_type_value)  # Tour Package Type
+    ws.cell(row=current_info_row, column=3, value=package.name)  # Tour quote name
+    ws.cell(row=current_info_row, column=7, value=package.customer_name)  # Customer Name at G5 (relative)
+    current_info_row += 1
     
-    ws.cell(row=2, column=1, value=tour_pack_type_value)
-    ws.cell(row=2, column=2, value=package.name)  # Tour quote name
+    # Determine data start row based on pax count
+    # If tour pack type > 2pax, add one more blank row
+    data_start_row = current_info_row
+    if package.tour_pack_type:
+        # Extract number from tour pack type name (e.g., "4pax" -> 4)
+        pax_match = re.search(r'(\d+)', package.tour_pack_type.name)
+        if pax_match and int(pax_match.group(1)) > 2:
+            data_start_row = current_info_row + 1  # Add one more blank row
     
-    # Service type priority order: transfer=1, hotels=2, package=3, tour=4, custom=5, zero=6
+    # Service type priority order
     SERVICE_TYPE_ORDER = {
         'transfer': 1,
         'package': 3,
@@ -2136,6 +2185,49 @@ def export_tourday_excel(request, pk):
     
     # Get all tour days ordered by date
     tour_days = list(package.tour_days.all().order_by('date'))
+    
+    # Build hotel info lookup from hotel_costs (name -> list of room configs)
+    # hotel_costs contains: name, type, room, extraBedPrice, price, nights, promotion
+    # Same hotel can have multiple room types with different prices
+    hotel_info_lookup = {}
+    for cost in (package.hotel_costs or []):
+        hotel_name = cost.get('name', '')
+        room_count = cost.get('room', 1)
+        room_type = cost.get('type', '')
+        extra_bed_price = cost.get('extraBedPrice')
+        room_price = cost.get('price', 0)
+        nights = cost.get('nights', 1)
+        promotion = cost.get('promotion', '')
+        
+        # Build display string: "3x Premier room + extra bed"
+        room_part = ""
+        if room_count and room_type:
+            room_part = f"{room_count}x {room_type}"
+        elif room_type:
+            room_part = room_type
+        
+        # Build price formula: (room_price + extra_bed_price) * nights * rooms
+        extra_bed = float(extra_bed_price) if extra_bed_price and float(extra_bed_price) > 0 else 0
+        room_price_val = float(room_price) if room_price else 0
+        nights_val = int(nights) if nights else 1
+        rooms_val = int(room_count) if room_count else 1
+        
+        # Formula string: (room_price+extra_bed)*nights*rooms
+        if extra_bed > 0:
+            price_formula = f"=({room_price_val}+{extra_bed})*{nights_val}*{rooms_val}"
+            display_name = f"{room_part} + extra bed" if room_part else ""
+        else:
+            price_formula = f"={room_price_val}*{nights_val}*{rooms_val}"
+            display_name = room_part
+        
+        # Store as list to handle same hotel with multiple room types
+        if hotel_name not in hotel_info_lookup:
+            hotel_info_lookup[hotel_name] = []
+        hotel_info_lookup[hotel_name].append({
+            'display': display_name,
+            'price_formula': price_formula,
+            'promotion': promotion
+        })
     
     # Group tour days by hotel to calculate hotel stays
     # Structure: {hotel_name: {'arrival_date': date, 'departure_date': date, 'nights': int, 'services': []}}
@@ -2183,45 +2275,59 @@ def export_tourday_excel(request, pk):
     final_items = []
     
     for hotel_name, hotel_data in hotel_groups.items():
-        # Get regular services only (not guide services)
+        # Combine regular services and guide services, then sort by date
         regular_services = hotel_data['services']
         guide_services = hotel_data['guide_services']
         
-        # Sort regular services by date only (preserve original order within same date)
-        regular_services.sort(key=lambda x: x['date'])
-        guide_services.sort(key=lambda x: x['date'])
+        # Combine all services and sort by date to maintain date sequence
+        all_services = regular_services + guide_services
+        all_services.sort(key=lambda x: x['date'])
         
-        # Hotel row data
-        hotel_row = {
-            'arrival_date': hotel_data['arrival_date'],
-            'departure_date': hotel_data['departure_date'],
-            'nights': hotel_data['nights'],
-            'service_name': hotel_name,
-            'price': None,
-        }
-        
-        # Find the position to insert hotel:
-        # - If there are transfers or ** services, insert hotel after the LAST one
-        # - If no transfers or ** services, hotel goes first
+        # Hotel rows - create one row per room configuration (same hotel can have multiple room types)
+        hotel_rows = []
+        if hotel_name in hotel_info_lookup:
+            room_configs = hotel_info_lookup[hotel_name]
+            for room_config in room_configs:
+                hotel_display_name = hotel_name
+                if room_config['display']:
+                    hotel_display_name = f"{hotel_name}, {room_config['display']}"
+                hotel_rows.append({
+                    'arrival_date': hotel_data['arrival_date'],
+                    'departure_date': hotel_data['departure_date'],
+                    'nights': hotel_data['nights'],
+                    'service_name': hotel_display_name,
+                    'price': None,
+                    'price_formula': room_config['price_formula'],
+                    'promotion': room_config.get('promotion', ''),
+                    'is_hotel': True,
+                })
+        else:
+            # No room config found, just use hotel name
+            hotel_rows.append({
+                'arrival_date': hotel_data['arrival_date'],
+                'departure_date': hotel_data['departure_date'],
+                'nights': hotel_data['nights'],
+                'service_name': hotel_name,
+                'price': None,
+                'price_formula': None,
+                'is_hotel': True,
+            })
         
         # Check if service should come before hotel (transfer type or ** in name)
         def should_be_before_hotel(svc):
             service_type = svc.get('service_type', '').lower()
             service_name = svc.get('name', '')
-            return 'transfer' in service_type or '**' in service_name
+            return 'transfer' in service_type or '**' in service_name or 'transfer' in service_name.lower()
         
         # Find the index of the last service that should be before hotel
         last_before_hotel_idx = -1
-        for idx, svc in enumerate(regular_services):
+        for idx, svc in enumerate(all_services):
             if should_be_before_hotel(svc):
                 last_before_hotel_idx = idx
         
         if last_before_hotel_idx >= 0:
             # Case 1: Has transfers or ** services
-            # Order: services before hotel -> hotel -> remaining services -> guide services
-            
-            # 1. Add services up to and including last_before_hotel_idx
-            for svc in regular_services[:last_before_hotel_idx + 1]:
+            for svc in all_services[:last_before_hotel_idx + 1]:
                 final_items.append({
                     'arrival_date': svc['date'],
                     'departure_date': None,
@@ -2229,22 +2335,10 @@ def export_tourday_excel(request, pk):
                     'service_name': svc['name'],
                     'price': svc['price'],
                 })
-            
-            # 2. Add hotel row
-            final_items.append(hotel_row)
-            
-            # 3. Add remaining regular services after hotel
-            for svc in regular_services[last_before_hotel_idx + 1:]:
-                final_items.append({
-                    'arrival_date': svc['date'],
-                    'departure_date': None,
-                    'nights': None,
-                    'service_name': svc['name'],
-                    'price': svc['price'],
-                })
-            
-            # 4. Add guide services after remaining regular services
-            for svc in guide_services:
+            # Add all hotel rows (multiple room types)
+            for hotel_row in hotel_rows:
+                final_items.append(hotel_row)
+            for svc in all_services[last_before_hotel_idx + 1:]:
                 final_items.append({
                     'arrival_date': svc['date'],
                     'departure_date': None,
@@ -2254,23 +2348,9 @@ def export_tourday_excel(request, pk):
                 })
         else:
             # Case 2: No transfers or ** services
-            # Order: hotel -> regular services -> guide services
-            
-            # 1. Add hotel row first
-            final_items.append(hotel_row)
-            
-            # 2. Add all regular services after hotel
-            for svc in regular_services:
-                final_items.append({
-                    'arrival_date': svc['date'],
-                    'departure_date': None,
-                    'nights': None,
-                    'service_name': svc['name'],
-                    'price': svc['price'],
-                })
-            
-            # 3. Add guide services after regular services
-            for svc in guide_services:
+            for hotel_row in hotel_rows:
+                final_items.append(hotel_row)
+            for svc in all_services:
                 final_items.append({
                     'arrival_date': svc['date'],
                     'departure_date': None,
@@ -2279,53 +2359,109 @@ def export_tourday_excel(request, pk):
                     'price': svc['price'],
                 })
     
-    # Write data rows starting from row 3
-    current_row = 3
+    # Fill column 11 (separator) with black from row 1 up to data_start_row
+    for r in range(1, data_start_row):
+        ws.cell(row=r, column=11).fill = black_fill
+
+    # Write data rows from data_start_row
+    current_row = data_start_row
     for item in final_items:
-        # Format dates as DD-MMM-YY (e.g., 07-Jul-26)
         arrival_str = item['arrival_date'].strftime('%d-%b-%y') if item['arrival_date'] else ''
         departure_str = item['departure_date'].strftime('%d-%b-%y') if item['departure_date'] else ''
         nights_str = item['nights'] if item['nights'] else ''
+
+        ws.cell(row=current_row, column=1, value='')  # Ref nr. (empty for data rows)
+        ws.cell(row=current_row, column=2, value='')  # Pax (empty for data rows)
+        ws.cell(row=current_row, column=3, value=arrival_str)
+        ws.cell(row=current_row, column=4, value=departure_str)
+        ws.cell(row=current_row, column=5, value=nights_str)
+        ws.cell(row=current_row, column=6, value=item['service_name'])
+        # Columns 7-10 are empty (P.U., P.U.Time, D.O., Flight/Train/Boat/others)
         
-        ws.cell(row=current_row, column=1, value='')  # Tour Package Type column empty for data rows
-        ws.cell(row=current_row, column=2, value=arrival_str)
-        ws.cell(row=current_row, column=3, value=departure_str)
-        ws.cell(row=current_row, column=4, value=nights_str)
-        ws.cell(row=current_row, column=5, value=item['service_name'])
-        ws.cell(row=current_row, column=6, value=float(item['price']) if item['price'] else '')
+        # Column 11 is separator (black fill)
+        ws.cell(row=current_row, column=11).fill = black_fill
         
+        # Column 12 is INVOICE NR & TOTAL (empty)
+
+        if item.get('is_hotel') and item.get('price_formula'):
+            ws.cell(row=current_row, column=13, value=item['price_formula'])
+            if item.get('promotion'):
+                ws.cell(row=current_row, column=14, value=item['promotion'])
+        else:
+            if item['price']:
+                ws.cell(row=current_row, column=13, value=float(item['price']))
+            else:
+                ws.cell(row=current_row, column=13, value='')
+
         current_row += 1
+
+    # Add 3 blank rows separator before extra_costs
+    # Blank row 1
+    ws.cell(row=current_row, column=11).fill = black_fill
+    current_row += 1
+
+    # Blank row 2
+    ws.cell(row=current_row, column=11).fill = black_fill
+    current_row += 1
     
+    # Blank row 3 with black fill
+    for col in range(1, 21):
+        ws.cell(row=current_row, column=col).fill = black_fill
+    current_row += 1
+
     # Add extra_costs at the end
     extra_costs = package.extra_costs or []
     for extra_cost in extra_costs:
-        # extra_costs uses 'item' for name and 'amount' for cost
         cost_name = extra_cost.get('item', '') or extra_cost.get('name', '')
         cost_amount = extra_cost.get('amount', 0)
-        
-        if cost_name:  # Only add if there's a name
+
+        if cost_name:
             ws.cell(row=current_row, column=1, value='')
             ws.cell(row=current_row, column=2, value='')
             ws.cell(row=current_row, column=3, value='')
             ws.cell(row=current_row, column=4, value='')
-            ws.cell(row=current_row, column=5, value=cost_name)
-            ws.cell(row=current_row, column=6, value=float(cost_amount) if cost_amount else '')
+            ws.cell(row=current_row, column=5, value='')
+            ws.cell(row=current_row, column=6, value=cost_name)
+            if cost_amount:
+                ws.cell(row=current_row, column=13, value=float(cost_amount))
+            else:
+                 ws.cell(row=current_row, column=13, value='')
             current_row += 1
-    
-    # Adjust column widths
-    ws.column_dimensions['A'].width = 18
-    ws.column_dimensions['B'].width = 14
-    ws.column_dimensions['C'].width = 14
-    ws.column_dimensions['D'].width = 8
-    ws.column_dimensions['E'].width = 60
-    ws.column_dimensions['F'].width = 14
-    
+
+    # Adjust col widths
+    ws.column_dimensions['A'].width = 12  # Ref nr.
+    ws.column_dimensions['B'].width = 8   # Pax
+    ws.column_dimensions['C'].width = 12  # Arr.
+    ws.column_dimensions['D'].width = 12  # Dep.
+    ws.column_dimensions['E'].width = 5   # Nt
+    ws.column_dimensions['F'].width = 50  # Detail
+    ws.column_dimensions['G'].width = 10  # P.U.
+    ws.column_dimensions['H'].width = 10  # P.U.Time
+    ws.column_dimensions['I'].width = 10  # D.O.
+    ws.column_dimensions['J'].width = 25  # Flight / Train / Boat / others
+    ws.column_dimensions['K'].width = 1   # Separator (black border)
+    ws.column_dimensions['L'].width = 18  # INVOICE NR & TOTAL
+    ws.column_dimensions['M'].width = 18  # INVOICE to Connections
+    ws.column_dimensions['N'].width = 20  # remarks
+    ws.column_dimensions['O'].width = 20  # booking status / hotel cfrm nr
+    ws.column_dimensions['P'].width = 20  # INVOICE by supplier / EXPENSES to guide
+    ws.column_dimensions['Q'].width = 15  # payment status
+    ws.column_dimensions['R'].width = 15  # supplier / guide
+    ws.column_dimensions['S'].width = 18  # PROFIT PER PRODUCT
+    ws.column_dimensions['T'].width = 18  # PROFIT on file
+
+    # Populate sum formula at L5
+    # Sum of Column M (13) from data_start_row to last row
+    last_data_row = current_row - 1
+    if last_data_row >= data_start_row:
+        ws.cell(row=5, column=12, value=f"=SUM(M{data_start_row}:M{last_data_row})")
+
     # Create response
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     filename = f"tourday_export_{package.package_reference}.xlsx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
+
     wb.save(response)
     return response

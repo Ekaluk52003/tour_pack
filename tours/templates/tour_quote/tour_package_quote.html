@@ -198,6 +198,10 @@
     <textarea id="remark" x-model="remark" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
 </div>
 <div class="mb-4">
+    <label for="connection-ref" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Connection Ref</label>
+    <input type="text" id="connection-ref" x-model="connectionRef" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+</div>
+<div class="mb-4">
   <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2</label>
   <textarea id="remark2" x-model="remark2" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
 </div>
@@ -610,6 +614,14 @@ Add Day
                         x-model="cost.type"
                         class="p-2 w-full rounded border dark:bg-gray-700"
                         placeholder="Enter hotel Type"
+                      />
+                    </td>
+                    <td class="p-2 w-96">
+                      <input
+                        type="text"
+                        x-model="cost.promotion"
+                        class="p-2 w-full rounded border dark:bg-gray-700"
+                        placeholder="Enter promotion"
                       />
                     </td>
                     <td class="p-2 w-24">

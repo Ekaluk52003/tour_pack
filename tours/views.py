@@ -2428,7 +2428,7 @@ def export_tourday_excel(request, pk):
                  ws.cell(row=current_row, column=13, value='')
             current_row += 1
 
-    # Adjust col widths
+    # Adjust column widths
     ws.column_dimensions['A'].width = 12  # Ref nr.
     ws.column_dimensions['B'].width = 8   # Pax
     ws.column_dimensions['C'].width = 12  # Arr.

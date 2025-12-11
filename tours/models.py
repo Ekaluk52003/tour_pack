@@ -132,6 +132,7 @@ class TourPackageQuote(models.Model):
     service_grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     hotel_grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     remark = models.TextField(blank=True, null=True)
+    connection_ref = models.CharField(max_length=100, blank=True, null=True)
     package_reference = models.CharField(max_length=5, unique=True, blank=True, null=True)
     tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.SET_NULL, null=True)
     remark2 = models.TextField(blank=True, null=True)

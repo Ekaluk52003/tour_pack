@@ -431,7 +431,7 @@ class TourPackageQuoteAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {
-            'fields': ('name', 'customer_name', 'tour_pack_type', 'remark')
+            'fields': ('name', 'customer_name', 'tour_pack_type', 'remark', 'connection_ref')
         }),
         ('Costs', {
             'fields': ('hotel_costs', 'discounts', 'service_grand_total', 'hotel_grand_total', 'grand_total_cost')

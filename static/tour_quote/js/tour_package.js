@@ -24,6 +24,7 @@ window.tourPackage = function () {
     name: "",
     customerName: "",
     remark: "",
+    connectionRef: "",
     remark2: "",
     remark_of_hotels: "",
     tourPackType: "",
@@ -284,6 +285,7 @@ window.tourPackage = function () {
         this.name = existingData.name;
         this.customerName = existingData.customer_name;
         this.remark = existingData.remark || "";
+        this.connectionRef = existingData.connectionRef || "";
         this.remark2 = existingData.remark2 || "";
         this.remark_of_hotels = existingData.remark_of_hotels || "";
         this.tourPackType = existingData.tour_pack_type;
@@ -465,6 +467,7 @@ window.tourPackage = function () {
       date: "",
       name: "",
       type: "",
+      promotion: "",
       room: "0",
       nights: "1",
       price: null,
@@ -977,6 +980,7 @@ window.tourPackage = function () {
         name: this.name,
         customer_name: this.customerName,
         remark: this.remark,
+        connectionRef: this.connectionRef,
         remark2: this.remark2,
         remark_of_hotels: this.remark_of_hotels,
         tour_pack_type: this.tourPackType,
@@ -1039,6 +1043,7 @@ window.tourPackage = function () {
       this.hotelCosts.push({
         name: "",
         type: "",
+        promotion: "",
         room: 0,
         nights: 1,
         price: 0,

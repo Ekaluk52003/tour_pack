@@ -2219,12 +2219,12 @@ def export_tourday_excel(request, pk):
         nights_val = int(nights) if nights else 1
         rooms_val = int(room_count) if room_count else 1
         
-        # Formula string: (room_price+extra_bed)*nights*rooms
+        # Formula string: ((room_price * rooms) + extra_bed) * nights
         if extra_bed > 0:
-            price_formula = f"=({room_price_val}+{extra_bed})*{nights_val}*{rooms_val}"
+            price_formula = f"=(({room_price_val}*{rooms_val})+{extra_bed})*{nights_val}"
             display_name = f"{room_part} + extra bed" if room_part else ""
         else:
-            price_formula = f"={room_price_val}*{nights_val}*{rooms_val}"
+            price_formula = f"={room_price_val}*{rooms_val}*{nights_val}"
             display_name = room_part
         
         # Store as list to handle same hotel with multiple room types

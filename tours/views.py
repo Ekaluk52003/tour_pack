@@ -107,6 +107,10 @@ def save_tour_package(request, package_reference=None):
                         'commission_rate_hotel', 0)
                     package.commission_rate_services = data.get(
                         'commission_rate_services', 0)
+                # For assistance group, set default commission rates only on creation
+                elif request.user.groups.filter(name='assistance').exists() and is_new:
+                    package.commission_rate_hotel = 20
+                    package.commission_rate_services = 5
                 
                 # Note: prepare_by_user is only set during creation, never during updates
                 # This field is immutable after the tour quote is created

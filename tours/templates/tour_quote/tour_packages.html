@@ -1,60 +1,86 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container px-4 py-6 mx-auto">
-    <h1 class="mb-6 text-3xl font-bold text-gray-800 dark:text-gray-200">Tour Packages</h1>
-    <div class="flex justify-between items-center mb-4">
-        <div>
-            <a href="{% url 'tour_package_quote' %}" class="px-4 py-2 font-semibold text-white bg-blue-500 rounded transition duration-300 hover:bg-blue-600">Create New</a>
-        </div>
-        <div>
-            <a href="{% url 'import_tour_package_json' %}" class="px-4 py-2 font-semibold text-white bg-yellow-500 rounded transition duration-300 hover:bg-yellow-600">Import JSON</a>
+<div class="p-6 mx-auto bg-white rounded-lg shadow-lg dark:bg-gray-800">
+    <div class="flex flex-col justify-between items-center mb-6 md:flex-row">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Tour Packages</h1>
+        <div class="flex gap-3 mt-4 md:mt-0">
+            <a href="{% url 'tour_package_quote' %}" class="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg shadow transition duration-300 hover:bg-blue-700">
+                <svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Create New
+            </a>
+            <a href="{% url 'import_tour_package_json' %}" class="flex items-center px-4 py-2 text-white bg-yellow-500 rounded-lg shadow transition duration-300 hover:bg-yellow-600">
+                <svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                Import JSON
+            </a>
         </div>
     </div>
+
     <!-- Search Bar -->
     <div class="mb-6">
-        <form method="GET" class="flex items-center space-x-4">
-            <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by package name or customer..." class="px-4 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:border-blue-500 dark:bg-gray-800 dark:text-gray-200">
-            <button type="submit" class="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">Search</button>
+        <form method="GET" class="relative">
+            <div class="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
+                <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by package name, customer, or reference..." 
+                   class="block p-4 pl-10 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+            <button type="submit" class="absolute right-2.5 bottom-2.5 px-4 py-2 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Search</button>
         </form>
     </div>
 
     <!-- Packages Table -->
-        <table class="overflow-hidden min-w-full rounded-lg border shadow-md">
-            <thead>
-                <tr class="border">
-                    <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Reference</th>
-                    <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Name</th>
-                    <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Type</th>
-                    <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Customer</th>
-                    <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Created At</th>
-                    <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Prepared By</th>
-                    <th class="px-6 py-3 text-sm font-medium tracking-wider text-left uppercase">Actions</th>
+    <div class="overflow-x-auto rounded-lg border dark:border-gray-700">
+        <table class="min-w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-6 py-3">Reference</th>
+                    <th scope="col" class="px-6 py-3">Name</th>
+                    <th scope="col" class="px-6 py-3">Type</th>
+                    <th scope="col" class="px-6 py-3">Customer</th>
+                    <th scope="col" class="px-6 py-3">Created At</th>
+                    <th scope="col" class="px-6 py-3">Prepared By</th>
+                    <th scope="col" class="px-6 py-3">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 border-neutral-300 bg-neutral-50 text-neutral-600">
+            <tbody>
                 {% for package in packages %}
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ package.package_reference }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ package.name }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ package.tour_pack_type }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ package.customer_name }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ package.created_at|date:"dMy H:i" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
+                <tr class="bg-white border-b hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
+                    <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ package.package_reference }}</td>
+                    <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ package.name }}</td>
+                    <td class="px-6 py-4">{{ package.tour_pack_type }}</td>
+                    <td class="px-6 py-4">{{ package.customer_name }}</td>
+                    <td class="px-6 py-4">{{ package.created_at|date:"d M Y H:i" }}</td>
+                    <td class="px-6 py-4">
                         {% if package.prepare_by_user %}
-                            {{ package.prepare_by_user.username }}
+                            <span class="px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full dark:bg-blue-200 dark:text-blue-800">
+                                {{ package.prepare_by_user.username }}
+                            </span>
                         {% else %}
-                            <span class="text-gray-400">N/A</span>
+                            <span class="text-gray-400">-</span>
                         {% endif %}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <a href="{% url 'tour_package_detail' package.package_reference %}" class="text-blue-500 hover:underline">View</a>
-                        <a href="{% url 'tour_package_edit' package.package_reference %}" class="ml-4 text-green-500 hover:underline">Edit</a>
+                    <td class="px-6 py-4">
+                        <div class="flex space-x-2">
+                            <a href="{% url 'tour_package_detail' package.package_reference %}" class="flex items-center px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg transition-colors duration-200 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                                <svg class="mr-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                View
+                            </a>
+                            <a href="{% url 'tour_package_edit' package.package_reference %}" class="flex items-center px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg transition-colors duration-200 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                                <svg class="mr-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                Edit
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">No packages found.</td>
+                    <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col justify-center items-center">
+                            <svg class="mb-3 w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <p class="text-lg">No packages found.</p>
+                            <p class="text-sm">Try adjusting your search or create a new one.</p>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -62,29 +88,29 @@
     </div>
 
     <!-- Pagination -->
-    <div class="mt-6">
-        <nav class="flex flex-col justify-between items-center sm:flex-row">
-            <div class="mb-4 sm:mb-0">
-                <p class="text-sm text-gray-600 dark:text-gray-400">Showing {{ packages.start_index }} to {{ packages.end_index }} of {{ packages.paginator.count }} results</p>
-            </div>
-            <div class="flex flex-wrap gap-2 justify-center sm:justify-end">
-                {% if packages.has_previous %}
-                <a href="?q={{ request.GET.q }}&page={{ packages.previous_page_number }}" class="px-3 py-1 text-gray-800 bg-gray-200 rounded dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 dark:text-gray-200">Previous</a>
+    <div class="flex flex-col justify-between items-center mt-6 sm:flex-row">
+        <div class="mb-4 text-sm text-gray-700 dark:text-gray-400 sm:mb-0">
+            Showing <span class="font-semibold text-gray-900 dark:text-white">{{ packages.start_index }}</span> to <span class="font-semibold text-gray-900 dark:text-white">{{ packages.end_index }}</span> of <span class="font-semibold text-gray-900 dark:text-white">{{ packages.paginator.count }}</span> Entries
+        </div>
+        <div class="inline-flex -space-x-px text-sm">
+            {% if packages.has_previous %}
+            <a href="?q={{ request.GET.q }}&page={{ packages.previous_page_number }}" class="flex justify-center items-center px-3 ml-0 h-8 leading-tight text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">Previous</a>
+            {% endif %}
+            
+            {% for num in packages.paginator.page_range %}
+                {% if packages.number == num %}
+                <span class="flex justify-center items-center px-3 h-8 text-blue-600 bg-blue-50 border border-gray-300 hover:bg-blue-100 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white">{{ num }}</span>
+                {% elif num == 1 or num == packages.paginator.num_pages or num == packages.number|add:"-1" or num == packages.number|add:"1" %}
+                <a href="?q={{ request.GET.q }}&page={{ num }}" class="flex justify-center items-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">{{ num }}</a>
+                {% elif num == packages.number|add:"-2" or num == packages.number|add:"2" %}
+                <span class="flex justify-center items-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400">...</span>
                 {% endif %}
-                {% for num in packages.paginator.page_range %}
-                    {% if packages.number == num %}
-                    <span class="px-3 py-1 text-white bg-blue-500 rounded">{{ num }}</span>
-                    {% elif num == 1 or num == packages.paginator.num_pages or num == packages.number|add:"-1" or num == packages.number|add:"1" %}
-                    <a href="?q={{ request.GET.q }}&page={{ num }}" class="px-3 py-1 text-gray-800 bg-gray-200 rounded dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 dark:text-gray-200">{{ num }}</a>
-                    {% elif num == packages.number|add:"-2" or num == packages.number|add:"2" %}
-                    <span class="px-3 py-1">...</span>
-                    {% endif %}
-                {% endfor %}
-                {% if packages.has_next %}
-                <a href="?q={{ request.GET.q }}&page={{ packages.next_page_number }}" class="px-3 py-1 text-gray-800 bg-gray-200 rounded dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 dark:text-gray-200">Next</a>
-                {% endif %}
-            </div>
-        </nav>
+            {% endfor %}
+
+            {% if packages.has_next %}
+            <a href="?q={{ request.GET.q }}&page={{ packages.next_page_number }}" class="flex justify-center items-center px-3 h-8 leading-tight text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">Next</a>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}

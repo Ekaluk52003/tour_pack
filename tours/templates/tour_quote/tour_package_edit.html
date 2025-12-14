@@ -899,7 +899,35 @@
     class="px-3 py-2 mt-4 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
     x-text="packageReference ? 'Update Package' : 'Create Package'">
 </button>
-  </div>
+  <!-- Floating Action Button for Save -->
+  <button
+    @click="(() => {
+      for (let i = 0; i < hotelCosts.length; i++) {
+          const cost = hotelCosts[i];
+          
+          // Calculate total cost
+          const totalCost = ((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) +
+                            (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2);
+
+          if ( parseFloat(cost.price) === 0 || parseFloat(cost.room) === 0 || parseFloat(totalCost) <= 0) {
+              modalMessage = `<p>The total cost for day ${i + 1} is not valid due to followings</p>
+              ${parseFloat(cost.room) === 0 ? '<p><strong>Number of rooms is 0</strong></p>' : ''}
+              ${parseFloat(cost.price) === 0 ? '<p><strong>Price is 0.</strong></p>' : ''}
+              <p>Total: <strong>${formatCommaNumber(totalCost)} THB</strong>.</p>
+              <p class='mt-2'>Click <strong>Proceed Anyway</strong> to save or <strong>Cancel</strong> to review.</p>`;
+              confirmAction = () => saveTourPackage();
+              showModal = true;
+              return;
+          }
+      }
+      saveTourPackage();
+  })()"
+    class="fixed right-8 bottom-8 z-50 p-4 text-white bg-green-600 rounded-full shadow-lg transition-transform duration-300 transform hover:bg-green-700 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-800"
+    :title="packageReference ? 'Update Package' : 'Create Package'">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+  </button>
 
   <!-- Custom modal component -->
   <div x-show="showModal" class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50" x-cloak>
@@ -924,5 +952,5 @@
       </div>
     </div>
   </div>
-
+</div>
 {% endblock %}

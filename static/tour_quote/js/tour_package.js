@@ -27,6 +27,7 @@ window.tourPackage = function () {
     connectionRef: "",
     remark2: "",
     remark_of_hotels: "",
+    special_note: "",
     tourPackType: "",
     selectedPredefinedQuote: "",
     commission_rate_hotel: 20,
@@ -288,6 +289,7 @@ window.tourPackage = function () {
         this.connectionRef = existingData.connectionRef || "";
         this.remark2 = existingData.remark2 || "";
         this.remark_of_hotels = existingData.remark_of_hotels || "";
+        this.special_note = existingData.special_note || "";
         this.tourPackType = existingData.tour_pack_type;
         this.commission_rate_hotel = existingData.commission_rate_hotel || 0;
         this.commission_rate_services =
@@ -983,6 +985,7 @@ window.tourPackage = function () {
         connectionRef: this.connectionRef,
         remark2: this.remark2,
         remark_of_hotels: this.remark_of_hotels,
+        special_note: this.special_note,
         tour_pack_type: this.tourPackType,
         commission_rate_hotel: this.commission_rate_hotel,
         commission_rate_services: this.commission_rate_services,

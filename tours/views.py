@@ -119,6 +119,7 @@ def save_tour_package(request, package_reference=None):
             # all login users can update these field
             package.hotel_costs = data['hotelCosts']
             package.remark_of_hotels = data.get('remark_of_hotels', '')
+            package.special_note = data.get('special_note', '')
             package.connection_ref = data.get('connectionRef', '')
             package.discounts = data.get('discounts', [])
             package.extra_costs = data.get('extraCosts', [])
@@ -257,6 +258,9 @@ def tour_package_pdf(request, pk):
     remark_of_hotels = package.remark_of_hotels.replace(
         '\n', '<br>') if package.remark_of_hotels is not None else ''
 
+    special_note = package.special_note.replace(
+        '\n', '<br>') if package.special_note is not None else ''
+
     ordered_tour_days = package.tour_days.all().order_by('date')
 
     html_string = render_to_string('tour_quote/tour_package_pdf.html', {
@@ -272,6 +276,7 @@ def tour_package_pdf(request, pk):
         'static_url': settings.STATIC_URL,
         'remark2': remark2,
         'remark_of_hotels': remark_of_hotels,
+        'special_note': special_note,
         'logo_data_uri': logo_data_uri
     })
 
@@ -355,6 +360,9 @@ def tour_package_pdf_no_cost(request, pk):
     remark_of_hotels = package.remark_of_hotels.replace(
         '\n', '<br>') if package.remark_of_hotels is not None else ''
     
+    special_note = package.special_note.replace(
+        '\n', '<br>') if package.special_note is not None else ''
+    
     ordered_tour_days = package.tour_days.all().order_by('date')
     
     html_string = render_to_string('tour_quote/tour_package_pdf_no_cost.html', {
@@ -368,6 +376,7 @@ def tour_package_pdf_no_cost(request, pk):
         'static_url': settings.STATIC_URL,
         'remark2': remark2,
         'remark_of_hotels': remark_of_hotels,
+        'special_note': special_note,
         'logo_data_uri': logo_data_uri,
         'hide_costs': True  # Flag to hide costs in template
     })
@@ -621,6 +630,7 @@ def tour_package_edit(request, package_reference):
         'connectionRef': package.connection_ref,
         'remark2': package.remark2,
         'remark_of_hotels': package.remark_of_hotels,
+        'special_note': package.special_note,
         'tour_pack_type': package.tour_pack_type_id,
         # Add hotel commission rate
         'commission_rate_hotel': float(package.commission_rate_hotel),
@@ -891,6 +901,7 @@ def duplicate_tour_package(request, package_reference):
         connection_ref=original_package.connection_ref,
         remark2=original_package.remark2,
         remark_of_hotels=original_package.remark_of_hotels,
+        special_note=original_package.special_note,
         tour_pack_type=original_package.tour_pack_type,
         commission_rate_hotel=original_package.commission_rate_hotel,
         commission_rate_services=original_package.commission_rate_services,
@@ -1169,6 +1180,7 @@ def export_tour_package_json(request, pk):
         "connection_ref": tour_package.connection_ref,
         "remark2": tour_package.remark2,
         "remark_of_hotels": tour_package.remark_of_hotels,
+        "special_note": tour_package.special_note,
         "tour_pack_type": tour_package.tour_pack_type.name if tour_package.tour_pack_type else None,
         "hotel_costs": tour_package.hotel_costs,
         "discounts": tour_package.discounts,
@@ -1238,6 +1250,7 @@ def import_tour_package_json(request):
                     connection_ref=json_data.get('connection_ref'),
                     remark2=json_data.get('remark2'),
                     remark_of_hotels=json_data.get('remark_of_hotels'),
+                    special_note=json_data.get('special_note'),
                     hotel_costs=json_data.get('hotel_costs', []),
                     discounts=json_data.get('discounts', []),
                     extra_costs=json_data.get('extra_costs', []),

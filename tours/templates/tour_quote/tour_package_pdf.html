@@ -572,10 +572,12 @@
     <div style="white-space: pre-wrap;"><div class="remarkTwo">{{ remark2|safe }}</div></div>
 {% endif %}
    <br>
+
+    {% if special_note %}
    <div class="special-note"><h3>Special Notes:</h3></div>
         <div style="white-space: pre-wrap;"><div class="special-items">{{ special_note|safe }}</div></div>
         <br>
-
+{% endif %}
     </div>
 
     </body>

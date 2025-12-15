@@ -2174,6 +2174,14 @@ def export_tourday_excel(request, pk):
     ws.cell(row=current_info_row, column=3, value=package.name)  # Tour quote name
     ws.cell(row=current_info_row, column=7, value=package.customer_name)  # Customer Name at G5 (relative)
     current_info_row += 1
+
+    # Add Special Note rows if exists
+    if package.special_note:
+        special_notes = package.special_note.split('\n')
+        for note in special_notes:
+            if note.strip():  # Only add non-empty lines
+                ws.cell(row=current_info_row, column=7, value=note.strip())
+                current_info_row += 1
     
     # Determine data start row based on pax count
     # If tour pack type > 2pax, add one more blank row

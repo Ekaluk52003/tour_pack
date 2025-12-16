@@ -2154,9 +2154,9 @@ def export_tourday_excel(request, pk):
     ws.cell(row=4, column=13, value="Bkg nr")
     
     # Add Remark 1 row only if remark exists
-    if package.remark:
-        ws.cell(row=current_info_row, column=3, value=package.remark)
-        current_info_row += 1
+    # if package.remark:
+    #     ws.cell(row=current_info_row, column=3, value=package.remark)
+    #     current_info_row += 1
     
     # Connection Ref + Tour pack type + tour quote name (all in same row)
     connection_ref_value = package.connection_ref if package.connection_ref else ''
@@ -2180,7 +2180,7 @@ def export_tourday_excel(request, pk):
         special_notes = package.special_note.split('\n')
         for note in special_notes:
             if note.strip():  # Only add non-empty lines
-                ws.cell(row=current_info_row, column=7, value=note.strip())
+                ws.cell(row=current_info_row, column=3, value=note.strip())
                 current_info_row += 1
     
     # Determine data start row based on pax count

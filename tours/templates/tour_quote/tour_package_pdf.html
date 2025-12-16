@@ -103,7 +103,7 @@
             }
 
               .special-note h3 {
-            color: #10880c;
+            color: #059669;
             font-size: 12px;
             margin-bottom: 1px;
         }
@@ -143,7 +143,7 @@
             }
 
              .special-items {
-                color: #13bc0d;
+                color: #059669;
                 padding-left: 2px;
                 line-height: 0.9rem;
             }
@@ -467,7 +467,11 @@
                         <td>
                             {{ hotel_cost.date }}
                         </td>
-                        <td></strong>{{ hotel_cost.name }}</td>
+                        <td></strong>{{ hotel_cost.name }}
+                            {% if hotel_cost.promotion %}
+                            <div style="white-space: pre-wrap;"><div class="special-items">{{ hotel_cost.promotion }}</div></div>
+                            {% endif %}
+                        </td>
                         <td>{{ hotel_cost.type }}</td>
                         <td>{{ hotel_cost.room }}</td>
                         <td> {{hotel_cost.nights}}</td>
@@ -498,12 +502,6 @@
         <div class="remark2"><h3>Remark hotels</h3></div>
         <div style="white-space: pre-wrap;"><div class="remark2-items">{{ remark_of_hotels|safe }}</div></div>
         <br>      
-
-        {% for hotel_cost in hotel_costs_with_total %}{% if hotel_cost.promotion %}
-        <div style="white-space: pre-wrap;"><div class="remark2-items">{{ hotel_cost.name }}: {{ hotel_cost.promotion }}</div></div>
-        {% endif %}{% endfor %}
-        <br>
-     
             <h2>
                 Total Hotel Cost
                 <span class="total-cost">{% if package.hotel_grand_total == 0 %}

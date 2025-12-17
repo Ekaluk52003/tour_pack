@@ -2259,7 +2259,8 @@ def export_tourday_excel(request, pk):
             'display': display_name,
             'price_formula': price_formula,
             'promotion': promotion,
-            'date_str': cost.get('date', '')
+            'date_str': cost.get('date', ''),
+            'nights': nights_val
         })
     
     # Group tour days by hotel to calculate hotel stays
@@ -2279,6 +2280,7 @@ def export_tourday_excel(request, pk):
                 'nights': 1,
                 'services': [],
                 'guide_services': [],
+                'dates': [day.date],
             }
             hotel_groups_list.append(current_group)
             last_hotel_name = hotel_name
@@ -2286,6 +2288,7 @@ def export_tourday_excel(request, pk):
             # Extend the stay - update departure date and nights
             current_group['departure_date'] = day.date + timedelta(days=1)
             current_group['nights'] += 1
+            current_group['dates'].append(day.date)
         
         # Collect services for this day under this hotel
         for service in day.services.all():
@@ -2329,16 +2332,27 @@ def export_tourday_excel(request, pk):
         elif hotel_name in hotel_info_lookup:
             room_configs = hotel_info_lookup[hotel_name]
             
-            # Filter configs by date matching
-            group_day = hotel_data['arrival_date'].day
-            group_month = hotel_data['arrival_date'].strftime('%b')
-            day_str_pad = f"{group_day:02d}"
-            
+            # Filter configs by date matching - check if config date matches ANY day in the stay
             matching_configs = []
+            group_dates = hotel_data.get('dates', [hotel_data['arrival_date']])
+            
             for config in room_configs:
                 c_date = config.get('date_str', '')
-                # Check if starts with day (padded or not) and contains month
-                if c_date and (c_date.startswith(day_str_pad) or c_date.startswith(str(group_day))) and group_month in c_date:
+                if not c_date:
+                    continue
+
+                # Check against all dates in the group
+                is_match = False
+                for d in group_dates:
+                    day_str_pad = f"{d.day:02d}"
+                    month_str = d.strftime('%b').lower()
+                    
+                    # Check if starts with day (padded or not) and contains month (case-insensitive)
+                    if (c_date.startswith(day_str_pad) or c_date.startswith(str(d.day))) and month_str in c_date.lower():
+                        is_match = True
+                        break
+                
+                if is_match:
                     matching_configs.append(config)
             
             # Fallback if no specific date match found
@@ -2356,7 +2370,7 @@ def export_tourday_excel(request, pk):
                 hotel_rows.append({
                     'arrival_date': hotel_data['arrival_date'],
                     'departure_date': hotel_data['departure_date'],
-                    'nights': hotel_data['nights'],
+                    'nights': room_config.get('nights', hotel_data['nights']),
                     'service_name': hotel_display_name,
                     'price': None,
                     'price_formula': room_config.get('price_formula'),

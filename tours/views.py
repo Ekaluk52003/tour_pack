@@ -26,7 +26,7 @@ from io import BytesIO
 from django.contrib import messages
 import os
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 import csv
 import io
@@ -2342,18 +2342,21 @@ def export_tourday_excel(request, pk):
                     continue
 
                 # Check against all dates in the group
-                is_match = False
+                matched_date = None
                 for d in group_dates:
                     day_str_pad = f"{d.day:02d}"
                     month_str = d.strftime('%b').lower()
                     
                     # Check if starts with day (padded or not) and contains month (case-insensitive)
                     if (c_date.startswith(day_str_pad) or c_date.startswith(str(d.day))) and month_str in c_date.lower():
-                        is_match = True
+                        matched_date = d
                         break
                 
-                if is_match:
-                    matching_configs.append(config)
+                if matched_date:
+                    # Create a copy of config with the specific arrival date
+                    config_copy = config.copy()
+                    config_copy['specific_arrival_date'] = matched_date
+                    matching_configs.append(config_copy)
             
             # Fallback if no specific date match found
             if not matching_configs:
@@ -2362,15 +2365,31 @@ def export_tourday_excel(request, pk):
                      'price_formula': None,
                      'promotion': ''
                  })
+            
+            # Sort configs by date to ensure they appear in order, even if input was out of order
+            matching_configs.sort(key=lambda x: x.get('specific_arrival_date') or hotel_data['arrival_date'])
 
             for room_config in matching_configs:
                 hotel_display_name = hotel_name
                 if room_config.get('display'):
                     hotel_display_name = f"{hotel_name}, {room_config['display']}"
+                
+                # Determine dates and nights
+                arrival_date = room_config.get('specific_arrival_date', hotel_data['arrival_date'])
+                nights = room_config.get('nights', hotel_data['nights'])
+                
+                # Calculate departure date based on specific arrival and nights
+                try:
+                     # ensure nights is valid number
+                    nights_int = int(nights) if nights else 0
+                    departure_date = arrival_date + timedelta(days=nights_int)
+                except:
+                    departure_date = hotel_data['departure_date']
+
                 hotel_rows.append({
-                    'arrival_date': hotel_data['arrival_date'],
-                    'departure_date': hotel_data['departure_date'],
-                    'nights': room_config.get('nights', hotel_data['nights']),
+                    'arrival_date': arrival_date,
+                    'departure_date': departure_date,
+                    'nights': nights,
                     'service_name': hotel_display_name,
                     'price': None,
                     'price_formula': room_config.get('price_formula'),

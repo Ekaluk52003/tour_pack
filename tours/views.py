@@ -1560,6 +1560,7 @@ def analyze_hotels_and_services_step2(basic_analysis, cities):
     if num_people:
         pax_name = f"{num_people}pax"
         tour_pack_type = TourPackType.objects.filter(name__iexact=pax_name).first()
+        
         print(f"Looking for tour pack type: {pax_name}, Found: {tour_pack_type.name if tour_pack_type else 'NOT FOUND'}")
     
     # Collect available hotels and services for each city
@@ -2127,13 +2128,18 @@ def export_tourday_excel(request, pk):
     headers = [
         'Ref nr.', 'Pax', 'Arr.', 'Dep.', 'Nt', 'Detail', 'P.U.', 'P.U.Time', 'D.O.',
         'Flight / Train / Boat / others', '', 'INVOICE NR & TOTAL', 'INVOICE to Connections',
-        'remarks', 'booking status \\ hotel cfrm nr', 'INVOICE by supplier \\ EXPENSES to guide',
-        '', 'payment status', 'supplier \\ guide', 'PROFIT PER PRODUCT', 'PROFIT on file'
+        'Promotion', 'booking status \\ hotel cfrm nr', 'INVOICE \ EXPENSES by supplier',
+        '', 'due date', 'supplier \\ guide', 'PROFIT PER PRODUCT', 'PROFIT on file'
     ]
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = Font(bold=True)
-        cell.alignment = Alignment(wrap_text=True)
+        
+        # Center align headers from 'Ref nr.' to 'D.O.' (first 9 columns) EXCEPT 'Detail' (col 6)
+        if col <= 9 and col != 6:
+            cell.alignment = Alignment(horizontal='center', wrap_text=True)
+        else:
+            cell.alignment = Alignment(wrap_text=True)
 
     # Row 2: First blank row (empty)
     # Row 3: Second blank row with black background
@@ -2149,7 +2155,8 @@ def export_tourday_excel(request, pk):
 
     # Populate Mo no. at J4
     mo_no_value = f"Mo no.:{package.package_reference}" if package.package_reference else "Mo no.:"
-    ws.cell(row=4, column=10, value=mo_no_value)
+    cell = ws.cell(row=4, column=10, value=mo_no_value)
+    cell.alignment = Alignment(horizontal='center')
     ws.cell(row=4, column=12, value="Invoice nr")
     ws.cell(row=4, column=13, value="Bkg nr")
     
@@ -2170,9 +2177,11 @@ def export_tourday_excel(request, pk):
             pax_value = int(match.group(1))
 
     ws.cell(row=current_info_row, column=1, value=connection_ref_value)  # Ref nr.
-    ws.cell(row=current_info_row, column=2, value=pax_value)  # Tour Package Type (Pax)
+    cell = ws.cell(row=current_info_row, column=2, value=pax_value)  # Tour Package Type (Pax)
+    cell.alignment = Alignment(horizontal='center')
     ws.cell(row=current_info_row, column=3, value=package.name)  # Tour quote name
-    ws.cell(row=current_info_row, column=7, value=package.customer_name)  # Customer Name at G5 (relative)
+    cell = ws.cell(row=current_info_row, column=7, value=package.customer_name)  # Customer Name at G5 (relative)
+    cell.alignment = Alignment(horizontal='center')
     current_info_row += 1
 
     # Add Special Note rows if exists
@@ -2395,6 +2404,7 @@ def export_tourday_excel(request, pk):
                     'price_formula': room_config.get('price_formula'),
                     'promotion': room_config.get('promotion', ''),
                     'is_hotel': True,
+                    'supplier_guide': hotel_name,
                 })
         else:
             # No room config found, just use hotel name
@@ -2406,6 +2416,7 @@ def export_tourday_excel(request, pk):
                 'price': None,
                 'price_formula': None,
                 'is_hotel': True,
+                'supplier_guide': hotel_name,
             })
         
         # Check if service should come before hotel (transfer type or ** in name)
@@ -2481,6 +2492,11 @@ def export_tourday_excel(request, pk):
                 cell.number_format = '#,##0.00'
             else:
                  ws.cell(row=current_row, column=13, value='')
+            
+            # Column T (20) Profit Formula: M - P - Q
+            ws.cell(row=current_row, column=20, value=f"=M{current_row}-P{current_row}-Q{current_row}")
+            ws.cell(row=current_row, column=20).number_format = '#,##0.00'
+            
             current_row += 1
     for item in final_items:
         ws.cell(row=current_row, column=1, value='')  # Ref nr. (empty for data rows)
@@ -2488,13 +2504,15 @@ def export_tourday_excel(request, pk):
 
         if item['arrival_date']:
             cell = ws.cell(row=current_row, column=3, value=item['arrival_date'])
-            cell.number_format = 'd-mmm-yy'
+            cell.number_format = 'dd-mmm-yy'
+            cell.alignment = Alignment(horizontal='center')
         else:
             ws.cell(row=current_row, column=3, value='')
 
         if item['departure_date']:
             cell = ws.cell(row=current_row, column=4, value=item['departure_date'])
-            cell.number_format = 'd-mmm-yy'
+            cell.number_format = 'dd-mmm-yy'
+            cell.alignment = Alignment(horizontal='center')
         else:
             ws.cell(row=current_row, column=4, value='')
 
@@ -2520,6 +2538,13 @@ def export_tourday_excel(request, pk):
             else:
                 ws.cell(row=current_row, column=13, value='')
 
+        if item.get('supplier_guide'):
+            ws.cell(row=current_row, column=19, value=item['supplier_guide'])
+
+        # Column T (20) Profit Formula: M - P - Q
+        ws.cell(row=current_row, column=20, value=f"=M{current_row}-P{current_row}-Q{current_row}")
+        ws.cell(row=current_row, column=20).number_format = '#,##0.00'
+
         current_row += 1
 
     # Add 3 blank rows separator after services
@@ -2543,9 +2568,9 @@ def export_tourday_excel(request, pk):
     ws.column_dimensions['D'].width = 12  # Dep.
     ws.column_dimensions['E'].width = 5   # Nt
     ws.column_dimensions['F'].width = 50  # Detail
-    ws.column_dimensions['G'].width = 10  # P.U.
+    ws.column_dimensions['G'].width = 25   # P.U.
     ws.column_dimensions['H'].width = 10  # P.U.Time
-    ws.column_dimensions['I'].width = 10  # D.O.
+    ws.column_dimensions['I'].width = 25   # D.O.
     ws.column_dimensions['J'].width = 25  # Flight / Train / Boat / others
     ws.column_dimensions['K'].width = 1   # Separator (black border)
     ws.column_dimensions['L'].width = 18  # INVOICE NR & TOTAL
@@ -2564,6 +2589,10 @@ def export_tourday_excel(request, pk):
     last_data_row = current_row - 1
     if last_data_row >= data_start_row:
         cell = ws.cell(row=5, column=12, value=f"=SUM(M{data_start_row}:M{last_data_row})")
+        cell.number_format = '#,##0.00'
+        
+        # Populate sum of Profit (Column T) at U4
+        cell = ws.cell(row=4, column=21, value=f"=SUM(T{data_start_row}:T{last_data_row})")
         cell.number_format = '#,##0.00'
 
     # Create response

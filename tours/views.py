@@ -2573,7 +2573,7 @@ def export_tourday_excel(request, pk):
     ws.column_dimensions['I'].width = 25   # D.O.
     ws.column_dimensions['J'].width = 25  # Flight / Train / Boat / others
     ws.column_dimensions['K'].width = 1   # Separator (black border)
-    ws.column_dimensions['L'].width = 18  # INVOICE NR & TOTAL
+    ws.column_dimensions['L'].width = 12  # INVOICE NR & TOTAL
     ws.column_dimensions['M'].width = 18  # INVOICE to Connections
     ws.column_dimensions['N'].width = 20  # remarks
     ws.column_dimensions['O'].width = 20  # booking status / hotel cfrm nr
@@ -2582,7 +2582,7 @@ def export_tourday_excel(request, pk):
     ws.column_dimensions['R'].width = 15  # payment status
     ws.column_dimensions['S'].width = 15  # supplier / guide
     ws.column_dimensions['T'].width = 18  # PROFIT PER PRODUCT
-    ws.column_dimensions['U'].width = 18  # PROFIT on file
+    ws.column_dimensions['U'].width = 12  # PROFIT on file
 
     # Populate sum formula at L5
     # Sum of Column M (13) from data_start_row to last row

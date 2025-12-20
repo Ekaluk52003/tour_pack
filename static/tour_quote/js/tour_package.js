@@ -1048,7 +1048,7 @@ window.tourPackage = function () {
         name: "",
         type: "",
         promotion: "",
-        room: 0,
+        room: 1,
         nights: 1,
         price: 0,
         extraBedPrice: "",

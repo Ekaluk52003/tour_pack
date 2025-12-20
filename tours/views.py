@@ -791,7 +791,8 @@ def tour_packages(request):
     # Filter packages based on search query
     if query:
         packages = TourPackageQuote.objects.filter(name__icontains=query) | TourPackageQuote.objects.filter(
-            customer_name__icontains=query) | TourPackageQuote.objects.filter(package_reference__icontains=query)
+            customer_name__icontains=query) | TourPackageQuote.objects.filter(package_reference__icontains=query) | TourPackageQuote.objects.filter(
+            prepare_by_user__username__icontains=query) | TourPackageQuote.objects.filter(connection_ref__icontains=query)
     else:
         packages = TourPackageQuote.objects.all()
 

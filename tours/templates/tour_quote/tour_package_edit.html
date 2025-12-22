@@ -731,6 +731,8 @@
       <thead>
         <tr class="bg-gray-200 dark:bg-gray-700">
           <th class="px-2 text-left text-gray-700 dark:text-gray-300">Item</th>
+          <th class="px-2 text-left text-gray-700 dark:text-gray-300">Price</th>
+          <th class="px-2 text-left text-gray-700 dark:text-gray-300">QTY</th>
           <th class="px-2 text-left text-gray-700 dark:text-gray-300">Cost Amount</th>
           <th class="px-2 text-left text-gray-700 dark:text-gray-300">Actions</th>
         </tr>
@@ -742,14 +744,25 @@
               <input type="text" x-model="extraCost.item" class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
             </td>
 
-
-            <td class="px-2 border" x-data="{ displayValue: formatCommaNumber(extraCost.amount), actualValue: extraCost.amount }">
+            <td class="px-2 border" x-data="{ displayValue: formatCommaNumber(extraCost.price || 0), actualValue: extraCost.price || 0 }">
               <input type="text"
                      x-model="displayValue"
                      @input="actualValue = unformatCommaNumber($event.target.value);
-                             extraCost.amount = actualValue;
+                             extraCost.price = actualValue;
+                             extraCost.amount = (parseFloat(extraCost.price || 0) * (isNaN(parseFloat(extraCost.qty)) ? 1 : parseFloat(extraCost.qty))).toFixed(2);
                              displayValue = formatCommaNumber(actualValue);"
                      class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+            </td>
+
+            <td class="px-2 border">
+                <input type="number" 
+                       x-model="extraCost.qty" 
+                       @input="extraCost.amount = (parseFloat(extraCost.price || 0) * (isNaN(parseFloat($event.target.value)) ? 1 : parseFloat($event.target.value))).toFixed(2);"
+                       class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+            </td>
+
+            <td class="px-2 border">
+                <span x-text="formatCommaNumber(extraCost.amount)"></span>
             </td>
 
             <td class="px-4 py-2 border">
@@ -880,6 +893,7 @@
 </div>
   <button
   @click="(() => {
+    // Validate Hotel Costs
     for (let i = 0; i < hotelCosts.length; i++) {
         const cost = hotelCosts[i];
         console.log('Checking day', i + 1, 'cost:', cost);
@@ -899,14 +913,34 @@
             return;
         }
     }
+
+    // Validate Additional Costs
+    for (let i = 0; i < extraCosts.length; i++) {
+        const cost = extraCosts[i];
+        console.log('Checking extra cost', i + 1, 'cost:', cost);
+
+        const totalAmount = parseFloat(cost.amount) || 0;
+
+        if (totalAmount <= 0) {
+            modalMessage = `<p>The amount for Additional Cost item '${cost.item || 'Item ' + (i + 1)}' is not valid.</p>
+            <p><strong>Amount is 0 or less.</strong></p>
+            <p>Total: <strong>${formatCommaNumber(totalAmount)} THB</strong>.</p>
+            <p class='mt-2'>Click <strong>Proceed Anyway</strong> to save or <strong>Cancel</strong> to review.</p>`;
+            confirmAction = () => saveTourPackage();
+            showModal = true;
+            return;
+        }
+    }
+
     saveTourPackage();
-})"
+})()"
     class="px-3 py-2 mt-4 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
     x-text="packageReference ? 'Update Package' : 'Create Package'">
 </button>
   <!-- Floating Action Button for Save -->
   <button
     @click="(() => {
+      // Validate Hotel Costs
       for (let i = 0; i < hotelCosts.length; i++) {
           const cost = hotelCosts[i];
           
@@ -925,6 +959,23 @@
               return;
           }
       }
+
+      // Validate Additional Costs
+      for (let i = 0; i < extraCosts.length; i++) {
+          const cost = extraCosts[i];
+          const totalAmount = parseFloat(cost.amount) || 0;
+
+          if (totalAmount <= 0) {
+              modalMessage = `<p>The amount for Additional Cost item '${cost.item || 'Item ' + (i + 1)}' is not valid.</p>
+              <p><strong>Amount is 0 or less.</strong></p>
+              <p>Total: <strong>${formatCommaNumber(totalAmount)} THB</strong>.</p>
+              <p class='mt-2'>Click <strong>Proceed Anyway</strong> to save or <strong>Cancel</strong> to review.</p>`;
+              confirmAction = () => saveTourPackage();
+              showModal = true;
+              return;
+          }
+      }
+
       saveTourPackage();
   })()"
     class="fixed right-8 bottom-8 z-50 p-4 text-white bg-green-600 rounded-full shadow-lg transition-transform duration-300 transform hover:bg-green-700 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-800"

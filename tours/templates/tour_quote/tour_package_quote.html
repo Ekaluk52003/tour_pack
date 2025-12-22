@@ -751,6 +751,8 @@ Add Day
       <thead>
         <tr class="bg-gray-200 dark:bg-gray-700">
           <th class="px-2 text-left text-gray-700 dark:text-gray-300">Item</th>
+          <th class="px-2 text-left text-gray-700 dark:text-gray-300">Price</th>
+          <th class="px-2 text-left text-gray-700 dark:text-gray-300">QTY</th>
           <th class="px-2 text-left text-gray-700 dark:text-gray-300">Cost Amount</th>
           <th class="px-2 text-left text-gray-700 dark:text-gray-300">Actions</th>
         </tr>
@@ -762,14 +764,25 @@ Add Day
               <input type="text" x-model="extraCost.item" class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
             </td>
 
-
-            <td class="px-2 border" x-data="{ displayValue: formatCommaNumber(extraCost.amount), actualValue: extraCost.amount }">
+            <td class="px-2 border" x-data="{ displayValue: formatCommaNumber(extraCost.price || 0), actualValue: extraCost.price || 0 }">
               <input type="text"
                      x-model="displayValue"
                      @input="actualValue = unformatCommaNumber($event.target.value);
-                             extraCost.amount = actualValue;
+                             extraCost.price = actualValue;
+                             extraCost.amount = (parseFloat(extraCost.price || 0) * (parseFloat(extraCost.qty) || 1)).toFixed(2);
                              displayValue = formatCommaNumber(actualValue);"
                      class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+            </td>
+
+            <td class="px-2 border">
+                <input type="number" 
+                       x-model="extraCost.qty" 
+                       @input="extraCost.amount = (parseFloat(extraCost.price || 0) * (parseFloat(extraCost.qty) || 1)).toFixed(2);"
+                       class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+            </td>
+
+            <td class="px-2 border">
+                <span x-text="formatCommaNumber(extraCost.amount)"></span>
             </td>
 
             <td class="px-4 py-2 border">

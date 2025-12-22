@@ -673,7 +673,9 @@ def tour_package_edit(request, package_reference):
           'extraCosts': [
             {
                 'item': extra_cost['item'],
-                'amount': float(extra_cost['amount'])
+                'amount': float(extra_cost['amount']),
+                'price': float(extra_cost.get('price', 0)),
+                'qty': float(extra_cost.get('qty', 1))
             }
             for extra_cost in package.extra_costs
         ],
@@ -2498,7 +2500,54 @@ def export_tourday_excel(request, pk):
             ws.cell(row=current_row, column=20, value=f"=M{current_row}-P{current_row}-Q{current_row}")
             ws.cell(row=current_row, column=20).number_format = '#,##0.00'
             
+            # Format P, Q, R
+            ws.cell(row=current_row, column=16).number_format = '#,##0.00'
+            ws.cell(row=current_row, column=17).number_format = '#,##0.00'
+            ws.cell(row=current_row, column=18).number_format = 'dd-mmm-yy'
+
             current_row += 1
+
+    # Add discounts after extra_costs
+    discounts = package.discounts or []
+    red_font = Font(color="FF0000") # Red color
+
+    for discount in discounts:
+        discount_name = discount.get('item', '') or discount.get('name', '')
+        discount_amount = discount.get('amount', 0)
+
+        if discount_name:
+            ws.cell(row=current_row, column=1, value='')
+            ws.cell(row=current_row, column=2, value='')
+            ws.cell(row=current_row, column=3, value='')
+            ws.cell(row=current_row, column=4, value='')
+            ws.cell(row=current_row, column=5, value='')
+            
+            # Detail column with red font
+            cell = ws.cell(row=current_row, column=6, value=discount_name)
+            cell.font = red_font
+            
+            ws.cell(row=current_row, column=11).fill = black_fill
+            
+            if discount_amount:
+                # Ensure negative amount
+                amount_val = -abs(float(discount_amount))
+                cell = ws.cell(row=current_row, column=13, value=amount_val)
+                cell.number_format = '#,##0.00'
+                cell.font = red_font
+            else:
+                 ws.cell(row=current_row, column=13, value='')
+            
+            # Column T (20) Profit Formula: M - P - Q
+            ws.cell(row=current_row, column=20, value=f"=M{current_row}-P{current_row}-Q{current_row}")
+            ws.cell(row=current_row, column=20).number_format = '#,##0.00'
+            
+            # Format P, Q, R
+            ws.cell(row=current_row, column=16).number_format = '#,##0.00'
+            ws.cell(row=current_row, column=17).number_format = '#,##0.00'
+            ws.cell(row=current_row, column=18).number_format = 'dd-mmm-yy'
+
+            current_row += 1
+
     for item in final_items:
         ws.cell(row=current_row, column=1, value='')  # Ref nr. (empty for data rows)
         ws.cell(row=current_row, column=2, value='')  # Pax (empty for data rows)
@@ -2545,6 +2594,11 @@ def export_tourday_excel(request, pk):
         # Column T (20) Profit Formula: M - P - Q
         ws.cell(row=current_row, column=20, value=f"=M{current_row}-P{current_row}-Q{current_row}")
         ws.cell(row=current_row, column=20).number_format = '#,##0.00'
+
+        # Format P, Q, R
+        ws.cell(row=current_row, column=16).number_format = '#,##0.00'
+        ws.cell(row=current_row, column=17).number_format = '#,##0.00'
+        ws.cell(row=current_row, column=18).number_format = 'dd-mmm-yy'
 
         current_row += 1
 

@@ -320,7 +320,12 @@ window.tourPackage = function () {
         }));
         this.hotelCosts = existingData.hotelCosts || [];
         this.discounts = existingData.discounts || [];
-        this.extraCosts  = existingData.extraCosts  || [];
+        this.extraCosts = (existingData.extraCosts || []).map(cost => ({
+            item: cost.item || "",
+            price: parseFloat(cost.price) || parseFloat(cost.amount) || 0,
+            qty: isNaN(parseFloat(cost.qty)) ? 1 : parseFloat(cost.qty),
+            amount: parseFloat(cost.amount) || 0
+        }));
 
          // Initialize city services and wait for completion
          this.initializeCityServicesForAllDays().then(() => {
@@ -1070,7 +1075,7 @@ window.tourPackage = function () {
     },
 
     addExtraCost() {
-      this.extraCosts.push({ item: "", amount: 0 });
+      this.extraCosts.push({ item: "", price: 0, qty: 1, amount: 0 });
     },
 
     removeExtraCost(index) {

@@ -39,7 +39,7 @@
             <div class="p-4 mb-6 bg-gray-100 rounded-lg dark:bg-gray-700">
 
                 <div class="grid grid-cols-1 gap-4 mb-4 md:grid-cols-3 dark:text-gray-300">
-                    <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Day {{ forloop.counter }} - {{ day.date|date:"Y-m-d" }}</h3>
+                    <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Day {{ forloop.counter }} - {{ day.date|date:"dMY" }}</h3>
                     <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">City: {{ day.city.name }}</h3>
                     <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Hotel:{{ day.hotel.name }}</h3>
 
@@ -112,7 +112,7 @@
                                         -
                                     {% endif %}
                                 </td>
-                                <td class="p-2 font-semibold text-right">{{ hotel_cost.total|intcomma }}</td>
+                                <td class="p-2 font-semibold text-right">{{ hotel_cost.total|floatformat:"2"|intcomma }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -140,6 +140,8 @@
                     <thead class="bg-gray-200 dark:bg-gray-700">
                         <tr>
                             <th class="p-2 text-left text-blue-600 dark:text-gray-200">Item</th>
+                            <th class="p-2 text-right text-blue-600 dark:text-gray-200">Price</th>
+                            <th class="p-2 text-center text-blue-600 dark:text-gray-200">QTY</th>
                             <th class="p-2 text-right text-blue-600 dark:text-gray-200">Amount</th>
                         </tr>
                     </thead>
@@ -147,12 +149,20 @@
                         {% for extra_cost in extra_costs %}
                         <tr>
                             <td class="p-2 text-blue-600 border-b dark:border-gray-600">{{ extra_cost.item }}</td>
+                            <td class="p-2 text-right text-blue-600 border-b dark:border-gray-600">
+                                {% if extra_cost.price %}
+                                    {{ extra_cost.price|intcomma }}
+                                {% else %}
+                                    {{ extra_cost.amount|intcomma }}
+                                {% endif %}
+                            </td>
+                            <td class="p-2 text-center text-blue-600 border-b dark:border-gray-600">{{ extra_cost.qty|default:"1" }}</td>
                             <td class="p-2 text-right text-blue-600 border-b dark:border-gray-600">{{ extra_cost.amount|intcomma }} THB</td>
                         </tr>
                         {% empty %}
 
                         <tr>
-                            <td colspan="2" class="p-2 text-center text-blue-600">No extra cost</td>
+                            <td colspan="4" class="p-2 text-center text-blue-600">No extra cost</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -160,7 +170,7 @@
                     {% if extra_costs %}
                     <tfoot class="font-bold text-blue-600 dark:text-gray-200">
                         <tr>
-                            <td class="p-2">Total Additional Costs</td>
+                            <td colspan="3" class="p-2 text-right">Total Additional Costs</td>
                             <td class="p-2 text-right">{{ total_extra_cost|intcomma }} THB</td>
                         </tr>
                     </tfoot>

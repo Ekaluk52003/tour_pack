@@ -565,8 +565,8 @@
 <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Hotel Costs</h2>
 
 
-<div class="mb-8">
-  <table class="w-full border-collapse">
+<div class="overflow-x-auto mb-8">
+  <table class="w-full min-w-max border-collapse">
     <tbody>
       <template x-for="(cost, index) in hotelCosts" :key="index">
         <tr>
@@ -614,13 +614,13 @@
                             open = true;
                           }
                         "
-                        class="p-2 w-full rounded border dark:bg-gray-700 placeholder-gray-900 dark:placeholder-gray-300"
+                        class="p-2 w-full placeholder-gray-900 rounded border dark:bg-gray-700 dark:placeholder-gray-300"
                         :placeholder="cost.name || 'Search hotel...'"
                       />
 
                       <div
                       x-show="open"
-                      class="absolute z-50 w-full bg-white border rounded-md shadow-xl dark:bg-gray-700 max-h-60 overflow-y-auto"
+                      class="overflow-y-auto absolute z-50 w-full max-h-60 bg-white rounded-md border shadow-xl dark:bg-gray-700"
                       style="top: 100%; left: 0;"
                       @mousedown.prevent
                       @click.outside="open = false" 

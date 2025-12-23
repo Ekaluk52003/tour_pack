@@ -16,7 +16,6 @@ window.tourPackage = function () {
 
 
 
-
   return {
 
 
@@ -48,6 +47,7 @@ window.tourPackage = function () {
     ],
     guideServices: [],
     hotelCosts: [],
+    allHotels: [],
     discounts: [],
     extraCosts: [],
     packageId: null,
@@ -132,6 +132,38 @@ window.tourPackage = function () {
       } catch (e) {
         return '';
       }
+    },
+
+    hotelCostHotelSearch(cost) {
+      const root = this;
+      return {
+        root,
+        open: false,
+        search: '',
+        selectedIndex: -1,
+        openDropdown() {
+          this.open = true;
+          this.search = '';
+          this.selectedIndex = -1;
+        },
+        filteredHotels() {
+          const term = (this.search || '').toLowerCase();
+          const hotels = this.root.allHotels || [];
+          if (!term) return hotels;
+          return hotels.filter(h => (h.name || '').toLowerCase().includes(term));
+        },
+        selectHotel(hotel) {
+          if (!hotel) return;
+          console.log('Selected hotel:', hotel.name);
+          cost.name = hotel.name;
+          this.search = '';
+          this.open = false;
+          this.selectedIndex = -1;
+        },
+        validateInput() {
+          this.search = '';
+        }
+      };
     },
 
     updateHotelDateDisplay(cost) {
@@ -477,7 +509,7 @@ window.tourPackage = function () {
       type: "",
       promotion: "",
       room: "0",
-      nights: "1",
+      nights: "0",
       price: null,
       extraBedPrice: null,
       _display: {  // Add display properties to ensure price fields stay empty
@@ -1053,8 +1085,8 @@ window.tourPackage = function () {
         name: "",
         type: "",
         promotion: "",
-        room: 1,
-        nights: 1,
+        room: 0,
+        nights: 0,
         price: 0,
         extraBedPrice: "",
       });
@@ -1075,7 +1107,7 @@ window.tourPackage = function () {
     },
 
     addExtraCost() {
-      this.extraCosts.push({ item: "", price: 0, qty: 1, amount: 0 });
+      this.extraCosts.push({ item: "", price: 0, qty: 0, amount: 0 });
     },
 
     removeExtraCost(index) {

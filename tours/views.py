@@ -616,6 +616,7 @@ def tour_package_edit(request, package_reference):
     package = get_object_or_404(TourPackageQuote, package_reference=package_reference)
     cities = City.objects.all()
     guide_services = list(GuideService.objects.values('id', 'name', 'price'))
+    all_hotels = list(Hotel.objects.values('id', 'name', 'city__name'))
     predefined_quotes = PredefinedTourQuote.objects.all()
     tour_pack_types = TourPackType.objects.all()
 
@@ -691,8 +692,9 @@ def tour_package_edit(request, package_reference):
     context = {
         'package': package,
         'cities': cities,
-        'guide_services_json': json.dumps(guide_services, cls=DjangoJSONEncoder),
-        'package_json': json.dumps(package_data, cls=DjangoJSONEncoder),
+        'guide_services_json': json.dumps(guide_services, cls=DjangoJSONEncoder).replace('</', '<\\/'),
+        'all_hotels_json': json.dumps(all_hotels, cls=DjangoJSONEncoder).replace('</', '<\\/'),
+        'package_json': json.dumps(package_data, cls=DjangoJSONEncoder).replace('</', '<\\/'),
         'predefined_quotes': predefined_quotes,
         'tour_pack_types': tour_pack_types,
         'show_commission': show_commission,

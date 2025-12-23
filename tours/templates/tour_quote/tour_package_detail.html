@@ -39,7 +39,7 @@
             <div class="p-4 mb-6 bg-gray-100 rounded-lg dark:bg-gray-700">
 
                 <div class="grid grid-cols-1 gap-4 mb-4 md:grid-cols-3 dark:text-gray-300">
-                    <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Day {{ forloop.counter }} - {{ day.date|date:"dMY" }}</h3>
+                    <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Day {{ forloop.counter }} - {{ day.date|date:"d-M-Y" }}</h3>
                     <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">City: {{ day.city.name }}</h3>
                     <h3 class="mb-2 text-xl font-semibold dark:text-gray-200">Hotel:{{ day.hotel.name }}</h3>
 

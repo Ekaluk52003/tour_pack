@@ -10,6 +10,9 @@
 <script type="application/json" id="guide-services-data">
   {{ guide_services_json|safe }}
 </script>
+<script type="application/json" id="all-hotels-data">
+  {{ all_hotels_json|safe }}
+</script>
 <style>
   /* Drag and drop styling */
   .drop-zone {
@@ -51,12 +54,14 @@
      x-init="
         let packageData = JSON.parse(document.getElementById('package-data').textContent);
         let guideServicesData = JSON.parse(document.getElementById('guide-services-data').textContent);
+        let allHotelsData = JSON.parse(document.getElementById('all-hotels-data').textContent);
         initEditForm(packageData, {{ request.user.is_superuser|yesno:'true,false' }});
         // Set commission visibility flag
         $data.showCommission = {{ show_commission|yesno:'true,false' }};
         // Set edit permissions flag (superuser or assistance group)
         $data.canEdit = {{ can_edit|yesno:'true,false' }};
-        guideServices = guideServicesData;
+        $data.guideServices = guideServicesData;
+        $data.allHotels = allHotelsData;
         $data.showModal = false;
         $data.modalMessage = '';
         $data.confirmAction = null;
@@ -355,6 +360,8 @@
                 </div>
 
                 <div class="md:col-span-8">
+
+               
                 <div class="flex relative flex-col flex-grow" x-data="{
                   open: false,
                   search: '',
@@ -435,6 +442,8 @@
                     </div>
                   </div>
                 </div>
+                
+           
                 </div>
                 <div class="md:col-span-2">
                 <button @click="removeService(day, serviceIndex)" class="flex justify-center items-center p-2 w-full text-red-600 bg-red-100 rounded transition-colors duration-200 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 dark:bg-red-900/20">
@@ -556,7 +565,7 @@
 <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Hotel Costs</h2>
 
 
-<div class="overflow-x-auto mb-8">
+<div class="mb-8">
   <table class="w-full border-collapse">
     <tbody>
       <template x-for="(cost, index) in hotelCosts" :key="index">
@@ -578,13 +587,61 @@
 
                   <td class="p-2 w-96">
                     <label class="block mb-1 text-xs text-gray-500">Hotel Name</label>
-                    <input
-                      type="text"
-                      x-model="cost.name"
-                      class="p-2 w-full rounded border dark:bg-gray-700"
-                      placeholder="Enter hotel name"
-                    />
+                    <div class="relative" x-data="hotelCostHotelSearch(cost)" :class="open ? 'z-50' : ''" @click.outside="if(open){ open = false; validateInput(); }">
+                      <input
+                        type="text"
+                        x-model="search"
+                        @click="openDropdown()"
+                        @input="open = true; selectedIndex = -1"
+                        @keydown.down.prevent="
+                          if (open) {
+                            selectedIndex = selectedIndex < filteredHotels().length - 1 ? selectedIndex + 1 : 0;
+                          } else {
+                            openDropdown();
+                          }
+                        "
+                        @keydown.up.prevent="
+                          if (open) {
+                            selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : filteredHotels().length - 1;
+                          }
+                        "
+                        @keydown.enter.prevent="
+                          if (selectedIndex >= 0 && selectedIndex < filteredHotels().length) {
+                            selectHotel(filteredHotels()[selectedIndex]);
+                          } else if (filteredHotels().length === 1) {
+                            selectHotel(filteredHotels()[0]);
+                          } else {
+                            open = true;
+                          }
+                        "
+                        class="p-2 w-full rounded border dark:bg-gray-700 placeholder-gray-900 dark:placeholder-gray-300"
+                        :placeholder="cost.name || 'Search hotel...'"
+                      />
+
+                      <div
+                      x-show="open"
+                      class="absolute z-50 w-full bg-white border rounded-md shadow-xl dark:bg-gray-700 max-h-60 overflow-y-auto"
+                      style="top: 100%; left: 0;"
+                      @mousedown.prevent
+                      @click.outside="open = false" 
+                    >
+                        <template x-for="(hotel, index) in filteredHotels()" :key="hotel.id">
+                          <div
+                            class="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                            :class="{ 
+                              'bg-green-100 dark:bg-green-800': hotel.name === cost.name,
+                              'bg-blue-100 dark:bg-blue-800': selectedIndex === index 
+                            }"
+                            @click="selectHotel(hotel)"
+                          >
+                            <div x-text="hotel.city__name ? `${hotel.name} (${hotel.city__name})` : hotel.name"></div>
+                          </div>
+                        </template>
+                      </div>
+
+                    </div>
                   </td>
+
                   <td class="p-2 w-96">
                     <label class="block mb-1 text-xs text-gray-500">Room Type</label>
                     <input

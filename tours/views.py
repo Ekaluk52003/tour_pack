@@ -2652,6 +2652,10 @@ def export_tourday_excel(request, pk):
         cell = ws.cell(row=4, column=21, value=f"=SUM(T{data_start_row}:T{last_data_row})")
         cell.number_format = '#,##0.00'
 
+    # format column M to have comma for thousand and with 3 decimal
+    for r in range(1, 501):
+        ws.cell(row=r, column=13).number_format = '#,##0.00'
+
     # Create response
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

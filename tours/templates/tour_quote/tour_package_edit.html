@@ -565,169 +565,174 @@
 <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Hotel Costs</h2>
 
 
-<div class="overflow-x-auto mb-8">
-  <table class="w-full min-w-max border-collapse">
-    <tbody>
+<div class="mb-8">
+  <table class="block w-full border-collapse md:table">
+    <tbody class="contents md:table-row-group">
       <template x-for="(cost, index) in hotelCosts" :key="index">
-        <tr>
-          <td class="p-0">
+        <tr class="block w-full border-b md:table-row md:border-none">
+          <td class="block p-0 w-full md:table-cell">
             <!-- First TR: Main hotel cost row -->
-            <div class="flex w-full" :data-hotel-index="index">
-              <table class="w-full">
-                <tr class="bg-gray-100 border-b dark:border-gray-600 dark:bg-gray-900">
-                  <td class="p-2 w-56">
-                    <label class="block mb-1 text-xs text-gray-500">Date In/Out</label>
-                    <input
-                      type="text"
-                      x-model="cost.date"
-                      class="p-2 w-full whitespace-pre-line rounded border dark:bg-gray-700"
-                      placeholder="e.g., 25-27-Nov-24"
-                    />
-                  </td>
-
-                  <td class="p-2 w-96">
-                    <label class="block mb-1 text-xs text-gray-500">Hotel Name</label>
-                    <div class="relative" x-data="hotelCostHotelSearch(cost)" :class="open ? 'z-50' : ''" @click.outside="if(open){ open = false; validateInput(); }">
+            <div class="w-full" :data-hotel-index="index">
+              <table class="block w-full md:table">
+                <tbody class="block w-full md:table-row-group">
+                  <tr class="flex flex-col bg-gray-100 border-b md:table-row dark:border-gray-600 dark:bg-gray-900">
+                    <td class="block p-2 w-full md:w-56 md:table-cell">
+                      <label class="block mb-1 text-xs text-gray-500">Date In/Out</label>
                       <input
                         type="text"
-                        x-model="search"
-                        @click="openDropdown()"
-                        @input="open = true; selectedIndex = -1"
-                        @keydown.down.prevent="
-                          if (open) {
-                            selectedIndex = selectedIndex < filteredHotels().length - 1 ? selectedIndex + 1 : 0;
-                          } else {
-                            openDropdown();
-                          }
-                        "
-                        @keydown.up.prevent="
-                          if (open) {
-                            selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : filteredHotels().length - 1;
-                          }
-                        "
-                        @keydown.enter.prevent="
-                          if (selectedIndex >= 0 && selectedIndex < filteredHotels().length) {
-                            selectHotel(filteredHotels()[selectedIndex]);
-                          } else if (filteredHotels().length === 1) {
-                            selectHotel(filteredHotels()[0]);
-                          } else {
-                            open = true;
-                          }
-                        "
-                        class="p-2 w-full placeholder-gray-900 rounded border dark:bg-gray-700 dark:placeholder-gray-300"
-                        :placeholder="cost.name || 'Search hotel...'"
+                        x-model="cost.date"
+                        class="p-2 w-full whitespace-pre-line rounded border dark:bg-gray-700"
+                        placeholder="e.g., 25-27-Nov-24"
                       />
+                    </td>
 
-                      <div
-                      x-show="open"
-                      class="overflow-y-auto absolute z-50 w-full max-h-60 bg-white rounded-md border shadow-xl dark:bg-gray-700"
-                      style="top: 100%; left: 0;"
-                      @mousedown.prevent
-                      @click.outside="open = false" 
-                    >
-                        <template x-for="(hotel, index) in filteredHotels()" :key="hotel.id">
-                          <div
-                            class="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                            :class="{ 
-                              'bg-green-100 dark:bg-green-800': hotel.name === cost.name,
-                              'bg-blue-100 dark:bg-blue-800': selectedIndex === index 
-                            }"
-                            @click="selectHotel(hotel)"
-                          >
-                            <div x-text="hotel.city__name ? `${hotel.name} (${hotel.city__name})` : hotel.name"></div>
-                          </div>
-                        </template>
-                      </div>
-
-                    </div>
-                  </td>
-
-                  <td class="p-2 w-96">
-                    <label class="block mb-1 text-xs text-gray-500">Room Type</label>
-                    <input
-                      type="text"
-                      x-model="cost.type"
-                      class="p-2 w-full rounded border dark:bg-gray-700"
-                      placeholder="Enter hotel Type"
-                    />
-                  </td>
-                  <td class="p-2 w-96">
-                    <label class="block mb-1 text-xs text-gray-500">Promotion</label>
-                    <input
-                      type="text"
-                      x-model="cost.promotion"
-                      class="p-2 w-full rounded border dark:bg-gray-700"
-                      placeholder="Enter promotion"
-                    />
-                  </td>
-                  <td class="p-2 w-24">
-                    <button class="px-4 py-2 text-white bg-red-500 rounded hover:bg-red-600" @click="removeHotelCost(index)">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-
-                <tr class="border-b dark:border-gray-600">
-                  <td colspan="4">
-                    <div class="flex items-center px-2 py-3 space-x-4">
-
-                      <div class="flex items-center">
-                        <label class="block w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Rooms:
-                        </label>
+                    <td class="block p-2 w-full md:w-96 md:table-cell">
+                      <label class="block mb-1 text-xs text-gray-500">Hotel Name</label>
+                      <div class="relative" x-data="hotelCostHotelSearch(cost)" :class="open ? 'z-50' : ''" @click.outside="if(open){ open = false; validateInput(); }">
                         <input
-                          type="number"
-                          x-model="cost.room"
-                          class="p-2 w-20 text-center rounded border dark:bg-gray-700"
-                          min="1"
-                          placeholder="0"
+                          type="text"
+                          x-model="search"
+                          @click="openDropdown()"
+                          @input="open = true; selectedIndex = -1"
+                          @keydown.down.prevent="
+                            if (open) {
+                              selectedIndex = selectedIndex < filteredHotels().length - 1 ? selectedIndex + 1 : 0;
+                            } else {
+                              openDropdown();
+                            }
+                          "
+                          @keydown.up.prevent="
+                            if (open) {
+                              selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : filteredHotels().length - 1;
+                            }
+                          "
+                          @keydown.enter.prevent="
+                            if (selectedIndex >= 0 && selectedIndex < filteredHotels().length) {
+                              selectHotel(filteredHotels()[selectedIndex]);
+                            } else if (filteredHotels().length === 1) {
+                              selectHotel(filteredHotels()[0]);
+                            } else {
+                              open = true;
+                            }
+                          "
+                          class="p-2 w-full placeholder-gray-900 rounded border dark:bg-gray-700 dark:placeholder-gray-300"
+                          :placeholder="cost.name || 'Search hotel...'"
                         />
-                      </div>
-                      <div class="flex items-center">
-                        <label class="block w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Nights:
-                        </label>
-                        <input
-                          type="number"
-                          class="p-2 w-20 text-center rounded border dark:bg-gray-700"
-                          min="1"
-                          x-model="cost.nights"
-                          placeholder="0"
-                        />
-                      </div>
 
-                      <div class="flex items-center">
-                        <label class="block w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Price/Night:
-                        </label>
-                        <input type="text" class="px-2 py-1 w-32 text-right rounded border dark:bg-gray-700"
-                        x-bind:value="formatCommaNumber(cost.price || 0)"
-                        @input="cost.price = unformatCommaNumber($event.target.value); calculateHotelCostTotal()">
+                        <div
+                        x-show="open"
+                        class="overflow-y-auto absolute z-50 w-full max-h-60 bg-white rounded-md border shadow-xl dark:bg-gray-700"
+                        style="top: 100%; left: 0;"
+                        @mousedown.prevent
+                        @click.outside="open = false" 
+                      >
+                          <template x-for="(hotel, index) in filteredHotels()" :key="hotel.id">
+                            <div
+                              class="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                              :class="{ 
+                                'bg-green-100 dark:bg-green-800': hotel.name === cost.name,
+                                'bg-blue-100 dark:bg-blue-800': selectedIndex === index 
+                              }"
+                              @click="selectHotel(hotel)"
+                            >
+                              <div x-text="hotel.city__name ? `${hotel.name} (${hotel.city__name})` : hotel.name"></div>
+                            </div>
+                          </template>
+                        </div>
+
                       </div>
-                    <!-- Extra bed price input field -->
-                    <div class="flex items-center">
-                      <label class="block w-32 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Extra Bed Price:
-                      </label>
+                    </td>
+
+                    <td class="block p-2 w-full md:w-96 md:table-cell">
+                      <label class="block mb-1 text-xs text-gray-500">Room Type</label>
                       <input
                         type="text"
-                        :value="cost.extraBedPrice === null ? '' : formatCommaNumber(cost.extraBedPrice)"
-                        @input="cost.extraBedPrice = unformatCommaNumber($event.target.value) || null"
-                        class="p-2 text-center rounded border w-25 dark:bg-gray-700"
-                        placeholder="0"
+                        x-model="cost.type"
+                        class="p-2 w-full rounded border dark:bg-gray-700"
+                        placeholder="Enter hotel Type"
                       />
-                      </div>
+                    </td>
+                    <td class="block p-2 w-full md:w-96 md:table-cell">
+                      <label class="block mb-1 text-xs text-gray-500">Promotion</label>
+                      <input
+                        type="text"
+                        x-model="cost.promotion"
+                        class="p-2 w-full rounded border dark:bg-gray-700"
+                        placeholder="Enter promotion"
+                      />
+                    </td>
+                    
+                  </tr>
+
+                  <tr class="block border-b md:table-row dark:border-gray-600">
+                    <td colspan="5" class="block w-full md:table-cell">
+                      <div class="flex flex-wrap gap-4 items-center px-2 py-3">
+
+                        <div class="flex items-center">
+                          <label class="block w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Rooms:
+                          </label>
+                          <input
+                            type="number"
+                            x-model="cost.room"
+                            class="p-2 w-20 text-center rounded border dark:bg-gray-700"
+                            min="1"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div class="flex items-center">
+                          <label class="block w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Nights:
+                          </label>
+                          <input
+                            type="number"
+                            class="p-2 w-20 text-center rounded border dark:bg-gray-700"
+                            min="1"
+                            x-model="cost.nights"
+                            placeholder="0"
+                          />
+                        </div>
+
+                        <div class="flex items-center">
+                          <label class="block w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Price/Night:
+                          </label>
+                          <input type="text" class="px-2 py-1 w-32 text-right rounded border dark:bg-gray-700"
+                          x-bind:value="formatCommaNumber(cost.price || 0)"
+                          @input="cost.price = unformatCommaNumber($event.target.value); calculateHotelCostTotal()">
+                        </div>
+                      <!-- Extra bed price input field -->
                       <div class="flex items-center">
-                        <label class="block w-10 text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Total THB:
+                        <label class="block w-32 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Extra Bed Price:
                         </label>
-                        <span className="w-56 pl-8 font-medium text-right" x-text="formatCommaNumber(((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2))"></span>
+                        <input
+                          type="text"
+                          :value="cost.extraBedPrice === null ? '' : formatCommaNumber(cost.extraBedPrice)"
+                          @input="cost.extraBedPrice = unformatCommaNumber($event.target.value) || null"
+                          class="p-2 text-center rounded border w-25 dark:bg-gray-700"
+                          placeholder="0"
+                        />
+                        </div>
+                        <div class="flex items-center ml-auto md:ml-0">
+                          <label class="block w-10 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Total THB:
+                          </label>
+                          <span className="w-56 pl-8 font-medium text-right" x-text="formatCommaNumber(((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2))"></span>
+                        </div>
+                        
                       </div>
-                    </div>
-                  </td>
-                </tr>
+                    </td>                    
+                  </tr>                  
+                </tbody>
               </table>
+                  <div class="w-full">
+                    <button class="px-4 py-2 w-full text-white bg-red-500 rounded hover:bg-red-600" @click="removeHotelCost(index)">
+                        Delete
+                    </button>                         
+              </div>
             </div>
+           
 
             <!-- Insert button row - appears after each hotel cost except the last one -->
             <template x-if="index < hotelCosts.length - 1">

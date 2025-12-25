@@ -697,7 +697,7 @@
                           <label class="block w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
                             Price/Night:
                           </label>
-                          <input type="text" class="px-2 py-1 w-32 text-right rounded border dark:bg-gray-700"
+                          <input type="text" class="px-2 py-1 w-24 text-right rounded border dark:bg-gray-700"
                           x-bind:value="formatCommaNumber(cost.price || 0)"
                           @input="cost.price = unformatCommaNumber($event.target.value); calculateHotelCostTotal()">
                         </div>
@@ -710,7 +710,7 @@
                           type="text"
                           :value="cost.extraBedPrice === null ? '' : formatCommaNumber(cost.extraBedPrice)"
                           @input="cost.extraBedPrice = unformatCommaNumber($event.target.value) || null"
-                          class="p-2 text-center rounded border w-25 dark:bg-gray-700"
+                          class="p-2 w-24 text-center rounded border dark:bg-gray-700"
                           placeholder="0"
                         />
                         </div>
@@ -719,6 +719,12 @@
                             Total THB:
                           </label>
                           <span className="w-56 pl-8 font-medium text-right" x-text="formatCommaNumber(((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2))"></span>
+                        
+                           <div class="ml-4 w-full">
+                    <button class="px-2 py-2 w-full text-white bg-red-500 rounded hover:bg-red-600" @click="removeHotelCost(index)">
+                        Delete
+                    </button>                         
+              </div>
                         </div>
                         
                       </div>
@@ -726,11 +732,7 @@
                   </tr>                  
                 </tbody>
               </table>
-                  <div class="w-full">
-                    <button class="px-4 py-2 w-full text-white bg-red-500 rounded hover:bg-red-600" @click="removeHotelCost(index)">
-                        Delete
-                    </button>                         
-              </div>
+               
             </div>
            
 

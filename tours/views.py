@@ -2201,10 +2201,7 @@ def export_tourday_excel(request, pk):
     # If tour pack type > 2pax, add one more blank row
     data_start_row = current_info_row
     if package.tour_pack_type:
-        # Extract number from tour pack type name (e.g., "4pax" -> 4)
-        pax_match = re.search(r'(\d+)', package.tour_pack_type.name)
-        if pax_match and int(pax_match.group(1)) > 2:
-            data_start_row = current_info_row + 1  # Add one more blank row
+       data_start_row = current_info_row + 1  # Add one more blank row
     
     # Service type priority order
     SERVICE_TYPE_ORDER = {
@@ -2550,28 +2547,51 @@ def export_tourday_excel(request, pk):
 
             current_row += 1
 
+    # Define alignment styles
+    center_align = Alignment(horizontal='center', vertical='center')
+    
     for item in final_items:
-        ws.cell(row=current_row, column=1, value='')  # Ref nr. (empty for data rows)
-        ws.cell(row=current_row, column=2, value='')  # Pax (empty for data rows)
+        # Ref nr. (A) - Col 1
+        cell = ws.cell(row=current_row, column=1, value='')
+        cell.alignment = center_align
+        
+        # Pax (B) - Col 2
+        cell = ws.cell(row=current_row, column=2, value='')
+        cell.alignment = center_align
 
         if item['arrival_date']:
             cell = ws.cell(row=current_row, column=3, value=item['arrival_date'])
             cell.number_format = 'dd-mmm-yy'
-            cell.alignment = Alignment(horizontal='center')
+            cell.alignment = center_align
         else:
-            ws.cell(row=current_row, column=3, value='')
+            cell = ws.cell(row=current_row, column=3, value='')
+            cell.alignment = center_align
 
         if item['departure_date']:
             cell = ws.cell(row=current_row, column=4, value=item['departure_date'])
             cell.number_format = 'dd-mmm-yy'
-            cell.alignment = Alignment(horizontal='center')
+            cell.alignment = center_align
         else:
-            ws.cell(row=current_row, column=4, value='')
+            cell = ws.cell(row=current_row, column=4, value='')
+            cell.alignment = center_align
 
         nights_str = item['nights'] if item['nights'] else ''
         ws.cell(row=current_row, column=5, value=nights_str)
         ws.cell(row=current_row, column=6, value=item['service_name'])
         # Columns 7-10 are empty (P.U., P.U.Time, D.O., Flight/Train/Boat/others)
+        
+        # Apply alignment to columns G(7), H(8), I(9), J(10) which are currently empty in data but might need alignment if filled?
+        # Wait, the code below says "Columns 7-10 are empty" in the comment, but looking at previous lines, 
+        # I don't see them being filled from 'item'. 
+        # Let's check the 'item' structure. It has 'service_name', 'price', dates.
+        # It seems the export DOES NOT populate P.U., Time, D.O., Flight info from the item dictionary yet.
+        # But the user asked to align them. They might be manually filling them later or I missed where they are filled.
+        # The code comments say: "# Columns 7-10 are empty (P.U., P.U.Time, D.O., Flight/Train/Boat/others)"
+        # So I will just apply the alignment to the empty cells so that if they type in it, it is aligned.
+        
+        for col in [7, 8, 9, 10]:
+            cell = ws.cell(row=current_row, column=col)
+            cell.alignment = center_align
         
         # Column 11 is separator (black fill)
         ws.cell(row=current_row, column=11).fill = black_fill
@@ -2649,12 +2669,27 @@ def export_tourday_excel(request, pk):
         cell.number_format = '#,##0.00'
         
         # Populate sum of Profit (Column T) at U4
-        cell = ws.cell(row=4, column=21, value=f"=SUM(T{data_start_row}:T{last_data_row})")
+        cell = ws.cell(row=5, column=21, value=f"=SUM(T{data_start_row}:T{last_data_row})")
         cell.number_format = '#,##0.00'
 
-    # format column M to have comma for thousand and with 3 decimal
+    # Format up to row 500
+    # Ensure center alignment for A, B, C, D, G, H, I, J and number format for M
+    center_align_style = Alignment(horizontal='center', vertical='center')
+    
     for r in range(1, 501):
+        # Column M: number format
         ws.cell(row=r, column=13).number_format = '#,##0.00'
+        
+        # Column C(3), D(4): date format
+        ws.cell(row=r, column=3).number_format = 'dd-mmm-yy'
+        ws.cell(row=r, column=4).number_format = 'dd-mmm-yy'
+        
+        # Center align specific columns: A(1), B(2), C(3), D(4), G(7), H(8), I(9), J(10)
+        for col in [1, 2, 3, 4, 7, 8, 9, 10]:
+            # Skip C4 (row 4, column 3)
+            if r == 4 and col == 3:
+                continue
+            ws.cell(row=r, column=col).alignment = center_align_style
 
     # Create response
     response = HttpResponse(

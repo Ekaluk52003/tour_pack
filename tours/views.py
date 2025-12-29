@@ -2743,8 +2743,8 @@ def export_tourday_excel(request, pk):
         ws.cell(row=r, column=3).number_format = 'dd-mmm-yy'
         ws.cell(row=r, column=4).number_format = 'dd-mmm-yy'
         
-        # Center align specific columns: A(1), B(2), C(3), D(4), G(7), H(8), I(9), J(10)
-        for col in [1, 2, 3, 4, 7, 8, 9, 10]:
+        # Center align specific columns: A(1), B(2), C(3), D(4), E(5), G(7), H(8), I(9), J(10)
+        for col in [1, 2, 3, 4, 5, 7, 8, 9, 10]:
             # Skip C4 (row 4, column 3)
             if r == 4 and col == 3:
                 continue

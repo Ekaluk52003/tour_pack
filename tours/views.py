@@ -2124,8 +2124,67 @@ def export_tourday_excel(request, pk):
     
     package = get_object_or_404(TourPackageQuote, pk=pk)
     
+    # Define Office 2013-2022 Theme XML
+    OFFICE_THEME_XML = """
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme">
+   <a:themeElements>
+      <a:clrScheme name="Office">
+         <a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>
+         <a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>
+         <a:dk2><a:srgbClr val="44546A"/></a:dk2>
+         <a:lt2><a:srgbClr val="E7E6E6"/></a:lt2>
+         <a:accent1><a:srgbClr val="4472C4"/></a:accent1>
+         <a:accent2><a:srgbClr val="ED7D31"/></a:accent2>
+         <a:accent3><a:srgbClr val="A5A5A5"/></a:accent3>
+         <a:accent4><a:srgbClr val="FFC000"/></a:accent4>
+         <a:accent5><a:srgbClr val="5B9BD5"/></a:accent5>
+         <a:accent6><a:srgbClr val="70AD47"/></a:accent6>
+         <a:hlink><a:srgbClr val="0563C1"/></a:hlink>
+         <a:folHlink><a:srgbClr val="954F72"/></a:folHlink>
+      </a:clrScheme>
+      <a:fontScheme name="Office">
+         <a:majorFont>
+            <a:latin typeface="Calibri Light" panose="020F0302020204030204"/>
+            <a:ea typeface=""/>
+            <a:cs typeface=""/>
+         </a:majorFont>
+         <a:minorFont>
+            <a:latin typeface="Calibri" panose="020F0502020204030204"/>
+            <a:ea typeface=""/>
+            <a:cs typeface=""/>
+         </a:minorFont>
+      </a:fontScheme>
+      <a:fmtScheme name="Office">
+         <a:fillStyleLst>
+            <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+            <a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="50000"/><a:satMod val="300000"/></a:schemeClr></a:gs><a:gs pos="35000"><a:schemeClr val="phClr"><a:tint val="37000"/><a:satMod val="300000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:tint val="15000"/><a:satMod val="350000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="16200000" scaled="1"/></a:gradFill>
+            <a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:shade val="51000"/><a:satMod val="130000"/></a:schemeClr></a:gs><a:gs pos="80000"><a:schemeClr val="phClr"><a:shade val="93000"/><a:satMod val="130000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="94000"/><a:satMod val="135000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="16200000" scaled="0"/></a:gradFill>
+         </a:fillStyleLst>
+         <a:lnStyleLst>
+            <a:ln w="9525" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"><a:shade val="95000"/><a:satMod val="105000"/></a:schemeClr></a:solidFill><a:prstDash val="solid"/></a:ln>
+            <a:ln w="25400" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>
+            <a:ln w="38100" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>
+         </a:lnStyleLst>
+         <a:effectStyleLst>
+            <a:effectStyle><a:effectLst><a:outerShdw blurRad="40000" dist="20000" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="38000"/></a:srgbClr></a:outerShdw></a:effectLst></a:effectStyle>
+            <a:effectStyle><a:effectLst><a:outerShdw blurRad="40000" dist="23000" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="35000"/></a:srgbClr></a:outerShdw></a:effectLst></a:effectStyle>
+            <a:effectStyle><a:effectLst><a:outerShdw blurRad="40000" dist="23000" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="35000"/></a:srgbClr></a:outerShdw></a:effectLst><a:scene3d><a:camera prst="orthographicFront"><a:rot lat="0" lon="0" rev="0"/></a:camera><a:lightRig rig="threePt" dir="t"><a:rot lat="0" lon="0" rev="1200000"/></a:lightRig></a:scene3d><a:sp3d><a:bevelT w="63500" h="25400"/></a:sp3d></a:effectStyle>
+         </a:effectStyleLst>
+         <a:bgFillStyleLst>
+            <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+            <a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="40000"/><a:satMod val="350000"/></a:schemeClr></a:gs><a:gs pos="40000"><a:schemeClr val="phClr"><a:tint val="45000"/><a:shade val="99000"/><a:satMod val="350000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="20000"/><a:satMod val="255000"/></a:schemeClr></a:gs></a:gsLst><a:path path="circle"><a:fillToRect l="50000" t="-80000" r="50000" b="180000"/></a:path></a:gradFill>
+            <a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="80000"/><a:satMod val="300000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="30000"/><a:satMod val="200000"/></a:schemeClr></a:gs></a:gsLst><a:path path="circle"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path></a:gradFill>
+         </a:bgFillStyleLst>
+      </a:fmtScheme>
+   </a:themeElements>
+   <a:objectDefaults/>
+   <a:extraClrSchemeLst/>
+</a:theme>"""
+
     # Create workbook
     wb = Workbook()
+    # Apply the Office 2013-2022 theme
+    wb.loaded_theme = OFFICE_THEME_XML
     ws = wb.active
     ws.title = "Tour Days Export"
     
@@ -2147,10 +2206,10 @@ def export_tourday_excel(request, pk):
             cell.alignment = Alignment(wrap_text=True)
 
     # Row 2: First blank row (empty)
-    # Row 3: Second blank row with black background
-    black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')
+    # Row 3: Second blank row with separator background (Black)
+    separator_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')
     for col in range(1, 22):
-        ws.cell(row=3, column=col).fill = black_fill
+        ws.cell(row=3, column=col).fill = separator_fill
     
     # Freeze panes - freeze row 1 (header) so rows below scroll
     ws.freeze_panes = 'A3'
@@ -2467,9 +2526,9 @@ def export_tourday_excel(request, pk):
                     'price': svc['price'],
                 })
     
-    # Fill column 11 (separator) with black from row 1 up to data_start_row
+    # Fill column 11 (separator) with separator fill from row 1 up to data_start_row
     for r in range(1, data_start_row):
-        ws.cell(row=r, column=11).fill = black_fill
+        ws.cell(row=r, column=11).fill = separator_fill
 
     # Write data rows from data_start_row
     current_row = data_start_row
@@ -2487,7 +2546,7 @@ def export_tourday_excel(request, pk):
             ws.cell(row=current_row, column=4, value='')
             ws.cell(row=current_row, column=5, value='')
             ws.cell(row=current_row, column=6, value=cost_name)
-            ws.cell(row=current_row, column=11).fill = black_fill
+            ws.cell(row=current_row, column=11).fill = separator_fill
             
             if cost_amount:
                 cell = ws.cell(row=current_row, column=13, value=float(cost_amount))
@@ -2525,7 +2584,7 @@ def export_tourday_excel(request, pk):
             cell = ws.cell(row=current_row, column=6, value=discount_name)
             cell.font = red_font
             
-            ws.cell(row=current_row, column=11).fill = black_fill
+            ws.cell(row=current_row, column=11).fill = separator_fill
             
             if discount_amount:
                 # Ensure negative amount
@@ -2593,8 +2652,8 @@ def export_tourday_excel(request, pk):
             cell = ws.cell(row=current_row, column=col)
             cell.alignment = center_align
         
-        # Column 11 is separator (black fill)
-        ws.cell(row=current_row, column=11).fill = black_fill
+        # Column 11 is separator (separator fill)
+        ws.cell(row=current_row, column=11).fill = separator_fill
         
         # Column 12 is INVOICE NR & TOTAL (empty)
 
@@ -2626,16 +2685,16 @@ def export_tourday_excel(request, pk):
 
     # Add 3 blank rows separator after services
     # Blank row 1
-    ws.cell(row=current_row, column=11).fill = black_fill
+    ws.cell(row=current_row, column=11).fill = separator_fill
     current_row += 1
 
     # Blank row 2
-    ws.cell(row=current_row, column=11).fill = black_fill
+    ws.cell(row=current_row, column=11).fill = separator_fill
     current_row += 1
     
-    # Blank row 3 with black fill
+    # Blank row 3 with separator fill
     for col in range(1, 22):
-        ws.cell(row=current_row, column=col).fill = black_fill
+        ws.cell(row=current_row, column=col).fill = separator_fill
     current_row += 1
 
     # Adjust column widths

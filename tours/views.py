@@ -45,6 +45,16 @@ def safe_decimal(value, default=Decimal('0')):
         return default
 
 
+def safe_float(value, default=0.0):
+    """Safely convert a value to float, returning default if conversion fails or value is empty."""
+    if value is None or value == '':
+        return default
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 def calculate_totals(package):
     service_total = sum(
         service.price_at_booking for day in package.tour_days.all() for service in day.services.all()
@@ -674,9 +684,9 @@ def tour_package_edit(request, package_reference):
           'extraCosts': [
             {
                 'item': extra_cost['item'],
-                'amount': float(extra_cost['amount']),
-                'price': float(extra_cost.get('price', 0)),
-                'qty': float(extra_cost.get('qty', 1))
+                'amount': safe_float(extra_cost.get('amount', 0)),
+                'price': safe_float(extra_cost.get('price', 0)),
+                'qty': safe_float(extra_cost.get('qty', 1), 1.0)
             }
             for extra_cost in package.extra_costs
         ],

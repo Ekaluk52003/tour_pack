@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Create Invoice - {{ package.package_reference }}{% endblock %}
+
+
+{% block content %}
+
+{{ invoice_items|json_script:"invoice-items-data" }}
+{{ supplier_expenses|json_script:"supplier-expenses-data" }}
+{{ suppliers_data|json_script:"suppliers-data" }}
+
+<div x-data="invoiceForm">
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Create Invoice</h1>
+  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+    Package: <span class="font-semibold">{{ package.package_reference }}</span> — {{ package.name }} — {{ package.customer_name }}
+  </p>
+</div>
+
+<form id="invoice-form" method="post">
+  {% csrf_token %}
+  <input type="hidden" id="invoice_items_json" name="invoice_items_json">
+  <input type="hidden" id="supplier_expenses_json" name="supplier_expenses_json">
+
+  <!-- Invoice metadata -->
+  <div class="grid grid-cols-1 gap-4 p-4 mb-6 bg-white rounded-lg shadow dark:bg-gray-800 md:grid-cols-3">
+    <div>
+      <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Agency</label>
+      <select name="agency" class="px-3 py-2 w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500">
+        <option value="">— No Agency —</option>
+        {% for agency in agencies %}
+          <option value="{{ agency.id }}">{{ agency.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Issue Date</label>
+      <input type="date" name="issue_date" value="{{ today|date:'Y-m-d' }}"
+             class="px-3 py-2 w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500">
+    </div>
+    <div>
+      <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
+      <input type="date" name="due_date"
+             class="px-3 py-2 w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500">
+    </div>
+    <div>
+      <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+      <select name="status" class="px-3 py-2 w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500">
+        {% for value, label in invoice_status_choices %}
+          <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="md:col-span-2">
+      <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
+      <input type="text" name="notes" placeholder="Optional notes..."
+             class="px-3 py-2 w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500">
+    </div>
+  </div>
+
+  <!-- Two panels -->
+  <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
+
+    <!-- LEFT: Invoice Items -->
+    <div class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
+      <h2 class="mb-3 text-lg font-semibold text-blue-700 dark:text-blue-400">Invoice to Client</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left">
+          <thead class="bg-blue-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Description</th>
+              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Type</th>
+              <th class="px-2 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Qty</th>
+              <th class="px-2 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Unit Price</th>
+              <th class="px-2 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
+              <th class="px-1 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(item, idx) in invoiceItems" :key="idx">
+              <tr class="border-b border-gray-100 dark:border-gray-700">
+                <td class="px-1 py-1">
+                  <input type="text" x-model="item.description" placeholder="Description"
+                         class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </td>
+                <td class="px-1 py-1">
+                  <select x-model="item.item_type" class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                    {% for value, label in invoice_item_types %}
+                      <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td class="px-1 py-1">
+                  <input type="number" x-model="item.quantity" step="0.01" min="0"
+                         @input="calcAmount(item)"
+                         class="px-2 py-1 w-16 text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </td>
+                <td class="px-1 py-1">
+                  <input type="number" x-model="item.unit_price" step="0.01"
+                         @input="calcAmount(item)"
+                         class="px-2 py-1 w-24 text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </td>
+                <td class="px-2 py-1 text-right font-medium text-gray-800 dark:text-gray-200"
+                    x-text="parseFloat(item.amount || 0).toLocaleString('th-TH', {minimumFractionDigits:2})"></td>
+                <td class="px-1 py-1">
+                  <button type="button" @click="removeInvoiceItem(idx)" class="text-red-400 hover:text-red-600">✕</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+          <tfoot>
+            <tr class="bg-blue-50 dark:bg-gray-700">
+              <td colspan="4" class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Total</td>
+              <td class="px-2 py-2 font-bold text-right text-blue-700 dark:text-blue-400"
+                  x-text="parseFloat(invoiceTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <button type="button" @click="addInvoiceItem()"
+              class="mt-3 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-400 rounded hover:bg-blue-50 dark:text-blue-400 dark:border-blue-600 dark:hover:bg-gray-700">
+        + Add Row
+      </button>
+    </div>
+
+    <!-- RIGHT: Supplier Expenses -->
+    <div class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
+      <h2 class="mb-3 text-lg font-semibold text-orange-600 dark:text-orange-400">Supplier Expenses</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left">
+          <thead class="bg-orange-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300 w-36">Supplier</th>
+              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Service / Description</th>
+              <th class="px-2 py-2 font-medium text-center text-gray-600 dark:text-gray-300 w-12">Qty</th>
+              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300 w-20">Category</th>
+              <th class="px-2 py-2 font-medium text-right text-gray-600 dark:text-gray-300 w-20">Amount</th>
+              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300 w-24">Due Date</th>
+              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300 w-18">Status</th>
+              <th class="px-1 py-2 w-6"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(exp, idx) in supplierExpenses" :key="idx">
+              <tr class="border-b border-gray-100 dark:border-gray-700">
+
+                <!-- Supplier combobox -->
+                <td class="px-1 py-1">
+                  <div @click.outside="closeSupplierDrop(exp)">
+                    <input type="text"
+                           x-model="exp.supplierQuery"
+                           @focus="openSupplierDrop(exp, $el)"
+                           @input="exp.supplierOpen = true"
+                           placeholder="Search supplier…"
+                           class="px-2 py-1 w-full text-xs rounded border dark:bg-gray-700 dark:text-gray-200"
+                           :class="exp.supplier_name ? 'border-orange-300 dark:border-orange-600 font-medium' : 'border-gray-200 dark:border-gray-600'">
+                    <div x-show="exp.supplierOpen"
+                         :style="exp.supplierDropStyle"
+                         class="bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto dark:bg-gray-800 dark:border-gray-600">
+                      <template x-for="s in filteredSuppliers(exp.supplierQuery)" :key="s.id">
+                        <div @mousedown.prevent="selectSupplier(exp, s)"
+                             class="px-3 py-2 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700"
+                             :class="exp.supplierId === s.id ? 'bg-orange-50 font-semibold dark:bg-gray-700' : ''"
+                             x-text="s.name"></div>
+                      </template>
+                      <div x-show="filteredSuppliers(exp.supplierQuery).length === 0"
+                           class="px-3 py-2 text-gray-400 italic">No suppliers found</div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Service combobox -->
+                <td class="px-1 py-1">
+                  <div @click.outside="exp.serviceOpen = false">
+                    <input type="text"
+                           x-model="exp.description"
+                           @focus="openServiceDrop(exp, $el); exp.serviceQuery = exp.description"
+                           @input="exp.serviceQuery = exp.description; if(exp.supplierId) exp.serviceOpen = true"
+                           placeholder="Service / description…"
+                           class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                    <div x-show="exp.serviceOpen && exp.supplierId"
+                         :style="exp.serviceDropStyle"
+                         class="bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto dark:bg-gray-800 dark:border-gray-600">
+                      <template x-for="s in filteredServices(exp)" :key="s.id">
+                        <div @mousedown.prevent="selectService(exp, s)"
+                             class="px-3 py-2 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center gap-2">
+                          <span x-text="s.name"></span>
+                          <span class="text-gray-400 shrink-0" x-text="'฿' + Number(s.cost).toLocaleString('th-TH')"></span>
+                        </div>
+                      </template>
+                      <div x-show="filteredServices(exp).length === 0"
+                           class="px-3 py-2 text-gray-400 italic">No matching services</div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Qty -->
+                <td class="px-1 py-1">
+                  <input type="number" x-model="exp.qty" step="1" min="1"
+                         @input="calcExpenseAmount(exp)"
+                         class="px-1 py-1 w-full text-xs text-center rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </td>
+
+                <td class="px-1 py-1">
+                  <select x-model="exp.category" class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                    {% for value, label in supplier_expense_categories %}
+                      <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td class="px-1 py-1">
+                  <input type="number" x-model="exp.amount" step="0.01" min="0"
+                         class="px-2 py-1 w-full text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </td>
+                <td class="px-1 py-1">
+                  <input type="date" x-model="exp.due_date"
+                         class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </td>
+                <td class="px-1 py-1">
+                  <select x-model="exp.status" class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                    <option value="Pending">Pending</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </td>
+                <td class="px-1 py-1">
+                  <button type="button" @click="removeExpense(idx)" class="text-red-400 hover:text-red-600">✕</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+          <tfoot>
+            <tr class="bg-orange-50 dark:bg-gray-700">
+              <td colspan="4" class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Total</td>
+              <td class="px-2 py-2 font-bold text-right text-orange-600 dark:text-orange-400"
+                  x-text="parseFloat(expenseTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <button type="button" @click="addExpense()"
+              class="mt-3 px-3 py-1.5 text-xs font-medium text-orange-600 border border-orange-400 rounded hover:bg-orange-50 dark:text-orange-400 dark:border-orange-600 dark:hover:bg-gray-700">
+        + Add Row
+      </button>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="flex flex-col gap-3 md:flex-row">
+    <button type="button" @click="submitForm()"
+            class="px-6 py-3 font-semibold text-white bg-indigo-600 rounded-lg transition hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800">
+      Confirm Invoice &amp; Generate Payment List
+    </button>
+    <a href="{% url 'tour_package_detail' package.package_reference %}"
+       class="px-6 py-3 font-semibold text-center text-gray-700 bg-gray-200 rounded-lg transition hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+      Cancel
+    </a>
+  </div>
+
+</form>
+</div>
+
+{% endblock %}

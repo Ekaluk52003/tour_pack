@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}{% if action == 'edit' %}Edit {{ supplier.name }}{% else %}Add Supplier{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+      {% if action == 'edit' %}Edit Supplier{% else %}Add Supplier{% endif %}
+    </h1>
+    <a href="{% url 'supplier_list' %}"
+       class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+      Cancel
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="mb-4 px-4 py-3 rounded-lg text-sm bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" class="space-y-5">
+    {% csrf_token %}
+
+    <div class="bg-white rounded-lg shadow p-6 dark:bg-gray-800 space-y-4">
+      <h2 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Contact Info</h2>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier Name *</label>
+        <input type="text" name="name" required
+               value="{{ supplier.name|default:'' }}"
+               class="w-full px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Person</label>
+          <input type="text" name="contact_person"
+                 value="{{ supplier.contact_person|default:'' }}"
+                 class="w-full px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+          <input type="text" name="phone"
+                 value="{{ supplier.phone|default:'' }}"
+                 class="w-full px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+        <input type="email" name="email"
+               value="{{ supplier.email|default:'' }}"
+               class="w-full px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+        <textarea name="address" rows="2"
+                  class="w-full px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">{{ supplier.address|default:'' }}</textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+        <textarea name="notes" rows="2"
+                  class="w-full px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">{{ supplier.notes|default:'' }}</textarea>
+      </div>
+    </div>
+
+    <!-- Services this supplier provides -->
+    <div class="bg-white rounded-lg shadow p-6 dark:bg-gray-800">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Services Provided</h2>
+        <button type="button" id="add-service-btn"
+                class="text-xs px-3 py-1 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300">
+          + Add Row
+        </button>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">List the services this supplier can provide (e.g. Airport Transfer, City Tour, Hotel Booking).</p>
+
+      <div class="grid grid-cols-[1fr_140px_32px] gap-2 mb-1 px-1">
+        <span class="text-xs text-gray-400 dark:text-gray-500">Service name</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500">Cost (฿)</span>
+        <span></span>
+      </div>
+      <div id="services-list" class="space-y-2">
+        {% if existing_services %}
+          {% for svc in existing_services %}
+          <div class="service-row grid grid-cols-[1fr_140px_32px] items-center gap-2">
+            <input type="text" name="service_names" value="{{ svc.name }}"
+                   placeholder="e.g. Airport Transfer"
+                   class="px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+            <input type="number" name="service_costs" value="{{ svc.cost }}" min="0" step="0.01"
+                   placeholder="0.00"
+                   class="px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+            <button type="button" onclick="this.closest('.service-row').remove()"
+                    class="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 text-lg leading-none">×</button>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="service-row grid grid-cols-[1fr_140px_32px] items-center gap-2">
+            <input type="text" name="service_names" placeholder="e.g. Airport Transfer"
+                   class="px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+            <input type="number" name="service_costs" value="0" min="0" step="0.01"
+                   placeholder="0.00"
+                   class="px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+            <button type="button" onclick="this.closest('.service-row').remove()"
+                    class="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 text-lg leading-none">×</button>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3">
+      <a href="{% url 'supplier_list' %}"
+         class="px-5 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+        Cancel
+      </a>
+      <button type="submit"
+              class="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+        {% if action == 'edit' %}Save Changes{% else %}Create Supplier{% endif %}
+      </button>
+    </div>
+  </form>
+
+</div>
+
+<script>
+document.getElementById('add-service-btn').addEventListener('click', function () {
+  const row = document.createElement('div');
+  row.className = 'service-row grid grid-cols-[1fr_140px_32px] items-center gap-2';
+  row.innerHTML = `
+    <input type="text" name="service_names" placeholder="e.g. Airport Transfer"
+           class="px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+    <input type="number" name="service_costs" value="0" min="0" step="0.01" placeholder="0.00"
+           class="px-3 py-2 text-sm border rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+    <button type="button" onclick="this.closest('.service-row').remove()"
+            class="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 text-lg leading-none">×</button>
+  `;
+  document.getElementById('services-list').appendChild(row);
+});
+</script>
+{% endblock %}

@@ -2,7 +2,9 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
-from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedTourQuote, ReferenceID, ServicePrice, TourPackType
+from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedTourQuote, ReferenceID, ServicePrice, TourPackType, Agency, Invoice, InvoiceItem, SupplierExpense, InvoiceReferenceID, Supplier, SupplierService
+from django.db.models import Sum, Count, F, ExpressionWrapper, DecimalField
+from django.db.models.functions import Coalesce
 import json
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
@@ -2202,7 +2204,7 @@ def export_tourday_excel(request, pk):
     headers = [
         'Ref nr.', 'Pax', 'Arr.', 'Dep.', 'Nt', 'Detail', 'P.U.', 'P.U.Time', 'D.O.',
         'Flight / Train / Boat / others', '', 'INVOICE NR & TOTAL', 'INVOICE to Connections',
-        'Promotion', 'booking status \\ hotel cfrm nr', 'INVOICE \ EXPENSES by supplier',
+        'Promotion', 'booking status \\ hotel cfrm nr', 'INVOICE \\ EXPENSES by supplier',
         '', 'due date', 'supplier \\ guide', 'PROFIT PER PRODUCT', 'PROFIT on file'
     ]
     for col, header in enumerate(headers, 1):
@@ -2769,3 +2771,589 @@ def export_tourday_excel(request, pk):
 
     wb.save(response)
     return response
+
+
+# ──────────────────────────────────────────────────────────────
+# Invoice & Supplier Expense views
+# ──────────────────────────────────────────────────────────────
+
+def build_prepopulated_invoice_data(package):
+    """
+    Returns (invoice_items, supplier_expenses) as lists of dicts
+    pre-populated from the TourPackageQuote data.
+    """
+    invoice_items = []
+    supplier_expenses = []
+    order = 0
+
+    for cost in (package.hotel_costs or []):
+        try:
+            rooms = int(cost.get('room', 1) or 1)
+            nights = int(cost.get('nights', 1) or 1)
+            price = Decimal(str(cost.get('price', 0) or 0))
+            extra_bed_price = Decimal(str(cost.get('extraBedPrice', 0) or 0))
+            hotel_name = cost.get('name', 'Hotel') or 'Hotel'
+            date_str = cost.get('date', '')
+            room_type = cost.get('type', '')
+
+            room_total = rooms * nights * price
+            extra_bed_total = extra_bed_price * nights
+            total = room_total + extra_bed_total
+
+            desc = f"{hotel_name} ({room_type}) - {date_str} x {rooms} rooms x {nights} nights"
+            invoice_items.append({
+                'description': desc, 'quantity': '1', 'unit_price': str(total),
+                'amount': str(total), 'item_type': 'Hotel', 'order': order,
+            })
+            supplier_expenses.append({
+                'supplier_name': hotel_name, 'description': desc,
+                'category': 'Hotel', 'amount': str(total),
+                'due_date': '', 'status': 'Pending', 'reference_number': '', 'order': order,
+            })
+            order += 1
+        except Exception:
+            pass
+
+    for day in package.tour_days.all().order_by('date').prefetch_related(
+        'services__service', 'guide_services__guide_service'
+    ):
+        for svc in day.services.all():
+            desc = f"{svc.service.name} ({day.date})"
+            amt = str(svc.price_at_booking)
+            invoice_items.append({
+                'description': desc, 'quantity': '1', 'unit_price': amt,
+                'amount': amt, 'item_type': 'Service', 'order': order,
+            })
+            supplier_expenses.append({
+                'supplier_name': svc.service.name, 'description': desc,
+                'category': 'Transport', 'amount': amt,
+                'due_date': '', 'status': 'Pending', 'reference_number': '', 'order': order,
+            })
+            order += 1
+
+        for gsvc in day.guide_services.all():
+            desc = f"{gsvc.guide_service.name} ({day.date})"
+            amt = str(gsvc.price_at_booking)
+            invoice_items.append({
+                'description': desc, 'quantity': '1', 'unit_price': amt,
+                'amount': amt, 'item_type': 'Guide', 'order': order,
+            })
+            supplier_expenses.append({
+                'supplier_name': gsvc.guide_service.name, 'description': desc,
+                'category': 'Guide', 'amount': amt,
+                'due_date': '', 'status': 'Pending', 'reference_number': '', 'order': order,
+            })
+            order += 1
+
+    for ec in (package.extra_costs or []):
+        try:
+            desc = ec.get('item', 'Extra Cost') or 'Extra Cost'
+            amt = str(Decimal(str(ec.get('amount', 0) or 0)))
+            invoice_items.append({
+                'description': desc, 'quantity': '1', 'unit_price': amt,
+                'amount': amt, 'item_type': 'Extra', 'order': order,
+            })
+            supplier_expenses.append({
+                'supplier_name': 'Supplier', 'description': desc,
+                'category': 'Other', 'amount': amt,
+                'due_date': '', 'status': 'Pending', 'reference_number': '', 'order': order,
+            })
+            order += 1
+        except Exception:
+            pass
+
+    for disc in (package.discounts or []):
+        try:
+            desc = disc.get('item', 'Discount') or 'Discount'
+            amt = Decimal(str(disc.get('amount', 0) or 0))
+            invoice_items.append({
+                'description': desc, 'quantity': '1', 'unit_price': str(-amt),
+                'amount': str(-amt), 'item_type': 'Discount', 'order': order,
+            })
+            order += 1
+        except Exception:
+            pass
+
+    return invoice_items, supplier_expenses
+
+
+def _get_suppliers_data():
+    return [
+        {
+            'id': s.id,
+            'name': s.name,
+            'services': [
+                {'id': ss.id, 'name': ss.name, 'cost': str(ss.cost)}
+                for ss in s.supplier_services.all()
+            ],
+        }
+        for s in Supplier.objects.prefetch_related('supplier_services').all()
+    ]
+
+
+@login_required
+def create_invoice(request, package_reference):
+    package = get_object_or_404(TourPackageQuote, package_reference=package_reference)
+    agencies = Agency.objects.all()
+
+    if request.method == 'POST':
+        agency_id = request.POST.get('agency') or None
+        issue_date = request.POST.get('issue_date')
+        due_date = request.POST.get('due_date') or None
+        notes = request.POST.get('notes', '')
+        status = request.POST.get('status', Invoice.STATUS_DRAFT)
+        items_json = request.POST.get('invoice_items_json', '[]')
+        expenses_json = request.POST.get('supplier_expenses_json', '[]')
+
+        try:
+            items_data = json.loads(items_json)
+            expenses_data = json.loads(expenses_json)
+        except json.JSONDecodeError:
+            items_data, expenses_data = [], []
+
+        with transaction.atomic():
+            invoice = Invoice.objects.create(
+                tour_package=package,
+                agency_id=agency_id,
+                issue_date=issue_date,
+                due_date=due_date,
+                notes=notes,
+                status=status,
+                created_by=request.user,
+            )
+
+            for i, item in enumerate(items_data):
+                qty = safe_decimal(item.get('quantity', 1), Decimal('1'))
+                unit_price = safe_decimal(item.get('unit_price', 0))
+                InvoiceItem.objects.create(
+                    invoice=invoice,
+                    description=item.get('description', '')[:500],
+                    quantity=qty,
+                    unit_price=unit_price,
+                    amount=qty * unit_price,
+                    item_type=item.get('item_type', 'Other'),
+                    order=i,
+                )
+
+            supplier_cache = {s.name: s for s in Supplier.objects.all()}
+            for i, exp in enumerate(expenses_data):
+                sname = exp.get('supplier_name', '')[:200]
+                qty = safe_decimal(exp.get('qty', 1), Decimal('1'))
+                unit_price = safe_decimal(exp.get('unit_price', 0))
+                SupplierExpense.objects.create(
+                    invoice=invoice,
+                    supplier=supplier_cache.get(sname),
+                    supplier_name=sname,
+                    description=exp.get('description', '')[:500],
+                    qty=qty,
+                    unit_price=unit_price,
+                    category=exp.get('category', 'Other'),
+                    amount=safe_decimal(exp.get('amount', 0)),
+                    due_date=exp.get('due_date') or None,
+                    status=exp.get('status', 'Pending'),
+                    reference_number=exp.get('reference_number', '')[:100],
+                    order=i,
+                )
+
+            invoice.recalculate_total()
+
+        messages.success(request, f'Invoice {invoice.invoice_number} created successfully.')
+        return redirect('invoice_detail', invoice_id=invoice.id)
+
+    invoice_items, _ = build_prepopulated_invoice_data(package)
+    today = datetime.now().date()
+
+    context = {
+        'package': package,
+        'agencies': agencies,
+        'invoice_items': invoice_items,
+        'supplier_expenses': [],
+        'suppliers_data': _get_suppliers_data(),
+        'invoice_status_choices': Invoice.STATUS_CHOICES,
+        'supplier_expense_categories': SupplierExpense.CATEGORY_CHOICES,
+        'invoice_item_types': InvoiceItem.ITEM_TYPE_CHOICES,
+        'today': today,
+    }
+    return render(request, 'tour_quote/create_invoice.html', context)
+
+
+@login_required
+def edit_invoice(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    agencies = Agency.objects.all()
+
+    if request.method == 'POST':
+        agency_id = request.POST.get('agency') or None
+        issue_date = request.POST.get('issue_date')
+        due_date = request.POST.get('due_date') or None
+        notes = request.POST.get('notes', '')
+        status = request.POST.get('status', Invoice.STATUS_DRAFT)
+        items_json = request.POST.get('invoice_items_json', '[]')
+        expenses_json = request.POST.get('supplier_expenses_json', '[]')
+
+        try:
+            items_data = json.loads(items_json)
+            expenses_data = json.loads(expenses_json)
+        except json.JSONDecodeError:
+            items_data, expenses_data = [], []
+
+        with transaction.atomic():
+            invoice.agency_id = agency_id
+            invoice.issue_date = issue_date
+            invoice.due_date = due_date
+            invoice.notes = notes
+            invoice.status = status
+            invoice.save()
+
+            invoice.items.all().delete()
+            invoice.supplier_expenses.all().delete()
+
+            for i, item in enumerate(items_data):
+                qty = safe_decimal(item.get('quantity', 1), Decimal('1'))
+                unit_price = safe_decimal(item.get('unit_price', 0))
+                InvoiceItem.objects.create(
+                    invoice=invoice,
+                    description=item.get('description', '')[:500],
+                    quantity=qty,
+                    unit_price=unit_price,
+                    amount=qty * unit_price,
+                    item_type=item.get('item_type', 'Other'),
+                    order=i,
+                )
+
+            supplier_cache = {s.name: s for s in Supplier.objects.all()}
+            for i, exp in enumerate(expenses_data):
+                sname = exp.get('supplier_name', '')[:200]
+                qty = safe_decimal(exp.get('qty', 1), Decimal('1'))
+                unit_price = safe_decimal(exp.get('unit_price', 0))
+                SupplierExpense.objects.create(
+                    invoice=invoice,
+                    supplier=supplier_cache.get(sname),
+                    supplier_name=sname,
+                    description=exp.get('description', '')[:500],
+                    qty=qty,
+                    unit_price=unit_price,
+                    category=exp.get('category', 'Other'),
+                    amount=safe_decimal(exp.get('amount', 0)),
+                    due_date=exp.get('due_date') or None,
+                    status=exp.get('status', 'Pending'),
+                    reference_number=exp.get('reference_number', '')[:100],
+                    order=i,
+                )
+
+            invoice.recalculate_total()
+
+        messages.success(request, f'Invoice {invoice.invoice_number} updated.')
+        return redirect('invoice_detail', invoice_id=invoice.id)
+
+    existing_items = [
+        {
+            'description': item.description,
+            'quantity': str(item.quantity),
+            'unit_price': str(item.unit_price),
+            'amount': str(item.amount),
+            'item_type': item.item_type,
+            'order': item.order,
+        }
+        for item in invoice.items.all().order_by('order')
+    ]
+    existing_expenses = [
+        {
+            'supplier_name': exp.supplier_name,
+            'supplier_id': exp.supplier_id,
+            'description': exp.description,
+            'qty': str(exp.qty),
+            'unit_price': str(exp.unit_price),
+            'category': exp.category,
+            'amount': str(exp.amount),
+            'due_date': exp.due_date.isoformat() if exp.due_date else '',
+            'status': exp.status,
+            'reference_number': exp.reference_number or '',
+            'order': exp.order,
+        }
+        for exp in invoice.supplier_expenses.all().order_by('order')
+    ]
+
+    context = {
+        'invoice': invoice,
+        'agencies': agencies,
+        'invoice_items': existing_items,
+        'supplier_expenses': existing_expenses,
+        'suppliers_data': _get_suppliers_data(),
+        'invoice_status_choices': Invoice.STATUS_CHOICES,
+        'supplier_expense_categories': SupplierExpense.CATEGORY_CHOICES,
+        'invoice_item_types': InvoiceItem.ITEM_TYPE_CHOICES,
+    }
+    return render(request, 'tour_quote/edit_invoice.html', context)
+
+
+@login_required
+def invoice_detail(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    items = invoice.items.all().order_by('order')
+    expenses = invoice.supplier_expenses.all().order_by('order')
+    total_expenses = sum(e.amount for e in expenses)
+    margin = invoice.total_amount - total_expenses
+
+    context = {
+        'invoice': invoice,
+        'items': items,
+        'expenses': expenses,
+        'total_expenses': total_expenses,
+        'margin': margin,
+    }
+    return render(request, 'tour_quote/invoice_detail.html', context)
+
+
+@login_required
+def invoice_list(request):
+    invoices = (
+        Invoice.objects
+        .select_related('tour_package', 'agency')
+        .annotate(
+            expense_total=Coalesce(Sum('supplier_expenses__amount'), Decimal('0.00')),
+        )
+        .annotate(
+            margin=ExpressionWrapper(
+                F('total_amount') - F('expense_total'),
+                output_field=DecimalField(max_digits=14, decimal_places=2),
+            )
+        )
+        .order_by('-created_at')
+    )
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        invoices = invoices.filter(status=status_filter)
+
+    paginator = Paginator(invoices, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'status_choices': Invoice.STATUS_CHOICES,
+        'current_status': status_filter,
+    }
+    return render(request, 'tour_quote/invoice_list.html', context)
+
+
+@login_required
+def invoice_pdf(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    items = invoice.items.all().order_by('order')
+
+    logo_data_uri = None
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'image', 'rsz_animo1.png')
+    if os.path.exists(logo_path):
+        with open(logo_path, 'rb') as f:
+            logo_data_uri = f'data:image/png;base64,{base64.b64encode(f.read()).decode()}'
+
+    html_string = render_to_string('tour_quote/invoice_pdf.html', {
+        'invoice': invoice,
+        'items': items,
+        'logo_data_uri': logo_data_uri,
+    })
+
+    response = HttpResponse(content_type='application/pdf')
+    safe_num = ''.join(c for c in (invoice.invoice_number or 'invoice') if c.isalnum() or c in '-_')
+    response['Content-Disposition'] = f'inline; filename="Invoice_{safe_num}.pdf"'
+    HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf(
+        response,
+        stylesheets=[CSS(string='@page { size: A4; margin: 2cm; } body { font-family: sans-serif; font-size: 12px; }')]
+    )
+    return response
+
+
+@login_required
+def payment_list_view(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    expenses = list(invoice.supplier_expenses.all().order_by('category', 'order'))
+
+    expenses_by_category = {}
+    for exp in expenses:
+        expenses_by_category.setdefault(exp.category, []).append(exp)
+
+    total_expenses = sum(e.amount for e in expenses)
+
+    if request.GET.get('pdf'):
+        logo_data_uri = None
+        logo_path = os.path.join(settings.BASE_DIR, 'static', 'image', 'rsz_animo1.png')
+        if os.path.exists(logo_path):
+            with open(logo_path, 'rb') as f:
+                logo_data_uri = f'data:image/png;base64,{base64.b64encode(f.read()).decode()}'
+
+        html_string = render_to_string('tour_quote/payment_list_pdf.html', {
+            'invoice': invoice,
+            'expenses_by_category': expenses_by_category,
+            'total_expenses': total_expenses,
+            'logo_data_uri': logo_data_uri,
+        })
+        response = HttpResponse(content_type='application/pdf')
+        safe_num = ''.join(c for c in (invoice.invoice_number or 'invoice') if c.isalnum() or c in '-_')
+        response['Content-Disposition'] = f'inline; filename="PaymentList_{safe_num}.pdf"'
+        HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf(
+            response,
+            stylesheets=[CSS(string='@page { size: A4; margin: 2cm; } body { font-family: sans-serif; font-size: 12px; }')]
+        )
+        return response
+
+    context = {
+        'invoice': invoice,
+        'expenses_by_category': expenses_by_category,
+        'total_expenses': total_expenses,
+    }
+    return render(request, 'tour_quote/payment_list.html', context)
+
+
+@login_required
+def update_supplier_expense_status(request, expense_id):
+    if request.method != 'POST':
+        return redirect('supplier_payment_overview')
+    expense = get_object_or_404(SupplierExpense, id=expense_id)
+    new_status = request.POST.get('status')
+    if new_status in dict(SupplierExpense.STATUS_CHOICES):
+        expense.status = new_status
+        expense.save(update_fields=['status'])
+        expense.invoice.recalculate_total()
+    return redirect(request.POST.get('next', reverse('supplier_payment_detail', args=[expense.supplier_name])))
+
+
+@login_required
+def supplier_list(request):
+    suppliers = Supplier.objects.prefetch_related('supplier_services').all()
+    return render(request, 'tour_quote/supplier_list.html', {'suppliers': suppliers})
+
+
+@login_required
+def supplier_create(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if not name:
+            messages.error(request, 'Supplier name is required.')
+        elif Supplier.objects.filter(name=name).exists():
+            messages.error(request, f'A supplier named "{name}" already exists.')
+        else:
+            supplier = Supplier.objects.create(
+                name=name,
+                contact_person=request.POST.get('contact_person', '').strip() or None,
+                email=request.POST.get('email', '').strip() or None,
+                phone=request.POST.get('phone', '').strip() or None,
+                address=request.POST.get('address', '').strip() or None,
+                notes=request.POST.get('notes', '').strip() or None,
+            )
+            svc_names = request.POST.getlist('service_names')
+            svc_costs = request.POST.getlist('service_costs')
+            for svc_name, svc_cost in zip(svc_names, svc_costs):
+                svc_name = svc_name.strip()
+                if svc_name:
+                    SupplierService.objects.create(
+                        supplier=supplier, name=svc_name,
+                        cost=safe_decimal(svc_cost),
+                    )
+            SupplierExpense.objects.filter(supplier_name=name, supplier__isnull=True).update(supplier=supplier)
+            messages.success(request, f'Supplier "{name}" created.')
+            return redirect('supplier_list')
+    return render(request, 'tour_quote/supplier_form.html', {'action': 'create'})
+
+
+@login_required
+def supplier_edit(request, supplier_id):
+    supplier = get_object_or_404(Supplier, id=supplier_id)
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if not name:
+            messages.error(request, 'Supplier name is required.')
+        elif Supplier.objects.filter(name=name).exclude(pk=supplier_id).exists():
+            messages.error(request, f'A supplier named "{name}" already exists.')
+        else:
+            old_name = supplier.name
+            supplier.name = name
+            supplier.contact_person = request.POST.get('contact_person', '').strip() or None
+            supplier.email = request.POST.get('email', '').strip() or None
+            supplier.phone = request.POST.get('phone', '').strip() or None
+            supplier.address = request.POST.get('address', '').strip() or None
+            supplier.notes = request.POST.get('notes', '').strip() or None
+            supplier.save()
+            # Rebuild services: delete all then recreate from submitted names
+            supplier.supplier_services.all().delete()
+            svc_names = request.POST.getlist('service_names')
+            svc_costs = request.POST.getlist('service_costs')
+            for svc_name, svc_cost in zip(svc_names, svc_costs):
+                svc_name = svc_name.strip()
+                if svc_name:
+                    SupplierService.objects.create(
+                        supplier=supplier, name=svc_name,
+                        cost=safe_decimal(svc_cost),
+                    )
+            if old_name != name:
+                SupplierExpense.objects.filter(supplier=supplier).update(supplier_name=name)
+            messages.success(request, f'Supplier "{name}" updated.')
+            return redirect('supplier_list')
+    existing_services = list(supplier.supplier_services.values('name', 'cost'))
+    return render(request, 'tour_quote/supplier_form.html', {
+        'supplier': supplier,
+        'existing_services': existing_services,
+        'action': 'edit',
+    })
+
+
+@login_required
+def supplier_delete(request, supplier_id):
+    supplier = get_object_or_404(Supplier, id=supplier_id)
+    if request.method == 'POST':
+        name = supplier.name
+        supplier.delete()
+        messages.success(request, f'Supplier "{name}" deleted.')
+        return redirect('supplier_list')
+    return render(request, 'tour_quote/supplier_confirm_delete.html', {'supplier': supplier})
+
+
+@login_required
+def supplier_payment_overview(request):
+    suppliers = (
+        SupplierExpense.objects
+        .values('supplier_name')
+        .annotate(
+            total_amount=Sum('amount'),
+            total_count=Count('id'),
+            pending_amount=Sum('amount', filter=Q(status='Pending')),
+            pending_count=Count('id', filter=Q(status='Pending')),
+            paid_amount=Sum('amount', filter=Q(status='Paid')),
+        )
+        .order_by('supplier_name')
+    )
+    grand_total = sum(s['total_amount'] or 0 for s in suppliers)
+    grand_pending = sum(s['pending_amount'] or 0 for s in suppliers)
+
+    context = {
+        'suppliers': suppliers,
+        'grand_total': grand_total,
+        'grand_pending': grand_pending,
+    }
+    return render(request, 'tour_quote/supplier_payment_overview.html', context)
+
+
+@login_required
+def supplier_payment_detail(request, supplier_name):
+    status_filter = request.GET.get('status', 'Pending')
+    supplier_obj = Supplier.objects.prefetch_related('supplier_services').filter(name=supplier_name).first()
+    expenses_qs = (
+        SupplierExpense.objects
+        .filter(supplier_name=supplier_name)
+        .select_related('invoice', 'invoice__tour_package')
+        .order_by('status', 'due_date')
+    )
+    if status_filter != 'all':
+        expenses_qs = expenses_qs.filter(status=status_filter)
+
+    total = sum(e.amount for e in expenses_qs)
+
+    context = {
+        'supplier_name': supplier_name,
+        'supplier': supplier_obj,
+        'expenses': expenses_qs,
+        'total': total,
+        'status_filter': status_filter,
+        'status_choices': SupplierExpense.STATUS_CHOICES,
+    }
+    return render(request, 'tour_quote/supplier_payment_detail.html', context)

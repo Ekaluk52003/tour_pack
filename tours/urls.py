@@ -29,5 +29,22 @@ urlpatterns = [
     path('tour-package/<int:pk>/export-json/', views.export_tour_package_json, name='export_tour_package_json'),
     path('tour-package/import-json/', views.import_tour_package_json, name='import_tour_package_json'),
     path('tour-package/<int:pk>/export-excel/', views.export_tourday_excel, name='export_tourday_excel'),
+
+    # Invoice URLs
+    path('invoices/', views.invoice_list, name='invoice_list'),
+    path('invoices/<str:package_reference>/create/', views.create_invoice, name='create_invoice'),
+    path('invoices/<int:invoice_id>/', views.invoice_detail, name='invoice_detail'),
+    path('invoices/<int:invoice_id>/edit/', views.edit_invoice, name='edit_invoice'),
+    path('invoices/<int:invoice_id>/pdf/', views.invoice_pdf, name='invoice_pdf'),
+    path('invoices/<int:invoice_id>/payment-list/', views.payment_list_view, name='payment_list_view'),
+    path('supplier-payments/', views.supplier_payment_overview, name='supplier_payment_overview'),
+    path('supplier-payments/<str:supplier_name>/', views.supplier_payment_detail, name='supplier_payment_detail'),
+    path('supplier-expenses/<int:expense_id>/update-status/', views.update_supplier_expense_status, name='update_supplier_expense_status'),
+
+    # Supplier management
+    path('suppliers/', views.supplier_list, name='supplier_list'),
+    path('suppliers/create/', views.supplier_create, name='supplier_create'),
+    path('suppliers/<int:supplier_id>/edit/', views.supplier_edit, name='supplier_edit'),
+    path('suppliers/<int:supplier_id>/delete/', views.supplier_delete, name='supplier_delete'),
 ]
 

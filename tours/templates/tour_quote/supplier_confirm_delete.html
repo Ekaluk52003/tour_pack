@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Supplier{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-10">
+  <div class="bg-white rounded-lg shadow p-6 dark:bg-gray-800">
+    <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-3">Delete Supplier</h1>
+    <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">
+      Are you sure you want to delete <strong>{{ supplier.name }}</strong>?
+      Existing expense records will not be deleted but will lose the supplier link.
+    </p>
+    <div class="flex gap-3">
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit"
+                class="px-5 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
+          Delete
+        </button>
+      </form>
+      <a href="{% url 'supplier_list' %}"
+         class="px-5 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200">
+        Cancel
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

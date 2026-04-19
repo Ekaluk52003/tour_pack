@@ -12,7 +12,8 @@ from .models import (
     City, Hotel, Service, GuideService, ServiceType, TourPackType,
     PredefinedTourQuote, PredefinedTourDay, PredefinedTourDayService,
     PredefinedTourDayGuideService, TourPackageQuote, TourDay,
-    TourDayService, TourDayGuideService, ServicePrice, ReferenceID
+    TourDayService, TourDayGuideService, ServicePrice, ReferenceID,
+    Agency, Invoice, InvoiceItem, SupplierExpense, InvoiceReferenceID, Supplier, SupplierService
 )
 from import_export.formats import base_formats
 from import_export.results import Result, RowResult
@@ -537,9 +538,75 @@ class ReferenceIDAdmin(admin.ModelAdmin):
     formatted_reference.short_description = 'Reference'
 
     def has_add_permission(self, request):
-        # Prevent manual creation of new references
         return False
 
     def has_delete_permission(self, request, obj=None):
-        # Prevent deletion of references
+        return False
+
+
+@admin.register(Agency)
+class AgencyAdmin(admin.ModelAdmin):
+    list_display = ('name', 'contact_person', 'email', 'phone')
+    search_fields = ('name', 'contact_person', 'email')
+
+
+class InvoiceItemInline(admin.TabularInline):
+    model = InvoiceItem
+    extra = 1
+    fields = ('description', 'item_type', 'quantity', 'unit_price', 'amount', 'order')
+    readonly_fields = ('amount',)
+
+
+class SupplierServiceInline(admin.TabularInline):
+    model = SupplierService
+    extra = 1
+    fields = ('name', 'cost', 'description')
+
+
+@admin.register(Supplier)
+class SupplierAdmin(admin.ModelAdmin):
+    list_display = ('name', 'contact_person', 'email', 'phone')
+    search_fields = ('name', 'contact_person')
+    inlines = [SupplierServiceInline]
+
+
+class SupplierExpenseInline(admin.TabularInline):
+    model = SupplierExpense
+    extra = 1
+    fields = ('supplier', 'supplier_name', 'description', 'qty', 'unit_price', 'category', 'amount', 'due_date', 'status', 'reference_number')
+    autocomplete_fields = ('supplier',)
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ('invoice_number', 'tour_package', 'agency', 'issue_date', 'due_date', 'total_amount', 'status')
+    list_filter = ('status', 'issue_date')
+    search_fields = ('invoice_number', 'tour_package__customer_name', 'agency__name')
+    readonly_fields = ('invoice_number', 'created_at', 'created_by', 'total_amount')
+    inlines = [InvoiceItemInline, SupplierExpenseInline]
+    fieldsets = (
+        (None, {
+            'fields': ('invoice_number', 'tour_package', 'agency', 'status', 'notes')
+        }),
+        ('Dates', {
+            'fields': ('issue_date', 'due_date')
+        }),
+        ('Financials', {
+            'fields': ('total_amount',)
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'created_by'),
+            'classes': ('collapse',),
+        }),
+    )
+
+
+@admin.register(InvoiceReferenceID)
+class InvoiceReferenceIDAdmin(admin.ModelAdmin):
+    list_display = ('year', 'last_number')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False

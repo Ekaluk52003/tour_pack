@@ -263,6 +263,9 @@
             Duplicate Package
         </a>
         {% endif %}
+        <a href="{% url 'create_invoice' package.package_reference %}" class="px-6 py-3 font-semibold text-center text-white bg-indigo-500 rounded-lg transition duration-300 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700">
+            Generate Invoice
+        </a>
         <form
           id="email-form"
           action="{% url 'send_tour_package_email' package.id %}"

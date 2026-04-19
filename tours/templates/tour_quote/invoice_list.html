@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Invoices{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-4 items-start justify-between mb-6 md:flex-row md:items-center">
+  <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Invoices</h1>
+  <div class="flex items-center gap-2">
+    <form method="get" class="flex items-center gap-2">
+      <select name="status" onchange="this.form.submit()"
+              class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+        <option value="">All Statuses</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+<div class="overflow-x-auto bg-white rounded-lg shadow dark:bg-gray-800">
+  <table class="w-full text-sm text-left">
+    <thead class="bg-gray-50 dark:bg-gray-700">
+      <tr>
+        <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Invoice No</th>
+        <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Package</th>
+        <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Customer</th>
+        <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Connection Ref</th>
+        <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Agency</th>
+        <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Issue Date</th>
+        <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Due Date</th>
+        <th class="px-4 py-3 font-medium text-right text-gray-600 dark:text-gray-300">Total</th>
+        <th class="px-4 py-3 font-medium text-right text-gray-600 dark:text-gray-300">Expenses</th>
+        <th class="px-4 py-3 font-medium text-right text-gray-600 dark:text-gray-300">Margin</th>
+        <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Status</th>
+        <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for invoice in page_obj %}
+      <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750">
+        <td class="px-4 py-3 font-medium text-indigo-600 dark:text-indigo-400">
+          <a href="{% url 'invoice_detail' invoice.id %}" class="hover:underline">{{ invoice.invoice_number }}</a>
+        </td>
+        <td class="px-4 py-3">
+          <a href="{% url 'tour_package_detail' invoice.tour_package.package_reference %}" class="text-blue-600 hover:underline dark:text-blue-400">
+            {{ invoice.tour_package.package_reference }}
+          </a>
+        </td>
+        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ invoice.tour_package.customer_name }}</td>
+        <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ invoice.tour_package.connection_ref|default:"—" }}</td>
+        <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ invoice.agency.name|default:"—" }}</td>
+        <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ invoice.issue_date|date:"d M Y" }}</td>
+        <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ invoice.due_date|date:"d M Y"|default:"—" }}</td>
+        <td class="px-4 py-3 font-semibold text-right text-gray-800 dark:text-gray-200">฿{{ invoice.total_amount|intcomma }}</td>
+        <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400">฿{{ invoice.expense_total|floatformat:0|intcomma }}</td>
+        <td class="px-4 py-3 font-semibold text-right
+          {% if invoice.margin > 0 %}text-green-600 dark:text-green-400
+          {% elif invoice.margin < 0 %}text-red-600 dark:text-red-400
+          {% else %}text-gray-400 dark:text-gray-500{% endif %}">
+          ฿{{ invoice.margin|floatformat:0|intcomma }}
+        </td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-0.5 text-xs font-semibold rounded-full
+            {% if invoice.status == 'Paid' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+            {% elif invoice.status == 'Overdue' %}bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300
+            {% elif invoice.status == 'Sent' %}bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300
+            {% elif invoice.status == 'Cancelled' %}bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400
+            {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300{% endif %}">
+            {{ invoice.status }}
+          </span>
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex gap-2">
+            <a href="{% url 'invoice_detail' invoice.id %}" class="text-xs text-indigo-600 hover:underline dark:text-indigo-400">View</a>
+            <a href="{% url 'invoice_pdf' invoice.id %}" target="_blank" class="text-xs text-green-600 hover:underline dark:text-green-400">PDF</a>
+            <a href="{% url 'payment_list_view' invoice.id %}" class="text-xs text-orange-600 hover:underline dark:text-orange-400">Pay List</a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="12" class="px-4 py-8 text-center text-gray-400">No invoices found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="flex justify-center gap-2 mt-4">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}"
+       class="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700">Previous</a>
+  {% endif %}
+  <span class="px-3 py-1 text-sm text-gray-600 dark:text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}"
+       class="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700">Next</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

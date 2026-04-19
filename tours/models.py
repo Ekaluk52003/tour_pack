@@ -8,6 +8,9 @@ from django.db.models.signals import post_save
 from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
+from django.db.models import Sum
+from decimal import Decimal
+from datetime import datetime
 
 class City(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -229,3 +232,188 @@ class PredefinedTourDayGuideService(models.Model):
 
     def __str__(self):
         return f"{self.tour_day} - {self.guide_service}"
+
+
+class Agency(models.Model):
+    name = models.CharField(max_length=200)
+    contact_person = models.CharField(max_length=100, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name_plural = 'agencies'
+
+    def __str__(self):
+        return self.name
+
+
+class InvoiceReferenceID(models.Model):
+    year = models.IntegerField()
+    last_number = models.IntegerField(default=0)
+
+    @classmethod
+    def get_next_reference(cls):
+        current_year = datetime.now().year
+        with transaction.atomic():
+            ref, _ = cls.objects.select_for_update().get_or_create(year=current_year)
+            ref.last_number += 1
+            ref.save()
+        return f"INV-{current_year}-{str(ref.last_number).zfill(3)}"
+
+    def __str__(self):
+        return f"INV-{self.year}-{str(self.last_number).zfill(3)}"
+
+
+class Invoice(models.Model):
+    STATUS_DRAFT = 'Draft'
+    STATUS_SENT = 'Sent'
+    STATUS_PAID = 'Paid'
+    STATUS_OVERDUE = 'Overdue'
+    STATUS_CANCELLED = 'Cancelled'
+
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, 'Draft'),
+        (STATUS_SENT, 'Sent'),
+        (STATUS_PAID, 'Paid'),
+        (STATUS_OVERDUE, 'Overdue'),
+        (STATUS_CANCELLED, 'Cancelled'),
+    ]
+
+    invoice_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    tour_package = models.ForeignKey(TourPackageQuote, on_delete=models.PROTECT, related_name='invoices')
+    agency = models.ForeignKey(Agency, on_delete=models.PROTECT, related_name='invoices', null=True, blank=True)
+    issue_date = models.DateField(default=timezone.now)
+    due_date = models.DateField(null=True, blank=True)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_invoices')
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.invoice_number} - {self.tour_package.customer_name}"
+
+    def save(self, *args, **kwargs):
+        if not self.invoice_number:
+            self.invoice_number = InvoiceReferenceID.get_next_reference()
+        super().save(*args, **kwargs)
+
+    def recalculate_total(self):
+        result = self.items.aggregate(total=Sum('amount'))
+        self.total_amount = result['total'] or Decimal('0.00')
+        self.save(update_fields=['total_amount'])
+
+
+class InvoiceItem(models.Model):
+    ITEM_TYPE_HOTEL = 'Hotel'
+    ITEM_TYPE_SERVICE = 'Service'
+    ITEM_TYPE_GUIDE = 'Guide'
+    ITEM_TYPE_EXTRA = 'Extra'
+    ITEM_TYPE_DISCOUNT = 'Discount'
+    ITEM_TYPE_OTHER = 'Other'
+
+    ITEM_TYPE_CHOICES = [
+        (ITEM_TYPE_HOTEL, 'Hotel'),
+        (ITEM_TYPE_SERVICE, 'Service'),
+        (ITEM_TYPE_GUIDE, 'Guide Service'),
+        (ITEM_TYPE_EXTRA, 'Extra Cost'),
+        (ITEM_TYPE_DISCOUNT, 'Discount'),
+        (ITEM_TYPE_OTHER, 'Other'),
+    ]
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
+    description = models.CharField(max_length=500)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    item_type = models.CharField(max_length=20, choices=ITEM_TYPE_CHOICES, default=ITEM_TYPE_OTHER)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f"{self.invoice.invoice_number} - {self.description}"
+
+    def save(self, *args, **kwargs):
+        self.amount = self.quantity * self.unit_price
+        super().save(*args, **kwargs)
+
+
+class Supplier(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+    contact_person = models.CharField(max_length=100, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class SupplierService(models.Model):
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='supplier_services')
+    name = models.CharField(max_length=200)
+    cost = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['name']
+        unique_together = ['supplier', 'name']
+
+    def __str__(self):
+        return f"{self.supplier.name} — {self.name}"
+
+
+class SupplierExpense(models.Model):
+    STATUS_PENDING = 'Pending'
+    STATUS_PAID = 'Paid'
+    STATUS_CANCELLED = 'Cancelled'
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_PAID, 'Paid'),
+        (STATUS_CANCELLED, 'Cancelled'),
+    ]
+
+    CATEGORY_HOTEL = 'Hotel'
+    CATEGORY_TRANSPORT = 'Transport'
+    CATEGORY_GUIDE = 'Guide'
+    CATEGORY_OTHER = 'Other'
+
+    CATEGORY_CHOICES = [
+        (CATEGORY_HOTEL, 'Hotel'),
+        (CATEGORY_TRANSPORT, 'Transport'),
+        (CATEGORY_GUIDE, 'Guide'),
+        (CATEGORY_OTHER, 'Other'),
+    ]
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='supplier_expenses')
+    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True, related_name='expenses')
+    supplier_name = models.CharField(max_length=200)
+    description = models.CharField(max_length=500)
+    qty = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default=CATEGORY_OTHER)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    due_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    reference_number = models.CharField(max_length=100, blank=True, null=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'category', 'id']
+
+    def __str__(self):
+        return f"{self.supplier_name} - {self.description} ({self.amount})"

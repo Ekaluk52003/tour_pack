@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex flex-col items-start justify-between gap-4 mb-6 md:flex-row md:items-center">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ invoice.invoice_number }}</h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        Package: <a href="{% url 'tour_package_detail' invoice.tour_package.package_reference %}" class="text-blue-600 hover:underline dark:text-blue-400">{{ invoice.tour_package.package_reference }}</a>
+        — {{ invoice.tour_package.name }} — {{ invoice.tour_package.customer_name }}
+      </p>
+    </div>
+    <span class="px-3 py-1 text-sm font-semibold rounded-full
+      {% if invoice.status == 'Paid' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+      {% elif invoice.status == 'Overdue' %}bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300
+      {% elif invoice.status == 'Sent' %}bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300
+      {% elif invoice.status == 'Cancelled' %}bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400
+      {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300{% endif %}">
+      {{ invoice.status }}
+    </span>
+  </div>
+
+  <!-- Info cards -->
+  <div class="grid grid-cols-2 gap-4 mb-6 md:grid-cols-4">
+    <div class="p-3 bg-white rounded-lg shadow dark:bg-gray-800">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Agency</p>
+      <p class="font-semibold text-gray-800 dark:text-gray-100">{{ invoice.agency.name|default:"—" }}</p>
+    </div>
+    <div class="p-3 bg-white rounded-lg shadow dark:bg-gray-800">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Issue Date</p>
+      <p class="font-semibold text-gray-800 dark:text-gray-100">{{ invoice.issue_date|date:"d M Y" }}</p>
+    </div>
+    <div class="p-3 bg-white rounded-lg shadow dark:bg-gray-800">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Due Date</p>
+      <p class="font-semibold text-gray-800 dark:text-gray-100">{{ invoice.due_date|date:"d M Y"|default:"—" }}</p>
+    </div>
+    <div class="p-3 bg-white rounded-lg shadow dark:bg-gray-800">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Invoice Total</p>
+      <p class="text-lg font-bold text-blue-700 dark:text-blue-400">฿{{ invoice.total_amount|intcomma }}</p>
+    </div>
+  </div>
+
+  {% if invoice.notes %}
+  <div class="p-3 mb-4 text-sm text-gray-700 rounded-lg bg-yellow-50 dark:bg-gray-700 dark:text-gray-300">
+    <span class="font-medium">Notes:</span> {{ invoice.notes }}
+  </div>
+  {% endif %}
+
+  <!-- Invoice Items -->
+  <div class="p-4 mb-6 bg-white rounded-lg shadow dark:bg-gray-800">
+    <h2 class="mb-3 text-lg font-semibold text-blue-700 dark:text-blue-400">Invoice Items (Client)</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-blue-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Description</th>
+            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Type</th>
+            <th class="px-3 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Qty</th>
+            <th class="px-3 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Unit Price</th>
+            <th class="px-3 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr class="border-b border-gray-100 dark:border-gray-700 {% if item.item_type == 'Discount' %}text-red-600 dark:text-red-400{% endif %}">
+            <td class="px-3 py-2">{{ item.description }}</td>
+            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">{{ item.get_item_type_display }}</td>
+            <td class="px-3 py-2 text-right">{{ item.quantity }}</td>
+            <td class="px-3 py-2 text-right">{{ item.unit_price|intcomma }}</td>
+            <td class="px-3 py-2 font-medium text-right">{{ item.amount|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-3 py-4 text-center text-gray-400">No items</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="bg-blue-50 dark:bg-gray-700">
+            <td colspan="4" class="px-3 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Invoice Total</td>
+            <td class="px-3 py-2 font-bold text-right text-blue-700 dark:text-blue-400">฿{{ invoice.total_amount|intcomma }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Supplier Expenses -->
+  <div class="p-4 mb-6 bg-white rounded-lg shadow dark:bg-gray-800">
+    <h2 class="mb-3 text-lg font-semibold text-orange-600 dark:text-orange-400">Supplier Expenses</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-orange-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Supplier</th>
+            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Description</th>
+            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Category</th>
+            <th class="px-3 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
+            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Due Date</th>
+            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for exp in expenses %}
+          <tr class="border-b border-gray-100 dark:border-gray-700">
+            <td class="px-3 py-2 font-medium">{{ exp.supplier_name }}</td>
+            <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ exp.description }}</td>
+            <td class="px-3 py-2">{{ exp.category }}</td>
+            <td class="px-3 py-2 text-right">{{ exp.amount|intcomma }}</td>
+            <td class="px-3 py-2">{{ exp.due_date|date:"d M Y"|default:"—" }}</td>
+            <td class="px-3 py-2">
+              <span class="px-2 py-0.5 text-xs rounded-full
+                {% if exp.status == 'Paid' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                {% elif exp.status == 'Cancelled' %}bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400
+                {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300{% endif %}">
+                {{ exp.status }}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="px-3 py-4 text-center text-gray-400">No expenses</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="bg-orange-50 dark:bg-gray-700">
+            <td colspan="3" class="px-3 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Total Expenses</td>
+            <td class="px-3 py-2 font-bold text-right text-orange-600 dark:text-orange-400">฿{{ total_expenses|intcomma }}</td>
+            <td colspan="2"></td>
+          </tr>
+          <tr>
+            <td colspan="3" class="px-3 py-2 text-right text-gray-600 dark:text-gray-300">Margin</td>
+            <td class="px-3 py-2 font-bold text-right {% if margin >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+              ฿{{ margin|intcomma }}
+            </td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="flex flex-col gap-3 md:flex-row">
+    <a href="{% url 'edit_invoice' invoice.id %}"
+       class="px-6 py-3 font-semibold text-center text-white transition bg-blue-500 rounded-lg hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
+      Edit Invoice
+    </a>
+    <a href="{% url 'invoice_pdf' invoice.id %}" target="_blank"
+       class="px-6 py-3 font-semibold text-center text-white transition bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800">
+      Generate PDF Invoice
+    </a>
+    <a href="{% url 'payment_list_view' invoice.id %}"
+       class="px-6 py-3 font-semibold text-center text-white transition bg-yellow-300 rounded-lg hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700">
+      View Payment List
+    </a>
+    <a href="{% url 'invoice_list' %}"
+       class="px-6 py-3 font-semibold text-center text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+      All Invoices
+    </a>
+    <a href="{% url 'tour_package_detail' invoice.tour_package.package_reference %}"
+       class="px-6 py-3 font-semibold text-center text-white transition bg-blue-500 rounded-lg hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
+      Back to Package
+    </a>
+  </div>
+
+</div>
+{% endblock %}

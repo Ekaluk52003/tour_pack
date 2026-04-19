@@ -4,10 +4,12 @@ import ajax from "@imacrayon/alpine-ajax";
 import persist from '@alpinejs/persist'
 import "../tour_quote/js/tour_package.js";
 import datePicker from "./datePicker.js";
+import invoiceForm from "../tour_quote/js/invoice_form.js";
 
 // Initialize Alpine and plugins
 // Register datePicker component
 Alpine.data('datePicker', datePicker);
+Alpine.data('invoiceForm', invoiceForm);
 
 
 window.Alpine = Alpine;

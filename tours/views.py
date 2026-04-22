@@ -3310,45 +3310,35 @@ def supplier_delete(request, supplier_id):
 
 @login_required
 def supplier_payment_overview(request):
-    try:
-        suppliers = (
-            SupplierExpense.objects
-            .values('supplier_name')
-            .annotate(
-                total_amount=Coalesce(Sum('amount'), Decimal('0')),
-                total_count=Count('id'),
-                pending_amount=Coalesce(Sum(
-                    Case(When(status='Pending', then=F('amount')), default=Decimal('0'), output_field=DecimalField())
-                ), Decimal('0')),
-                pending_count=Coalesce(Sum(
-                    Case(When(status='Pending', then=1), default=0, output_field=IntegerField())
-                ), 0),
-                paid_amount=Coalesce(Sum(
-                    Case(When(status='Paid', then=F('amount')), default=Decimal('0'), output_field=DecimalField())
-                ), Decimal('0')),
-            )
-            .order_by('supplier_name')
+    suppliers = (
+        SupplierExpense.objects
+        .exclude(supplier_name__isnull=True)
+        .exclude(supplier_name='')
+        .values('supplier_name')
+        .annotate(
+            total_amount=Coalesce(Sum('amount'), Decimal('0')),
+            total_count=Count('id'),
+            pending_amount=Coalesce(Sum(
+                Case(When(status='Pending', then=F('amount')), default=Decimal('0'), output_field=DecimalField())
+            ), Decimal('0')),
+            pending_count=Coalesce(Sum(
+                Case(When(status='Pending', then=1), default=0, output_field=IntegerField())
+            ), 0),
+            paid_amount=Coalesce(Sum(
+                Case(When(status='Paid', then=F('amount')), default=Decimal('0'), output_field=DecimalField())
+            ), Decimal('0')),
         )
-        grand_total = sum(s['total_amount'] for s in suppliers)
-        grand_pending = sum(s['pending_amount'] for s in suppliers)
+        .order_by('supplier_name')
+    )
+    grand_total = sum(s['total_amount'] for s in suppliers)
+    grand_pending = sum(s['pending_amount'] for s in suppliers)
 
-        context = {
-            'suppliers': suppliers,
-            'grand_total': grand_total,
-            'grand_pending': grand_pending,
-        }
-        return render(request, 'tour_quote/supplier_payment_overview.html', context)
-    except Exception as e:
-        import sys
-        print("=" * 80, file=sys.stderr)
-        print("ERROR in supplier_payment_overview:", file=sys.stderr)
-        print(f"Exception type: {type(e).__name__}", file=sys.stderr)
-        print(f"Exception message: {e}", file=sys.stderr)
-        print("-" * 80, file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
-        print("=" * 80, file=sys.stderr)
-        raise
+    context = {
+        'suppliers': suppliers,
+        'grand_total': grand_total,
+        'grand_pending': grand_pending,
+    }
+    return render(request, 'tour_quote/supplier_payment_overview.html', context)
 
 
 @login_required

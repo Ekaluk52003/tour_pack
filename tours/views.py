@@ -3,7 +3,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
 from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedTourQuote, ReferenceID, ServicePrice, TourPackType, Agency, Invoice, InvoiceItem, SupplierExpense, InvoiceReferenceID, Supplier, SupplierService
-from django.db.models import Sum, Count, F, ExpressionWrapper, DecimalField
+from django.db.models import Sum, Count, F, ExpressionWrapper, DecimalField, Case, When, IntegerField
 from django.db.models.functions import Coalesce
 import json
 from django.views.decorators.http import require_http_methods
@@ -3314,16 +3314,22 @@ def supplier_payment_overview(request):
         SupplierExpense.objects
         .values('supplier_name')
         .annotate(
-            total_amount=Sum('amount'),
+            total_amount=Coalesce(Sum('amount'), Decimal('0')),
             total_count=Count('id'),
-            pending_amount=Sum('amount', filter=Q(status='Pending')),
-            pending_count=Count('id', filter=Q(status='Pending')),
-            paid_amount=Sum('amount', filter=Q(status='Paid')),
+            pending_amount=Coalesce(Sum(
+                Case(When(status='Pending', then=F('amount')), default=Decimal('0'), output_field=DecimalField())
+            ), Decimal('0')),
+            pending_count=Coalesce(Sum(
+                Case(When(status='Pending', then=1), default=0, output_field=IntegerField())
+            ), 0),
+            paid_amount=Coalesce(Sum(
+                Case(When(status='Paid', then=F('amount')), default=Decimal('0'), output_field=DecimalField())
+            ), Decimal('0')),
         )
         .order_by('supplier_name')
     )
-    grand_total = sum(s['total_amount'] or 0 for s in suppliers)
-    grand_pending = sum(s['pending_amount'] or 0 for s in suppliers)
+    grand_total = sum(s['total_amount'] for s in suppliers)
+    grand_pending = sum(s['pending_amount'] for s in suppliers)
 
     context = {
         'suppliers': suppliers,

@@ -2777,6 +2777,18 @@ def export_tourday_excel(request, pk):
 # Invoice & Supplier Expense views
 # ──────────────────────────────────────────────────────────────
 
+from functools import wraps
+from django.core.exceptions import PermissionDenied
+
+
+def superuser_or_owner_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if request.user.is_superuser or request.user.groups.filter(name='owner').exists():
+            return view_func(request, *args, **kwargs)
+        raise PermissionDenied
+    return _wrapped
+
 def build_prepopulated_invoice_data(package):
     """
     Returns (invoice_items, supplier_expenses) as lists of dicts
@@ -2892,6 +2904,7 @@ def _get_suppliers_data():
 
 
 @login_required
+@superuser_or_owner_required
 def create_invoice(request, package_reference):
     package = get_object_or_404(TourPackageQuote, package_reference=package_reference)
     agencies = Agency.objects.all()
@@ -2978,6 +2991,7 @@ def create_invoice(request, package_reference):
 
 
 @login_required
+@superuser_or_owner_required
 def edit_invoice(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
     agencies = Agency.objects.all()
@@ -3088,6 +3102,7 @@ def edit_invoice(request, invoice_id):
 
 
 @login_required
+@superuser_or_owner_required
 def invoice_detail(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
     items = invoice.items.all().order_by('order')
@@ -3106,6 +3121,7 @@ def invoice_detail(request, invoice_id):
 
 
 @login_required
+@superuser_or_owner_required
 def invoice_list(request):
     invoices = (
         Invoice.objects
@@ -3138,6 +3154,7 @@ def invoice_list(request):
 
 
 @login_required
+@superuser_or_owner_required
 def invoice_pdf(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
     items = invoice.items.all().order_by('order')
@@ -3165,6 +3182,7 @@ def invoice_pdf(request, invoice_id):
 
 
 @login_required
+@superuser_or_owner_required
 def payment_list_view(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
     expenses = list(invoice.supplier_expenses.all().order_by('category', 'order'))
@@ -3206,6 +3224,7 @@ def payment_list_view(request, invoice_id):
 
 
 @login_required
+@superuser_or_owner_required
 def update_supplier_expense_status(request, expense_id):
     if request.method != 'POST':
         return redirect('supplier_payment_overview')
@@ -3219,12 +3238,14 @@ def update_supplier_expense_status(request, expense_id):
 
 
 @login_required
+@superuser_or_owner_required
 def supplier_list(request):
     suppliers = Supplier.objects.prefetch_related('supplier_services').all()
     return render(request, 'tour_quote/supplier_list.html', {'suppliers': suppliers})
 
 
 @login_required
+@superuser_or_owner_required
 def supplier_create(request):
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
@@ -3257,6 +3278,7 @@ def supplier_create(request):
 
 
 @login_required
+@superuser_or_owner_required
 def supplier_edit(request, supplier_id):
     supplier = get_object_or_404(Supplier, id=supplier_id)
     if request.method == 'POST':
@@ -3298,6 +3320,7 @@ def supplier_edit(request, supplier_id):
 
 
 @login_required
+@superuser_or_owner_required
 def supplier_delete(request, supplier_id):
     supplier = get_object_or_404(Supplier, id=supplier_id)
     if request.method == 'POST':
@@ -3309,6 +3332,7 @@ def supplier_delete(request, supplier_id):
 
 
 @login_required
+@superuser_or_owner_required
 def supplier_payment_overview(request):
     suppliers = (
         SupplierExpense.objects
@@ -3342,6 +3366,7 @@ def supplier_payment_overview(request):
 
 
 @login_required
+@superuser_or_owner_required
 def supplier_payment_detail(request, supplier_name):
     status_filter = request.GET.get('status', 'Pending')
     supplier_obj = Supplier.objects.prefetch_related('supplier_services').filter(name=supplier_name).first()

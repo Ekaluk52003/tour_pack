@@ -59,7 +59,9 @@
                 class="px-3 py-2 text-sm font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'service_price_edit' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %}"
                 >Service Price</a
               >
+              {% endif %}
               <!-- Invoice & Payment dropdown -->
+              {% if user.is_superuser or is_owner %}
               <div class="relative" x-data="{ invoiceOpen: false }">
                 <button
                   @click="invoiceOpen = !invoiceOpen"
@@ -83,7 +85,7 @@
                   x-transition:leave="transition ease-in duration-100"
                   x-transition:leave-start="opacity-100 scale-100"
                   x-transition:leave-end="opacity-0 scale-95"
-                  class="absolute right-0 z-10 mt-1 w-48 bg-blue-900 dark:bg-gray-800 shadow-lg shadow-black/40"
+                  class="absolute right-0 z-10 mt-1 w-48 bg-blue-900 shadow-lg dark:bg-gray-800 shadow-black/40"
                   style="display:none"
                 >
                   <a
@@ -98,6 +100,8 @@
                   >
                 </div>
               </div>
+              {% endif %}
+              {% if user.is_superuser %}
               <a
                 href="{% url 'admin:index' %}"
                 class="px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
@@ -213,7 +217,8 @@
           class="block px-3 py-2 text-base font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'service_price_edit' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %} hover:bg-blue-800 dark:hover:bg-gray-700"
           >Service Price</a
         >
-          <!-- Invoice & Payment section (mobile) -->
+          {% endif %}
+          {% if user.is_superuser or is_owner %}
           <div x-data="{ invoiceMobileOpen: false }">
             <button
               @click="invoiceMobileOpen = !invoiceMobileOpen"
@@ -243,12 +248,13 @@
               >
             </div>
           </div>
+          {% endif %}
+          {% if user.is_superuser %}
           <a
             href="{% url 'admin:index' %}"
             class="block px-3 py-2 text-base font-medium transition-colors duration-200 hover:bg-blue-800 dark:hover:bg-gray-700"
             >Admin</a
           >
-
 
           {% endif %} {% if user.is_authenticated %}
           <span class="block px-3 py-2 text-base font-medium"

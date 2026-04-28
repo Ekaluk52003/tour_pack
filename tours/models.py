@@ -125,6 +125,7 @@ class ReferenceID(models.Model):
 class TourPackageQuote(models.Model):
     name = models.CharField(max_length=200)
     customer_name = models.CharField(max_length=100)
+    billing_name = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     hotel_costs = models.JSONField(default=list)
     discounts = models.JSONField(default=list)

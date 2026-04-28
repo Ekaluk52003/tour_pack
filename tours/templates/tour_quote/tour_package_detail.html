@@ -30,6 +30,7 @@
                 <p><strong>Created:</strong> {{ package.created_at|date:"Y-m-d H:i" }}</p>
                 <p><strong>Prepared by:</strong> {% if package.prepare_by_user %}{{ package.prepare_by_user.username }}{% else %}N/A{% endif %}</p>
             </div>
+       
         </div>
 
         <!-- Itinerary Section -->
@@ -219,7 +220,18 @@
             <div class="p-4 mt-6 bg-blue-100 rounded-lg dark:bg-blue-900">
                 <h3 class="text-2xl font-bold text-blue-800 dark:text-blue-200">Grand Total Cost: {{ package.grand_total_cost|intcomma }} THB</h3>
             </div>
+
+
+           {% if billing_name %}
+            <div class="mt-4">
+                <p class="dark:text-gray-200"><strong>Billing Name:</strong></p>
+                <div style="white-space: pre-wrap;" class="dark:text-gray-300">{{ billing_name|safe }}</div>
+            </div>
+            {% endif %}
+            
         </div>
+
+        
 
         <!-- Commission Section - Hidden from assistance group -->
         {% if show_commission %}

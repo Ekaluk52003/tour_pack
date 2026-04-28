@@ -108,6 +108,7 @@ def save_tour_package(request, package_reference=None):
                 # Users with edit permissions can edit basic fields
                 package.name = data['name']
                 package.customer_name = data['customer_name']
+                package.billing_name = data.get('billing_name', '')
                 package.remark = data.get('remark', '')
                 package.connection_ref = data.get('connectionRef', '')
                 package.remark2 = data.get('remark2', '')
@@ -132,6 +133,7 @@ def save_tour_package(request, package_reference=None):
             package.hotel_costs = data['hotelCosts']
             package.remark_of_hotels = data.get('remark_of_hotels', '')
             package.special_note = data.get('special_note', '')
+            package.billing_name = data.get('billing_name', '')
             package.connection_ref = data.get('connectionRef', '')
             package.discounts = data.get('discounts', [])
             package.extra_costs = data.get('extraCosts', [])
@@ -600,6 +602,9 @@ def tour_package_detail(request, package_reference):
     remark2 = package.remark2.replace(
         '\n', '<br>') if package.remark2 is not None else ''
     # remark2 = package.remark2.replace('\n', '<br>')
+    
+    billing_name = package.billing_name.replace(
+        '\n', '<br>') if package.billing_name is not None else ''
 
     comission_total = package.commission_amount_hotel + package.commission_amount_services
     # Check if user should see commission info (not in assistance group)
@@ -615,6 +620,7 @@ def tour_package_detail(request, package_reference):
         'extra_costs': extra_costs,
         'total_extra_cost': total_extra_cost,
         'remark2': remark2,
+        'billing_name': billing_name,
         'comission_total': comission_total,
         'ordered_tour_days': ordered_tour_days,
         'show_commission': show_commission,
@@ -639,6 +645,7 @@ def tour_package_edit(request, package_reference):
         'package_reference': package.package_reference,
         'name': package.name,
         'customer_name': package.customer_name,
+        'billing_name': package.billing_name,
         'remark': package.remark,
         'connectionRef': package.connection_ref,
         'remark2': package.remark2,
@@ -3428,14 +3435,18 @@ def invoice_detail(request, invoice_id):
     items_with_meta = []
     for i, item in enumerate(items):
         meta = None
-        if item.item_type == 'Hotel' and i < len(grouped_items):
+        if i < len(grouped_items):
             gi = grouped_items[i]
+            meta = {
+                'arrival_date': gi.get('arrival_date'),
+                'departure_date': gi.get('departure_date'),
+            }
             if gi.get('is_hotel') and gi.get('room_price'):
-                meta = {
+                meta.update({
                     'room_price': gi.get('room_price', 0),
                     'room_count': gi.get('room_count', 1),
                     'nights': gi.get('nights', 1),
-                }
+                })
         items_with_meta.append({'item': item, 'meta': meta})
 
     context = {
@@ -3485,7 +3496,26 @@ def invoice_list(request):
 @superuser_or_owner_required
 def invoice_pdf(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
-    items = invoice.items.all().order_by('order')
+    items = list(invoice.items.all().order_by('order'))
+
+    # Build items_with_meta with arrival/departure dates and hotel pricing
+    grouped_items, _ = get_grouped_tour_data(invoice.tour_package)
+    items_with_meta = []
+    for i, item in enumerate(items):
+        meta = None
+        if i < len(grouped_items):
+            gi = grouped_items[i]
+            meta = {
+                'arrival_date': gi.get('arrival_date'),
+                'departure_date': gi.get('departure_date'),
+            }
+            if gi.get('is_hotel') and gi.get('room_price'):
+                meta.update({
+                    'room_price': gi.get('room_price', 0),
+                    'room_count': gi.get('room_count', 1),
+                    'nights': gi.get('nights', 1),
+                })
+        items_with_meta.append({'item': item, 'meta': meta})
 
     logo_data_uri = None
     logo_path = os.path.join(settings.BASE_DIR, 'static', 'image', 'rsz_animo1.png')
@@ -3496,6 +3526,7 @@ def invoice_pdf(request, invoice_id):
     html_string = render_to_string('tour_quote/invoice_pdf.html', {
         'invoice': invoice,
         'items': items,
+        'items_with_meta': items_with_meta,
         'logo_data_uri': logo_data_uri,
     })
 
@@ -3504,7 +3535,7 @@ def invoice_pdf(request, invoice_id):
     response['Content-Disposition'] = f'inline; filename="Invoice_{safe_num}.pdf"'
     HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf(
         response,
-        stylesheets=[CSS(string='@page { size: A4; margin: 2cm; } body { font-family: sans-serif; font-size: 12px; }')]
+        stylesheets=[CSS(string='body { font-family: sans-serif; font-size: 12px; }')]
     )
     return response
 

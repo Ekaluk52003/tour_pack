@@ -912,6 +912,11 @@
 
 </div>
 
+<div class="mb-4">
+    <label for="billing-name" class="block mb-2 text-gray-900 dark:text-white">Billing Name</label>
+    <textarea id="billing-name" x-model="billingName" rows="3" :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white" placeholder="Enter billing name (supports multiple lines)"></textarea>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Press Enter for new lines</p>
+  </div>
 
 <!-- Add this inside your form, where appropriate -->
 <div class="p-4 mt-8 bg-gray-100 rounded-lg dark:bg-gray-700" x-show="showCommission">

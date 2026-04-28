@@ -58,6 +58,8 @@
       <table class="w-full text-xs text-left table-fixed">
         <thead class="bg-blue-50 dark:bg-gray-700">
           <tr>
+            <th class="px-2 py-2 w-20 font-medium text-gray-600 dark:text-gray-300">Arr.</th>
+            <th class="px-2 py-2 w-20 font-medium text-gray-600 dark:text-gray-300">Dep.</th>
             <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Detail</th>
             <th class="px-2 py-2 w-28 font-medium text-gray-600 dark:text-gray-300">Price</th>
           </tr>
@@ -66,9 +68,19 @@
           {% for item_with_meta in items_with_meta %}
           {% with item=item_with_meta.item %}
           <tr class="border-b border-gray-100 dark:border-gray-700 {% if item.item_type == 'Hotel' %}bg-blue-50 dark:bg-gray-700 {% elif item.item_type == 'Discount' %}bg-red-50 dark:bg-red-900/20{% endif %}">
+            <td class="px-2 py-1 w-20 text-gray-700 dark:text-gray-300">
+              {% if item_with_meta.meta and item_with_meta.meta.arrival_date %}
+                {{ item_with_meta.meta.arrival_date|date:"d M" }}
+              {% endif %}
+            </td>
+            <td class="px-2 py-1 w-20 text-gray-700 dark:text-gray-300">
+              {% if item_with_meta.meta and item_with_meta.meta.departure_date %}
+                {{ item_with_meta.meta.departure_date|date:"d M" }}
+              {% endif %}
+            </td>
             <td class="px-2 py-1 text-gray-800 dark:text-gray-200 {% if item.item_type == 'Discount' %}text-red-600 dark:text-red-400{% endif %}">
               {{ item.description }}
-              {% if item_with_meta.meta %}
+              {% if item_with_meta.meta and item_with_meta.meta.room_price %}
                 <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {{ item_with_meta.meta.room_price|floatformat:0|intcomma }} THB/night{% if item_with_meta.meta.room_count > 1 %} x {{ item_with_meta.meta.room_count }} rooms{% endif %}
                 </div>
@@ -84,12 +96,12 @@
           </tr>
           {% endwith %}
           {% empty %}
-          <tr><td colspan="2" class="px-2 py-4 text-center text-gray-400">No items</td></tr>
+          <tr><td colspan="4" class="px-2 py-4 text-center text-gray-400">No items</td></tr>
           {% endfor %}
         </tbody>
         <tfoot>
           <tr class="bg-blue-50 dark:bg-gray-700">
-            <td class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Invoice Total</td>
+            <td colspan="3" class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Invoice Total</td>
             <td class="px-2 py-2 font-bold text-right text-blue-700 dark:text-blue-400">฿{{ invoice.total_amount|intcomma }}</td>
           </tr>
         </tfoot>

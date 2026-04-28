@@ -22,6 +22,7 @@ window.tourPackage = function () {
     errors: {},
     name: "",
     customerName: "",
+    billingName: "",
     remark: "",
     connectionRef: "",
     remark2: "",
@@ -318,6 +319,7 @@ window.tourPackage = function () {
         this.packageReference = existingData.package_reference;
         this.name = existingData.name;
         this.customerName = existingData.customer_name;
+        this.billingName = existingData.billing_name || "";
         this.remark = existingData.remark || "";
         this.connectionRef = existingData.connectionRef || "";
         this.remark2 = existingData.remark2 || "";
@@ -1019,6 +1021,7 @@ window.tourPackage = function () {
         })),
         name: this.name,
         customer_name: this.customerName,
+        billing_name: this.billingName,
         remark: this.remark,
         connectionRef: this.connectionRef,
         remark2: this.remark2,

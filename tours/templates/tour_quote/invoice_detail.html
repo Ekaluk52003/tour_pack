@@ -4,10 +4,10 @@
 {% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto">
+<div class="mx-auto max-w-5xl">
 
   <!-- Header -->
-  <div class="flex flex-col items-start justify-between gap-4 mb-6 md:flex-row md:items-center">
+  <div class="flex flex-col gap-4 justify-between items-start mb-6 md:flex-row md:items-center">
     <div>
       <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ invoice.invoice_number }}</h1>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -46,7 +46,7 @@
   </div>
 
   {% if invoice.notes %}
-  <div class="p-3 mb-4 text-sm text-gray-700 rounded-lg bg-yellow-50 dark:bg-gray-700 dark:text-gray-300">
+  <div class="p-3 mb-4 text-sm text-gray-700 bg-yellow-50 rounded-lg dark:bg-gray-700 dark:text-gray-300">
     <span class="font-medium">Notes:</span> {{ invoice.notes }}
   </div>
   {% endif %}
@@ -55,33 +55,42 @@
   <div class="p-4 mb-6 bg-white rounded-lg shadow dark:bg-gray-800">
     <h2 class="mb-3 text-lg font-semibold text-blue-700 dark:text-blue-400">Invoice Items (Client)</h2>
     <div class="overflow-x-auto">
-      <table class="w-full text-sm text-left">
+      <table class="w-full text-xs text-left table-fixed">
         <thead class="bg-blue-50 dark:bg-gray-700">
           <tr>
-            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Description</th>
-            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Type</th>
-            <th class="px-3 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Qty</th>
-            <th class="px-3 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Unit Price</th>
-            <th class="px-3 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
+            <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Detail</th>
+            <th class="px-2 py-2 w-28 font-medium text-gray-600 dark:text-gray-300">Price</th>
           </tr>
         </thead>
         <tbody>
-          {% for item in items %}
-          <tr class="border-b border-gray-100 dark:border-gray-700 {% if item.item_type == 'Discount' %}text-red-600 dark:text-red-400{% endif %}">
-            <td class="px-3 py-2">{{ item.description }}</td>
-            <td class="px-3 py-2 text-gray-500 dark:text-gray-400">{{ item.get_item_type_display }}</td>
-            <td class="px-3 py-2 text-right">{{ item.quantity }}</td>
-            <td class="px-3 py-2 text-right">{{ item.unit_price|intcomma }}</td>
-            <td class="px-3 py-2 font-medium text-right">{{ item.amount|intcomma }}</td>
+          {% for item_with_meta in items_with_meta %}
+          {% with item=item_with_meta.item %}
+          <tr class="border-b border-gray-100 dark:border-gray-700 {% if item.item_type == 'Hotel' %}bg-blue-50 dark:bg-gray-700 {% elif item.item_type == 'Discount' %}bg-red-50 dark:bg-red-900/20{% endif %}">
+            <td class="px-2 py-1 text-gray-800 dark:text-gray-200 {% if item.item_type == 'Discount' %}text-red-600 dark:text-red-400{% endif %}">
+              {{ item.description }}
+              {% if item_with_meta.meta %}
+                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {{ item_with_meta.meta.room_price|floatformat:0|intcomma }} THB/night{% if item_with_meta.meta.room_count > 1 %} x {{ item_with_meta.meta.room_count }} rooms{% endif %}
+                </div>
+              {% endif %}
+            </td>
+            <td class="px-2 py-1 w-28 text-gray-700 dark:text-gray-300">
+              {% if item.amount < 0 %}
+                <span class="text-red-600 dark:text-red-400">({{ item.amount|intcomma }})</span>
+              {% else %}
+                {{ item.amount|intcomma }}
+              {% endif %}
+            </td>
           </tr>
+          {% endwith %}
           {% empty %}
-          <tr><td colspan="5" class="px-3 py-4 text-center text-gray-400">No items</td></tr>
+          <tr><td colspan="2" class="px-2 py-4 text-center text-gray-400">No items</td></tr>
           {% endfor %}
         </tbody>
         <tfoot>
           <tr class="bg-blue-50 dark:bg-gray-700">
-            <td colspan="4" class="px-3 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Invoice Total</td>
-            <td class="px-3 py-2 font-bold text-right text-blue-700 dark:text-blue-400">฿{{ invoice.total_amount|intcomma }}</td>
+            <td class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Invoice Total</td>
+            <td class="px-2 py-2 font-bold text-right text-blue-700 dark:text-blue-400">฿{{ invoice.total_amount|intcomma }}</td>
           </tr>
         </tfoot>
       </table>
@@ -145,23 +154,23 @@
   <!-- Action buttons -->
   <div class="flex flex-col gap-3 md:flex-row">
     <a href="{% url 'edit_invoice' invoice.id %}"
-       class="px-6 py-3 font-semibold text-center text-white transition bg-blue-500 rounded-lg hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
+       class="px-6 py-3 font-semibold text-center text-white bg-blue-500 rounded-lg transition hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
       Edit Invoice
     </a>
     <a href="{% url 'invoice_pdf' invoice.id %}" target="_blank"
-       class="px-6 py-3 font-semibold text-center text-white transition bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800">
+       class="px-6 py-3 font-semibold text-center text-white bg-green-600 rounded-lg transition hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800">
       Generate PDF Invoice
     </a>
     <a href="{% url 'payment_list_view' invoice.id %}"
-       class="px-6 py-3 font-semibold text-center text-white transition bg-yellow-300 rounded-lg hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700">
+       class="px-6 py-3 font-semibold text-center text-white bg-yellow-300 rounded-lg transition hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700">
       View Payment List
     </a>
     <a href="{% url 'invoice_list' %}"
-       class="px-6 py-3 font-semibold text-center text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+       class="px-6 py-3 font-semibold text-center text-gray-700 bg-gray-200 rounded-lg transition hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
       All Invoices
     </a>
     <a href="{% url 'tour_package_detail' invoice.tour_package.package_reference %}"
-       class="px-6 py-3 font-semibold text-center text-white transition bg-blue-500 rounded-lg hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
+       class="px-6 py-3 font-semibold text-center text-white bg-blue-500 rounded-lg transition hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
       Back to Package
     </a>
   </div>

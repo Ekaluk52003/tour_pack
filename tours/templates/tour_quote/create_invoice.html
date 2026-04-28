@@ -6,9 +6,8 @@
 
 {% block content %}
 
-{{ invoice_items|json_script:"invoice-items-data" }}
-{{ supplier_expenses|json_script:"supplier-expenses-data" }}
 {{ suppliers_data|json_script:"suppliers-data" }}
+{{ grouped_items|json_script:"grouped-items-data" }}
 
 <div x-data="invoiceForm">
 
@@ -26,7 +25,7 @@
 
   <!-- Invoice metadata -->
   <div class="grid grid-cols-1 gap-4 p-4 mb-6 bg-white rounded-lg shadow dark:bg-gray-800 md:grid-cols-3">
-    <div>
+    <div class="md:col-span-3">
       <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Agency</label>
       <select name="agency" class="px-3 py-2 w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500">
         <option value="">— No Agency —</option>
@@ -35,7 +34,7 @@
         {% endfor %}
       </select>
     </div>
-    <div>
+    <div class="md:col-span-1">
       <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Issue Date</label>
       <input type="date" name="issue_date" value="{{ today|date:'Y-m-d' }}"
              class="px-3 py-2 w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500">
@@ -63,82 +62,117 @@
   <!-- Two panels -->
   <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
 
-    <!-- LEFT: Invoice Items -->
-    <div class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
+    <!-- LEFT: Invoice to Client -->
+    <div class="p-4 min-w-0 bg-white rounded-lg shadow dark:bg-gray-800">
       <h2 class="mb-3 text-lg font-semibold text-blue-700 dark:text-blue-400">Invoice to Client</h2>
       <div class="overflow-x-auto">
-        <table class="w-full text-xs text-left">
+        <table class="w-full text-xs text-left table-fixed">
           <thead class="bg-blue-50 dark:bg-gray-700">
             <tr>
-              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Description</th>
-              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Type</th>
-              <th class="px-2 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Qty</th>
-              <th class="px-2 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Unit Price</th>
-              <th class="px-2 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
-              <th class="px-1 py-2"></th>
+              <th class="px-2 py-2 w-24 font-medium text-gray-600 dark:text-gray-300">Arr.</th>
+              <th class="px-2 py-2 w-24 font-medium text-gray-600 dark:text-gray-300">Dep.</th>
+              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Detail</th>
+              <th class="px-2 py-2 w-24 font-medium text-gray-600 dark:text-gray-300">Price</th>
             </tr>
           </thead>
           <tbody>
-            <template x-for="(item, idx) in invoiceItems" :key="idx">
-              <tr class="border-b border-gray-100 dark:border-gray-700">
-                <td class="px-1 py-1">
-                  <input type="text" x-model="item.description" placeholder="Description"
-                         class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+            <template x-for="(item, idx) in groupedItems" :key="idx">
+              <tr class="border-b border-blue-100 dark:border-gray-700"
+                  :class="item.is_hotel ? 'bg-blue-50 dark:bg-gray-700 border-l-4 border-l-blue-700 dark:border-l-blue-400' : (item.is_discount ? 'bg-red-50 dark:bg-red-900/20' : '')">
+                <td class="px-1 py-1 w-24">
+                  <template x-if="item.arrivalEdit">
+                    <input type="date" x-model="item.arrival_date"
+                           @blur="item.arrivalEdit = false"
+                           x-init="$nextTick(() => $el.focus())"
+                           class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                  </template>
+                  <template x-if="!item.arrivalEdit">
+                    <div @click="item.arrivalEdit = true" tabindex="0"
+                         x-text="formatDateShort(item.arrival_date)"
+                         class="cursor-pointer px-1 py-1 w-full text-xs text-gray-700 dark:text-gray-300 min-h-[1.5rem]"></div>
+                  </template>
+                </td>
+                <td class="px-1 py-1 w-24">
+                  <template x-if="item.departureEdit">
+                    <input type="date" x-model="item.departure_date"
+                           @blur="item.departureEdit = false"
+                           x-init="$nextTick(() => $el.focus())"
+                           class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                  </template>
+                  <template x-if="!item.departureEdit">
+                    <div @click="item.departureEdit = true" tabindex="0"
+                         x-text="formatDateShort(item.departure_date)"
+                         class="cursor-pointer px-1 py-1 w-full text-xs text-gray-700 dark:text-gray-300 min-h-[1.5rem]"></div>
+                  </template>
                 </td>
                 <td class="px-1 py-1">
-                  <select x-model="item.item_type" class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                    {% for value, label in invoice_item_types %}
-                      <option value="{{ value }}">{{ label }}</option>
-                    {% endfor %}
-                  </select>
+                  <input type="text" x-model="item.service_name"
+                         class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                         :class="item.is_discount ? 'text-red-600 dark:text-red-400' : ''">
+                  <template x-if="item.is_hotel">
+                    <div class="flex flex-wrap gap-2 items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <label class="flex gap-1 items-center">
+                        <span class="text-gray-700 dark:text-gray-200">Rooms:</span>
+                        <input type="number" x-model="item.room_count" min="1" step="1"
+                               @input="calcHotelPrice(item)"
+                               class="px-1 py-0.5 w-12 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      </label>
+                      <label class="flex gap-1 items-center">
+                        <span class="text-gray-700 dark:text-gray-200">Nights:</span>
+                        <input type="number" x-model="item.nights" min="1" step="1"
+                               @input="calcHotelPrice(item)"
+                               class="px-1 py-0.5 w-12 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      </label>
+                      <label class="flex gap-1 items-center">
+                        <span class="text-gray-700 dark:text-gray-200">Price/Night:</span>
+                        <input type="number" x-model="item.room_price" min="0" step="0.01"
+                               @input="calcHotelPrice(item)"
+                               class="px-1 py-0.5 w-20 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      </label>
+                      <label class="flex gap-1 items-center">
+                        <span class="text-gray-700 dark:text-gray-200">Extra Bed:</span>
+                        <input type="number" x-model="item.extra_bed_price" min="0" step="0.01"
+                               @input="calcHotelPrice(item)"
+                               class="px-1 py-0.5 w-20 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      </label>
+                    </div>
+                  </template>
                 </td>
-                <td class="px-1 py-1">
-                  <input type="number" x-model="item.quantity" step="0.01" min="0"
-                         @input="calcAmount(item)"
-                         class="px-2 py-1 w-16 text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                </td>
-                <td class="px-1 py-1">
-                  <input type="number" x-model="item.unit_price" step="0.01"
-                         @input="calcAmount(item)"
-                         class="px-2 py-1 w-24 text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                </td>
-                <td class="px-2 py-1 text-right font-medium text-gray-800 dark:text-gray-200"
-                    x-text="parseFloat(item.amount || 0).toLocaleString('th-TH', {minimumFractionDigits:2})"></td>
-                <td class="px-1 py-1">
-                  <button type="button" @click="removeInvoiceItem(idx)" class="text-red-400 hover:text-red-600">✕</button>
+                <td class="px-1 py-1 w-24">
+                  <input type="number" x-model="item.price" step="0.01"
+                         class="px-2 py-1 w-full text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                 </td>
               </tr>
             </template>
           </tbody>
           <tfoot>
             <tr class="bg-blue-50 dark:bg-gray-700">
-              <td colspan="4" class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Total</td>
-              <td class="px-2 py-2 font-bold text-right text-blue-700 dark:text-blue-400"
-                  x-text="parseFloat(invoiceTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></td>
-              <td></td>
+              <td colspan="3" class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Total</td>
+              <td class="px-2 py-2 font-bold text-right text-blue-600 dark:text-blue-400"
+                  x-text="parseFloat(groupedTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></td>
             </tr>
           </tfoot>
         </table>
       </div>
-      <button type="button" @click="addInvoiceItem()"
-              class="mt-3 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-400 rounded hover:bg-blue-50 dark:text-blue-400 dark:border-blue-600 dark:hover:bg-gray-700">
+      <button type="button" @click="addGroupedItem()"
+              class="px-3 py-1.5 mt-3 text-xs font-medium text-blue-600 rounded border border-blue-400 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-600 dark:hover:bg-gray-700">
         + Add Row
       </button>
     </div>
 
     <!-- RIGHT: Supplier Expenses -->
-    <div class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
+    <div class="p-4 min-w-0 bg-white rounded-lg shadow dark:bg-gray-800">
       <h2 class="mb-3 text-lg font-semibold text-orange-600 dark:text-orange-400">Supplier Expenses</h2>
       <div class="overflow-x-auto">
-        <table class="w-full text-xs text-left">
+        <table class="w-full text-xs text-left table-fixed">
           <thead class="bg-orange-50 dark:bg-gray-700">
             <tr>
-              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300 w-36">Supplier</th>
-              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Service / Description</th>
-              <th class="px-2 py-2 font-medium text-center text-gray-600 dark:text-gray-300 w-12">Qty</th>
-              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300 w-20">Category</th>
-              <th class="px-2 py-2 font-medium text-right text-gray-600 dark:text-gray-300 w-20">Amount</th>
-              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300 w-24">Due Date</th>
+              <th class="px-2 py-2 w-36 font-medium text-gray-600 dark:text-gray-300">Supplier</th>
+              <th class="px-2 py-2 w-32 font-medium text-gray-600 dark:text-gray-300">Service / Description</th>
+              <th class="px-2 py-2 w-12 font-medium text-center text-gray-600 dark:text-gray-300">Qty</th>
+              <th class="px-2 py-2 w-20 font-medium text-gray-600 dark:text-gray-300">Category</th>
+              <th class="px-2 py-2 w-20 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
+              <th class="px-2 py-2 w-24 font-medium text-gray-600 dark:text-gray-300">Due Date</th>
               <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300 w-18">Status</th>
               <th class="px-1 py-2 w-6"></th>
             </tr>
@@ -159,15 +193,15 @@
                            :class="exp.supplier_name ? 'border-orange-300 dark:border-orange-600 font-medium' : 'border-gray-200 dark:border-gray-600'">
                     <div x-show="exp.supplierOpen"
                          :style="exp.supplierDropStyle"
-                         class="bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto dark:bg-gray-800 dark:border-gray-600">
+                         class="overflow-y-auto max-h-48 bg-white rounded-lg border border-gray-200 shadow-xl dark:bg-gray-800 dark:border-gray-600">
                       <template x-for="s in filteredSuppliers(exp.supplierQuery)" :key="s.id">
                         <div @mousedown.prevent="selectSupplier(exp, s)"
-                             class="px-3 py-2 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700"
+                             class="px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700"
                              :class="exp.supplierId === s.id ? 'bg-orange-50 font-semibold dark:bg-gray-700' : ''"
                              x-text="s.name"></div>
                       </template>
                       <div x-show="filteredSuppliers(exp.supplierQuery).length === 0"
-                           class="px-3 py-2 text-gray-400 italic">No suppliers found</div>
+                           class="px-3 py-2 italic text-gray-400">No suppliers found</div>
                     </div>
                   </div>
                 </td>
@@ -183,16 +217,16 @@
                            class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                     <div x-show="exp.serviceOpen && exp.supplierId"
                          :style="exp.serviceDropStyle"
-                         class="bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto dark:bg-gray-800 dark:border-gray-600">
+                         class="overflow-y-auto max-h-48 bg-white rounded-lg border border-gray-200 shadow-xl dark:bg-gray-800 dark:border-gray-600">
                       <template x-for="s in filteredServices(exp)" :key="s.id">
                         <div @mousedown.prevent="selectService(exp, s)"
-                             class="px-3 py-2 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center gap-2">
+                             class="flex gap-2 justify-between items-center px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700">
                           <span x-text="s.name"></span>
                           <span class="text-gray-400 shrink-0" x-text="'฿' + Number(s.cost).toLocaleString('th-TH')"></span>
                         </div>
                       </template>
                       <div x-show="filteredServices(exp).length === 0"
-                           class="px-3 py-2 text-gray-400 italic">No matching services</div>
+                           class="px-3 py-2 italic text-gray-400">No matching services</div>
                     </div>
                   </div>
                 </td>
@@ -243,7 +277,7 @@
         </table>
       </div>
       <button type="button" @click="addExpense()"
-              class="mt-3 px-3 py-1.5 text-xs font-medium text-orange-600 border border-orange-400 rounded hover:bg-orange-50 dark:text-orange-400 dark:border-orange-600 dark:hover:bg-gray-700">
+              class="px-3 py-1.5 mt-3 text-xs font-medium text-orange-600 rounded border border-orange-400 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-600 dark:hover:bg-gray-700">
         + Add Row
       </button>
     </div>

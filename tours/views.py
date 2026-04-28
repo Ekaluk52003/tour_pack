@@ -2789,102 +2789,390 @@ def superuser_or_owner_required(view_func):
         raise PermissionDenied
     return _wrapped
 
+def get_grouped_tour_data(package):
+    """
+    Extract tour data grouped by hotel stay, following the same logic as export_tourday_excel.
+    Returns (final_items, hotel_groups_list) where:
+    - final_items: list of dicts with arrival_date, departure_date, nights, service_name, price, etc.
+    - hotel_groups_list: list of hotel group dicts
+    """
+    from datetime import timedelta
+    import re
+
+    SERVICE_TYPE_ORDER = {
+        'transfer': 1,
+        'package': 3,
+        'tour': 4,
+        'custom': 5,
+        'zero': 6,
+    }
+
+    def get_service_type_order(service_type_name, service_name=''):
+        """Get sort order for service type. Special case: ** in name acts as transfer."""
+        if '**' in service_name:
+            return 1
+        name_lower = service_type_name.lower() if service_type_name else ''
+        for key, order in SERVICE_TYPE_ORDER.items():
+            if key in name_lower:
+                return order
+        return 99
+
+    tour_days = list(package.tour_days.all().order_by('date'))
+
+    # Build hotel info lookup from hotel_costs
+    hotel_info_lookup = {}
+    for cost in (package.hotel_costs or []):
+        hotel_name = cost.get('name', '')
+        room_count = cost.get('room', 1)
+        room_type = cost.get('type', '')
+        extra_bed_price = cost.get('extraBedPrice')
+        room_price = cost.get('price', 0)
+        nights = cost.get('nights', 1)
+        promotion = cost.get('promotion', '')
+        date_str = cost.get('date', '')
+
+        # Calculate total price
+        extra_bed = float(extra_bed_price) if extra_bed_price and float(extra_bed_price) > 0 else 0
+        room_price_val = float(room_price) if room_price else 0
+        nights_val = int(nights) if nights else 1
+        rooms_val = int(room_count) if room_count else 1
+
+        total_price = (room_price_val * rooms_val + extra_bed) * nights_val
+
+        # Build display name
+        room_part = ""
+        if room_count and room_type:
+            room_part = f"{room_count}x {room_type}"
+        elif room_type:
+            room_part = room_type
+
+        if extra_bed > 0:
+            display_name = f"{room_part} + extra bed" if room_part else ""
+        else:
+            display_name = room_part
+
+        if hotel_name not in hotel_info_lookup:
+            hotel_info_lookup[hotel_name] = []
+        hotel_info_lookup[hotel_name].append({
+            'display': display_name,
+            'price': total_price,
+            'promotion': promotion,
+            'date_str': date_str,
+            'nights': nights_val,
+            'room_count': rooms_val,
+            'room_price': room_price_val,
+            'extra_bed': extra_bed,
+        })
+
+    # Group tour days by hotel
+    hotel_groups_list = []
+    last_hotel_name = None
+    current_group = None
+
+    for day in tour_days:
+        hotel_name = day.hotel.name if day.hotel else 'No Hotel'
+
+        if hotel_name != last_hotel_name:
+            current_group = {
+                'hotel_name': hotel_name,
+                'arrival_date': day.date,
+                'departure_date': day.date + timedelta(days=1),
+                'nights': 1,
+                'services': [],
+                'guide_services': [],
+                'dates': [day.date],
+            }
+            hotel_groups_list.append(current_group)
+            last_hotel_name = hotel_name
+        else:
+            current_group['departure_date'] = day.date + timedelta(days=1)
+            current_group['nights'] += 1
+            current_group['dates'].append(day.date)
+
+        # Collect services for this day
+        for service in day.services.all():
+            service_type_name = service.service.service_type.name if service.service.service_type else ''
+            service_name = service.service.name
+            # Try to get supplier name
+            supplier_name = ''
+            if hasattr(service.service, 'supplier') and service.service.supplier:
+                supplier_name = service.service.supplier.name
+            else:
+                supplier_name = service_name
+
+            current_group['services'].append({
+                'date': day.date,
+                'service_type': service_type_name,
+                'sort_order': get_service_type_order(service_type_name, service_name),
+                'name': service_name,
+                'price': service.price_at_booking,
+                'supplier': supplier_name,
+            })
+
+        # Collect guide services
+        for guide_service in day.guide_services.all():
+            current_group['guide_services'].append({
+                'date': day.date,
+                'service_type': 'custom',
+                'sort_order': 5,
+                'name': guide_service.guide_service.name,
+                'price': guide_service.price_at_booking,
+                'supplier': guide_service.guide_service.name,
+            })
+
+    # Build final items grouped by hotel
+    final_items = []
+
+    for hotel_data in hotel_groups_list:
+        hotel_name = hotel_data['hotel_name']
+
+        # Combine regular services and guide services, sort by date
+        all_services = hotel_data['services'] + hotel_data['guide_services']
+        all_services.sort(key=lambda x: x['date'])
+
+        # Build hotel rows
+        hotel_rows = []
+        if 'No Hotel' not in hotel_name:
+            matching_configs = []
+            if hotel_name in hotel_info_lookup:
+                room_configs = hotel_info_lookup[hotel_name]
+                group_dates = hotel_data.get('dates', [hotel_data['arrival_date']])
+
+                for config in room_configs:
+                    c_date = config.get('date_str', '')
+                    if not c_date:
+                        continue
+
+                    # Check if config date matches any day in the group
+                    matched_date = None
+                    for d in group_dates:
+                        day_str_pad = f"{d.day:02d}"
+                        month_str = d.strftime('%b').lower()
+
+                        if (c_date.startswith(day_str_pad) or c_date.startswith(str(d.day))) and month_str in c_date.lower():
+                            matched_date = d
+                            break
+
+                    if matched_date:
+                        config_copy = config.copy()
+                        config_copy['specific_arrival_date'] = matched_date
+                        matching_configs.append(config_copy)
+
+                # Fallback if no specific date match found
+                if not matching_configs:
+                    matching_configs.append({
+                        'display': '',
+                        'price': 0,
+                        'promotion': '',
+                        'nights': hotel_data['nights'],
+                    })
+
+                # Sort by date
+                matching_configs.sort(key=lambda x: x.get('specific_arrival_date') or hotel_data['arrival_date'])
+            else:
+                # No room config found, use defaults
+                matching_configs.append({
+                    'display': '',
+                    'price': 0,
+                    'promotion': '',
+                    'nights': hotel_data['nights'],
+                })
+
+            # Create hotel rows for each room config
+            for room_config in matching_configs:
+                hotel_display_name = hotel_name
+                if room_config.get('display'):
+                    hotel_display_name = f"{hotel_name}, {room_config['display']}"
+
+                arrival_date = room_config.get('specific_arrival_date', hotel_data['arrival_date'])
+                nights = room_config.get('nights', hotel_data['nights'])
+
+                try:
+                    nights_int = int(nights) if nights else 0
+                    departure_date = arrival_date + timedelta(days=nights_int)
+                except:
+                    departure_date = hotel_data['departure_date']
+
+                hotel_rows.append({
+                    'arrival_date': arrival_date,
+                    'departure_date': departure_date,
+                    'nights': nights,
+                    'service_name': hotel_display_name,
+                    'price': room_config.get('price', 0),
+                    'promotion': room_config.get('promotion', ''),
+                    'is_hotel': True,
+                    'supplier': hotel_name,
+                    'room_price': room_config.get('room_price', 0),
+                    'room_count': room_config.get('room_count', 1),
+                    'extra_bed_price': room_config.get('extra_bed', 0),
+                })
+
+        # Determine which services should come before hotel
+        def should_be_before_hotel(svc):
+            service_type = svc.get('service_type', '').lower()
+            service_name = svc.get('name', '')
+            return 'transfer' in service_type or '**' in service_name or 'transfer' in service_name.lower()
+
+        last_before_hotel_idx = -1
+        for idx, svc in enumerate(all_services):
+            if should_be_before_hotel(svc):
+                last_before_hotel_idx = idx
+
+        # Build final items in correct order
+        if last_before_hotel_idx >= 0:
+            # Transfers/transfer services before hotel
+            for svc in all_services[:last_before_hotel_idx + 1]:
+                final_items.append({
+                    'arrival_date': svc['date'],
+                    'departure_date': None,
+                    'nights': None,
+                    'service_name': svc['name'],
+                    'price': float(svc['price']) if svc['price'] else 0,
+                    'is_hotel': False,
+                    'supplier': svc.get('supplier', svc['name']),
+                })
+            # Hotel rows
+            for hotel_row in hotel_rows:
+                final_items.append(hotel_row)
+            # Remaining services after hotel
+            for svc in all_services[last_before_hotel_idx + 1:]:
+                final_items.append({
+                    'arrival_date': svc['date'],
+                    'departure_date': None,
+                    'nights': None,
+                    'service_name': svc['name'],
+                    'price': float(svc['price']) if svc['price'] else 0,
+                    'is_hotel': False,
+                    'supplier': svc.get('supplier', svc['name']),
+                })
+        else:
+            # No transfers - hotel first, then services
+            for hotel_row in hotel_rows:
+                final_items.append(hotel_row)
+            for svc in all_services:
+                final_items.append({
+                    'arrival_date': svc['date'],
+                    'departure_date': None,
+                    'nights': None,
+                    'service_name': svc['name'],
+                    'price': float(svc['price']) if svc['price'] else 0,
+                    'is_hotel': False,
+                    'supplier': svc.get('supplier', svc['name']),
+                })
+
+    # Add extra costs at the end
+    extra_costs = package.extra_costs or []
+    for extra_cost in extra_costs:
+        cost_name = extra_cost.get('item', '') or extra_cost.get('name', '')
+        cost_amount = extra_cost.get('amount', 0)
+        if cost_name:
+            final_items.append({
+                'arrival_date': None,
+                'departure_date': None,
+                'nights': None,
+                'service_name': cost_name,
+                'price': float(cost_amount) if cost_amount else 0,
+                'is_hotel': False,
+                'supplier': '',
+                'is_extra_cost': True,
+            })
+
+    # Add discounts at the end
+    discounts = package.discounts or []
+    for discount in discounts:
+        discount_name = discount.get('item', '') or discount.get('name', '')
+        discount_amount = discount.get('amount', 0)
+        if discount_name:
+            final_items.append({
+                'arrival_date': None,
+                'departure_date': None,
+                'nights': None,
+                'service_name': discount_name,
+                'price': -abs(float(discount_amount)) if discount_amount else 0,
+                'is_hotel': False,
+                'supplier': '',
+                'is_discount': True,
+            })
+
+    return final_items, hotel_groups_list
+
+
 def build_prepopulated_invoice_data(package):
     """
     Returns (invoice_items, supplier_expenses) as lists of dicts
-    pre-populated from the TourPackageQuote data.
+    pre-populated from the TourPackageQuote data, following the same
+    grouping and ordering as export_tourday_excel.
     """
+    grouped_items, _ = get_grouped_tour_data(package)
     invoice_items = []
     supplier_expenses = []
-    order = 0
 
-    for cost in (package.hotel_costs or []):
-        try:
-            rooms = int(cost.get('room', 1) or 1)
-            nights = int(cost.get('nights', 1) or 1)
-            price = Decimal(str(cost.get('price', 0) or 0))
-            extra_bed_price = Decimal(str(cost.get('extraBedPrice', 0) or 0))
-            hotel_name = cost.get('name', 'Hotel') or 'Hotel'
-            date_str = cost.get('date', '')
-            room_type = cost.get('type', '')
-
-            room_total = rooms * nights * price
-            extra_bed_total = extra_bed_price * nights
-            total = room_total + extra_bed_total
-
-            desc = f"{hotel_name} ({room_type}) - {date_str} x {rooms} rooms x {nights} nights"
+    for i, item in enumerate(grouped_items):
+        # Handle discounts
+        if item.get('is_discount'):
             invoice_items.append({
-                'description': desc, 'quantity': '1', 'unit_price': str(total),
-                'amount': str(total), 'item_type': 'Hotel', 'order': order,
+                'description': item['service_name'],
+                'quantity': '1',
+                'unit_price': str(item['price']),
+                'amount': str(item['price']),
+                'item_type': 'Discount',
+                'order': i,
             })
-            supplier_expenses.append({
-                'supplier_name': hotel_name, 'description': desc,
-                'category': 'Hotel', 'amount': str(total),
-                'due_date': '', 'status': 'Pending', 'reference_number': '', 'order': order,
-            })
-            order += 1
-        except Exception:
-            pass
+            continue
 
-    for day in package.tour_days.all().order_by('date').prefetch_related(
-        'services__service', 'guide_services__guide_service'
-    ):
-        for svc in day.services.all():
-            desc = f"{svc.service.name} ({day.date})"
-            amt = str(svc.price_at_booking)
-            invoice_items.append({
-                'description': desc, 'quantity': '1', 'unit_price': amt,
-                'amount': amt, 'item_type': 'Service', 'order': order,
-            })
-            supplier_expenses.append({
-                'supplier_name': svc.service.name, 'description': desc,
-                'category': 'Transport', 'amount': amt,
-                'due_date': '', 'status': 'Pending', 'reference_number': '', 'order': order,
-            })
-            order += 1
+        # Build description
+        desc_parts = [item['service_name']]
+        if item.get('arrival_date') and not item.get('is_hotel'):
+            desc_parts.append(f"({item['arrival_date']})")
+        elif item.get('is_hotel'):
+            arrival = item['arrival_date'].strftime('%d-%b') if item['arrival_date'] else ''
+            departure = item['departure_date'].strftime('%d-%b') if item['departure_date'] else ''
+            if arrival and departure:
+                desc_parts.append(f"- {arrival} to {departure}, {item['nights']} nights")
+            if item.get('promotion'):
+                desc_parts.append(f"({item['promotion']})")
 
-        for gsvc in day.guide_services.all():
-            desc = f"{gsvc.guide_service.name} ({day.date})"
-            amt = str(gsvc.price_at_booking)
-            invoice_items.append({
-                'description': desc, 'quantity': '1', 'unit_price': amt,
-                'amount': amt, 'item_type': 'Guide', 'order': order,
-            })
-            supplier_expenses.append({
-                'supplier_name': gsvc.guide_service.name, 'description': desc,
-                'category': 'Guide', 'amount': amt,
-                'due_date': '', 'status': 'Pending', 'reference_number': '', 'order': order,
-            })
-            order += 1
+        desc = ' '.join(filter(None, desc_parts))
+        amt = str(abs(Decimal(str(item['price'] or 0))))
 
-    for ec in (package.extra_costs or []):
-        try:
-            desc = ec.get('item', 'Extra Cost') or 'Extra Cost'
-            amt = str(Decimal(str(ec.get('amount', 0) or 0)))
-            invoice_items.append({
-                'description': desc, 'quantity': '1', 'unit_price': amt,
-                'amount': amt, 'item_type': 'Extra', 'order': order,
-            })
-            supplier_expenses.append({
-                'supplier_name': 'Supplier', 'description': desc,
-                'category': 'Other', 'amount': amt,
-                'due_date': '', 'status': 'Pending', 'reference_number': '', 'order': order,
-            })
-            order += 1
-        except Exception:
-            pass
+        # Determine item type
+        if item.get('is_extra_cost'):
+            item_type = 'Extra'
+        elif item.get('is_hotel'):
+            item_type = 'Hotel'
+        else:
+            item_type = 'Service'
 
-    for disc in (package.discounts or []):
-        try:
-            desc = disc.get('item', 'Discount') or 'Discount'
-            amt = Decimal(str(disc.get('amount', 0) or 0))
-            invoice_items.append({
-                'description': desc, 'quantity': '1', 'unit_price': str(-amt),
-                'amount': str(-amt), 'item_type': 'Discount', 'order': order,
-            })
-            order += 1
-        except Exception:
-            pass
+        invoice_items.append({
+            'description': desc,
+            'quantity': '1',
+            'unit_price': amt,
+            'amount': amt,
+            'item_type': item_type,
+            'order': i,
+        })
+
+        # Build supplier expense
+        category = 'Other'
+        if item.get('is_hotel'):
+            category = 'Hotel'
+        elif 'transfer' in (item.get('service_name') or '').lower():
+            category = 'Transport'
+
+        supplier_name = item.get('supplier', '')
+        if not supplier_name and item.get('is_hotel'):
+            supplier_name = item['service_name'].split(',')[0] if ',' in item['service_name'] else item['service_name']
+
+        supplier_expenses.append({
+            'supplier_name': supplier_name,
+            'description': desc,
+            'category': category,
+            'amount': amt,
+            'due_date': '',
+            'status': 'Pending',
+            'reference_number': '',
+            'order': i,
+        })
 
     return invoice_items, supplier_expenses
 
@@ -2973,14 +3261,16 @@ def create_invoice(request, package_reference):
         messages.success(request, f'Invoice {invoice.invoice_number} created successfully.')
         return redirect('invoice_detail', invoice_id=invoice.id)
 
-    invoice_items, _ = build_prepopulated_invoice_data(package)
+    invoice_items, supplier_expenses = build_prepopulated_invoice_data(package)
+    grouped_items, _ = get_grouped_tour_data(package)
     today = datetime.now().date()
 
     context = {
         'package': package,
         'agencies': agencies,
         'invoice_items': invoice_items,
-        'supplier_expenses': [],
+        'supplier_expenses': supplier_expenses,
+        'grouped_items': grouped_items,
         'suppliers_data': _get_suppliers_data(),
         'invoice_status_choices': Invoice.STATUS_CHOICES,
         'supplier_expense_categories': SupplierExpense.CATEGORY_CHOICES,
@@ -3060,17 +3350,41 @@ def edit_invoice(request, invoice_id):
         messages.success(request, f'Invoice {invoice.invoice_number} updated.')
         return redirect('invoice_detail', invoice_id=invoice.id)
 
-    existing_items = [
-        {
-            'description': item.description,
-            'quantity': str(item.quantity),
-            'unit_price': str(item.unit_price),
-            'amount': str(item.amount),
-            'item_type': item.item_type,
-            'order': item.order,
-        }
-        for item in invoice.items.all().order_by('order')
-    ]
+    existing_items = list(invoice.items.all().order_by('order'))
+    package_items, _ = get_grouped_tour_data(invoice.tour_package)
+
+    grouped_items = []
+    for i in range(max(len(package_items), len(existing_items))):
+        pkg = package_items[i] if i < len(package_items) else None
+        inv = existing_items[i] if i < len(existing_items) else None
+
+        if inv:
+            grouped_items.append({
+                'arrival_date': pkg.get('arrival_date', '') if pkg else '',
+                'departure_date': pkg.get('departure_date', '') if pkg else '',
+                'nights': pkg.get('nights', '') if pkg else '',
+                'service_name': inv.description,
+                'price': str(inv.amount),
+                'is_hotel': inv.item_type == InvoiceItem.ITEM_TYPE_HOTEL,
+                'is_discount': inv.item_type == InvoiceItem.ITEM_TYPE_DISCOUNT,
+                'is_extra_cost': inv.item_type == InvoiceItem.ITEM_TYPE_EXTRA,
+                'room_price': pkg.get('room_price', 0) if pkg else 0,
+                'room_count': pkg.get('room_count', 1) if pkg else 1,
+                'extra_bed_price': pkg.get('extra_bed_price', 0) if pkg else 0,
+            })
+        elif pkg:
+            # Package item not saved to invoice (shouldn't happen, but handle)
+            grouped_items.append({
+                'arrival_date': pkg.get('arrival_date', ''),
+                'departure_date': pkg.get('departure_date', ''),
+                'nights': pkg.get('nights', ''),
+                'service_name': pkg.get('service_name', ''),
+                'price': str(pkg.get('price', 0)),
+                'is_hotel': pkg.get('is_hotel', False),
+                'is_discount': pkg.get('is_discount', False),
+                'is_extra_cost': pkg.get('is_extra_cost', False),
+            })
+
     existing_expenses = [
         {
             'supplier_name': exp.supplier_name,
@@ -3091,12 +3405,11 @@ def edit_invoice(request, invoice_id):
     context = {
         'invoice': invoice,
         'agencies': agencies,
-        'invoice_items': existing_items,
+        'grouped_items': grouped_items,
         'supplier_expenses': existing_expenses,
         'suppliers_data': _get_suppliers_data(),
         'invoice_status_choices': Invoice.STATUS_CHOICES,
         'supplier_expense_categories': SupplierExpense.CATEGORY_CHOICES,
-        'invoice_item_types': InvoiceItem.ITEM_TYPE_CHOICES,
     }
     return render(request, 'tour_quote/edit_invoice.html', context)
 
@@ -3105,14 +3418,29 @@ def edit_invoice(request, invoice_id):
 @superuser_or_owner_required
 def invoice_detail(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
-    items = invoice.items.all().order_by('order')
+    items = list(invoice.items.all().order_by('order'))
     expenses = invoice.supplier_expenses.all().order_by('order')
     total_expenses = sum(e.amount for e in expenses)
     margin = invoice.total_amount - total_expenses
 
+    # Build per-night pricing from current package grouped data for hotel items
+    grouped_items, _ = get_grouped_tour_data(invoice.tour_package)
+    items_with_meta = []
+    for i, item in enumerate(items):
+        meta = None
+        if item.item_type == 'Hotel' and i < len(grouped_items):
+            gi = grouped_items[i]
+            if gi.get('is_hotel') and gi.get('room_price'):
+                meta = {
+                    'room_price': gi.get('room_price', 0),
+                    'room_count': gi.get('room_count', 1),
+                    'nights': gi.get('nights', 1),
+                }
+        items_with_meta.append({'item': item, 'meta': meta})
+
     context = {
         'invoice': invoice,
-        'items': items,
+        'items_with_meta': items_with_meta,
         'expenses': expenses,
         'total_expenses': total_expenses,
         'margin': margin,

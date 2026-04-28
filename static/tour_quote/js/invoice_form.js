@@ -1,10 +1,22 @@
 export default function invoiceForm() {
   return {
-    invoiceItems: JSON.parse(document.getElementById('invoice-items-data').textContent),
-    supplierExpenses: JSON.parse(document.getElementById('supplier-expenses-data').textContent),
+    invoiceItems: [],
+    supplierExpenses: [],
     allSuppliers: JSON.parse(document.getElementById('suppliers-data').textContent),
+    groupedItems: JSON.parse(document.getElementById('grouped-items-data').textContent),
 
     init() {
+      // Initialize groupedItems with edit flags and hotel defaults
+      this.groupedItems = this.groupedItems.map(item => ({
+        ...item,
+        arrivalEdit: false,
+        departureEdit: false,
+        room_count: item.room_count || 1,
+        nights: item.nights || 1,
+        room_price: item.room_price || 0,
+        extra_bed_price: item.extra_bed_price || 0,
+      }));
+      // Initialize supplierExpenses
       this.supplierExpenses = this.supplierExpenses.map(exp => {
         const matched = this.allSuppliers.find(s =>
           exp.supplier_id ? s.id === exp.supplier_id : s.name === exp.supplier_name
@@ -22,11 +34,19 @@ export default function invoiceForm() {
       });
     },
 
-    get invoiceTotal() {
-      return this.invoiceItems.reduce((s, i) => s + parseFloat(i.amount || 0), 0).toFixed(2);
+    get groupedTotal() {
+      return this.groupedItems.reduce((s, i) => s + parseFloat(i.price || 0), 0).toFixed(2);
     },
     get expenseTotal() {
       return this.supplierExpenses.reduce((s, e) => s + parseFloat(e.amount || 0), 0).toFixed(2);
+    },
+
+    formatDateShort(dateStr) {
+      if (!dateStr) return '';
+      const [y, m, d] = dateStr.split('-');
+      if (!y || !m || !d) return '';
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${d}-${months[parseInt(m,10)-1]}-${y.slice(-2)}`;
     },
 
     calcAmount(item) {
@@ -34,6 +54,14 @@ export default function invoiceForm() {
     },
     calcExpenseAmount(exp) {
       exp.amount = (parseFloat(exp.qty || 1) * parseFloat(exp.unit_price || 0)).toFixed(2);
+    },
+
+    calcHotelPrice(item) {
+      const rooms = parseFloat(item.room_count || 0);
+      const nights = parseFloat(item.nights || 0);
+      const pricePerNight = parseFloat(item.room_price || 0);
+      const extraBed = parseFloat(item.extra_bed_price || 0);
+      item.price = ((rooms * pricePerNight + extraBed) * nights).toFixed(2);
     },
 
     // --- Dropdown positioning (fixed so it never causes page scroll) ---
@@ -103,6 +131,17 @@ export default function invoiceForm() {
     },
     removeInvoiceItem(idx) { this.invoiceItems.splice(idx, 1); },
 
+    addGroupedItem() {
+      this.groupedItems.push({
+        arrival_date: '', departure_date: '', nights: '',
+        service_name: '', price: '0',
+        is_hotel: false, is_discount: false, is_extra_cost: false,
+        arrivalEdit: false, departureEdit: false,
+        room_count: 1, room_price: 0, extra_bed_price: 0,
+      });
+    },
+    removeGroupedItem(idx) { this.groupedItems.splice(idx, 1); },
+
     addExpense() {
       this.supplierExpenses.push({
         supplier_name: '', supplier_id: null,
@@ -124,7 +163,16 @@ export default function invoiceForm() {
         supplierDropStyle, serviceDropStyle,
         ...rest
       }) => rest);
-      document.getElementById('invoice_items_json').value = JSON.stringify(this.invoiceItems);
+      // Derive invoice items from grouped items
+      const derivedInvoiceItems = this.groupedItems.map((item, idx) => ({
+        description: item.service_name || '',
+        quantity: '1',
+        unit_price: String(item.price || 0),
+        amount: String(item.price || 0),
+        item_type: item.is_hotel ? 'Hotel' : (item.is_discount ? 'Discount' : (item.is_extra_cost ? 'Extra' : 'Service')),
+        order: idx,
+      }));
+      document.getElementById('invoice_items_json').value = JSON.stringify(derivedInvoiceItems);
       document.getElementById('supplier_expenses_json').value = JSON.stringify(cleanedExpenses);
       document.getElementById('invoice-form').submit();
     },

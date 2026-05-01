@@ -16,7 +16,12 @@ export default function invoiceForm() {
         room_price: item.room_price || 0,
         extra_bed_price: item.extra_bed_price || 0,
       }));
-      // Initialize supplierExpenses
+      // Load supplier expenses from the JSON script if available
+      const expensesData = document.getElementById('supplier-expenses-data');
+      if (expensesData) {
+        this.supplierExpenses = JSON.parse(expensesData.textContent);
+      }
+      // Initialize supplierExpenses with UI state
       this.supplierExpenses = this.supplierExpenses.map(exp => {
         const matched = this.allSuppliers.find(s =>
           exp.supplier_id ? s.id === exp.supplier_id : s.name === exp.supplier_name
@@ -31,6 +36,14 @@ export default function invoiceForm() {
           supplierDropStyle: '',
           serviceDropStyle: '',
         };
+      });
+
+      // Robust outside-click close: if the user mousedowns anywhere that
+      // isn't inside a combobox wrapper, close every open dropdown.
+      document.addEventListener('mousedown', (e) => {
+        if (!e.target.closest || !e.target.closest('[data-combobox]')) {
+          this._closeAllDrops();
+        }
       });
     },
 
@@ -52,9 +65,6 @@ export default function invoiceForm() {
     calcAmount(item) {
       item.amount = (parseFloat(item.quantity || 1) * parseFloat(item.unit_price || 0)).toFixed(2);
     },
-    calcExpenseAmount(exp) {
-      exp.amount = (parseFloat(exp.qty || 1) * parseFloat(exp.unit_price || 0)).toFixed(2);
-    },
 
     calcHotelPrice(item) {
       const rooms = parseFloat(item.room_count || 0);
@@ -72,13 +82,30 @@ export default function invoiceForm() {
       return `position:fixed;top:${top}px;left:${r.left}px;min-width:${Math.max(r.width, minWidth)}px;z-index:9999`;
     },
 
+    _closeAllDrops(exceptExp = null) {
+      this.supplierExpenses.forEach(e => {
+        if (e !== exceptExp) {
+          e.supplierOpen = false;
+          e.serviceOpen = false;
+        }
+      });
+    },
+
     openSupplierDrop(exp, el) {
+      this._closeAllDrops(exp);
+      exp.serviceOpen = false;
       exp.supplierDropStyle = this._dropStyle(el, 200);
       exp.supplierOpen = true;
     },
     openServiceDrop(exp, el) {
+      this._closeAllDrops(exp);
+      exp.supplierOpen = false;
       exp.serviceDropStyle = this._dropStyle(el, 220);
       exp.serviceOpen = !!exp.supplierId;
+    },
+
+    closeServiceDrop(exp) {
+      exp.serviceOpen = false;
     },
 
     // --- Supplier combobox ---
@@ -94,6 +121,7 @@ export default function invoiceForm() {
       exp.supplierId = supplier.id;
       exp.supplierQuery = supplier.name;
       exp.supplierOpen = false;
+      exp.serviceOpen = false;
       exp.description = '';
       exp.serviceQuery = '';
       exp.unit_price = '0';
@@ -119,7 +147,7 @@ export default function invoiceForm() {
       exp.serviceQuery = service.name;
       exp.unit_price = service.cost;
       exp.serviceOpen = false;
-      exp.amount = (parseFloat(exp.qty || 1) * parseFloat(service.cost)).toFixed(2);
+      exp.amount = parseFloat(service.cost).toFixed(2);
     },
 
     // --- Row management ---
@@ -145,8 +173,8 @@ export default function invoiceForm() {
     addExpense() {
       this.supplierExpenses.push({
         supplier_name: '', supplier_id: null,
-        description: '', qty: '1', unit_price: '0',
-        category: 'Other', amount: '0',
+        description: '', unit_price: '0',
+        amount: '0',
         due_date: '', status: 'Pending', reference_number: '',
         order: this.supplierExpenses.length,
         supplierId: null, supplierQuery: '', serviceQuery: '',

@@ -26,9 +26,8 @@
     </div>
   </div>
 
-  {% for category, exps in expenses_by_category.items %}
+  {% if expenses %}
   <div class="p-4 mb-4 bg-white rounded-lg shadow dark:bg-gray-800">
-    <h2 class="mb-3 text-base font-semibold text-orange-600 dark:text-orange-400">{{ category }}</h2>
     <div class="overflow-x-auto">
       <table class="w-full text-sm text-left">
         <thead class="bg-orange-50 dark:bg-gray-700">
@@ -42,7 +41,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for exp in exps %}
+          {% for exp in expenses %}
           <tr class="border-b border-gray-100 dark:border-gray-700">
             <td class="px-3 py-2 font-medium text-gray-800 dark:text-gray-200">{{ exp.supplier_name }}</td>
             <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ exp.description }}</td>
@@ -63,9 +62,9 @@
       </table>
     </div>
   </div>
-  {% empty %}
+  {% else %}
   <div class="p-6 text-center text-gray-400 bg-white rounded-lg shadow dark:bg-gray-800">No supplier expenses recorded.</div>
-  {% endfor %}
+  {% endif %}
 
   <div class="flex justify-end mt-4">
     <div class="p-4 bg-orange-50 rounded-lg dark:bg-gray-700">

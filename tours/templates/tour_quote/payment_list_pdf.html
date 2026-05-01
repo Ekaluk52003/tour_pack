@@ -38,9 +38,8 @@
   </div>
 </div>
 
-{% for category, exps in expenses_by_category.items %}
+{% if expenses %}
 <div class="section">
-  <h2>{{ category }}</h2>
   <table>
     <thead>
       <tr>
@@ -53,7 +52,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for exp in exps %}
+      {% for exp in expenses %}
       <tr>
         <td><strong>{{ exp.supplier_name }}</strong></td>
         <td>{{ exp.description }}</td>
@@ -66,7 +65,7 @@
     </tbody>
   </table>
 </div>
-{% endfor %}
+{% endif %}
 
 <div class="summary">
   Total Amount to Pay: <span class="amount">฿{{ total_expenses|floatformat:2 }}</span>

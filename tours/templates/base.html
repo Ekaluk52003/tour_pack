@@ -98,6 +98,11 @@
                     class="block px-4 py-2 text-sm font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'supplier_payment_overview' or request.resolver_match.url_name == 'supplier_payment_detail' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %}"
                     >Supplier Payments</a
                   >
+                  <a
+                    href="{% url 'pending_payment_list' %}"
+                    class="block px-4 py-2 text-sm font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'pending_payment_list' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %}"
+                    >Pending Payment</a
+                  >
                 </div>
               </div>
               {% endif %}
@@ -245,6 +250,11 @@
                 href="{% url 'supplier_payment_overview' %}"
                 class="block px-6 py-2 text-base font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'supplier_payment_overview' or request.resolver_match.url_name == 'supplier_payment_detail' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %}"
                 >Supplier Payments</a
+              >
+              <a
+                href="{% url 'pending_payment_list' %}"
+                class="block px-6 py-2 text-base font-medium transition-colors duration-200 {% if request.resolver_match.url_name == 'pending_payment_list' %}bg-blue-800 dark:bg-gray-700{% else %}hover:bg-blue-800 dark:hover:bg-gray-700{% endif %}"
+                >Pending Payment</a
               >
             </div>
           </div>

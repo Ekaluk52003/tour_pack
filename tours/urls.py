@@ -39,6 +39,7 @@ urlpatterns = [
     path('invoices/<int:invoice_id>/payment-list/', views.payment_list_view, name='payment_list_view'),
     path('supplier-payments/', views.supplier_payment_overview, name='supplier_payment_overview'),
     path('supplier-payments/<str:supplier_name>/', views.supplier_payment_detail, name='supplier_payment_detail'),
+    path('pending-payments/', views.pending_payment_list, name='pending_payment_list'),
     path('supplier-expenses/<int:expense_id>/update-status/', views.update_supplier_expense_status, name='update_supplier_expense_status'),
 
     # Supplier management

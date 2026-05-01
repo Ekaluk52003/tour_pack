@@ -98,9 +98,9 @@
 <table>
   <thead>
     <tr>
-      <th style="width:12%">Arr.</th>
-      <th style="width:12%">Dep.</th>
-      <th style="width:56%">Description</th>
+      <th style="width:14%">Arr.</th>
+      <th style="width:14%">Dep.</th>
+      <th style="width:52%">Description</th>
       <th class="right">Amount</th>
     </tr>
   </thead>
@@ -108,8 +108,8 @@
     {% for item_with_meta in items_with_meta %}
     {% with item=item_with_meta.item %}
     <tr {% if item.item_type == 'Discount' %}class="discount"{% endif %}>
-      <td>{% if item_with_meta.meta and item_with_meta.meta.arrival_date %}{{ item_with_meta.meta.arrival_date|date:"d M" }}{% endif %}</td>
-      <td>{% if item_with_meta.meta and item_with_meta.meta.departure_date %}{{ item_with_meta.meta.departure_date|date:"d M" }}{% endif %}</td>
+      <td>{% if item_with_meta.meta and item_with_meta.meta.arrival_date %}{{ item_with_meta.meta.arrival_date|date:"d M y" }}{% endif %}</td>
+      <td>{% if item_with_meta.meta and item_with_meta.meta.departure_date %}{{ item_with_meta.meta.departure_date|date:"d M y" }}{% endif %}</td>
       <td>
         {{ item.description }}
         {% if item_with_meta.meta and item_with_meta.meta.room_price %}

@@ -3160,12 +3160,6 @@ def build_prepopulated_invoice_data(package):
         })
 
         # Build supplier expense
-        category = 'Other'
-        if item.get('is_hotel'):
-            category = 'Hotel'
-        elif 'transfer' in (item.get('service_name') or '').lower():
-            category = 'Transport'
-
         supplier_name = item.get('supplier', '')
         if not supplier_name and item.get('is_hotel'):
             supplier_name = item['service_name'].split(',')[0] if ',' in item['service_name'] else item['service_name']
@@ -3173,7 +3167,6 @@ def build_prepopulated_invoice_data(package):
         supplier_expenses.append({
             'supplier_name': supplier_name,
             'description': desc,
-            'category': category,
             'amount': amt,
             'due_date': '',
             'status': 'Pending',
@@ -3246,16 +3239,12 @@ def create_invoice(request, package_reference):
             supplier_cache = {s.name: s for s in Supplier.objects.all()}
             for i, exp in enumerate(expenses_data):
                 sname = exp.get('supplier_name', '')[:200]
-                qty = safe_decimal(exp.get('qty', 1), Decimal('1'))
-                unit_price = safe_decimal(exp.get('unit_price', 0))
                 SupplierExpense.objects.create(
                     invoice=invoice,
                     supplier=supplier_cache.get(sname),
                     supplier_name=sname,
                     description=exp.get('description', '')[:500],
-                    qty=qty,
-                    unit_price=unit_price,
-                    category=exp.get('category', 'Other'),
+                    unit_price=safe_decimal(exp.get('unit_price', 0)),
                     amount=safe_decimal(exp.get('amount', 0)),
                     due_date=exp.get('due_date') or None,
                     status=exp.get('status', 'Pending'),
@@ -3280,7 +3269,6 @@ def create_invoice(request, package_reference):
         'grouped_items': grouped_items,
         'suppliers_data': _get_suppliers_data(),
         'invoice_status_choices': Invoice.STATUS_CHOICES,
-        'supplier_expense_categories': SupplierExpense.CATEGORY_CHOICES,
         'invoice_item_types': InvoiceItem.ITEM_TYPE_CHOICES,
         'today': today,
     }
@@ -3335,16 +3323,12 @@ def edit_invoice(request, invoice_id):
             supplier_cache = {s.name: s for s in Supplier.objects.all()}
             for i, exp in enumerate(expenses_data):
                 sname = exp.get('supplier_name', '')[:200]
-                qty = safe_decimal(exp.get('qty', 1), Decimal('1'))
-                unit_price = safe_decimal(exp.get('unit_price', 0))
                 SupplierExpense.objects.create(
                     invoice=invoice,
                     supplier=supplier_cache.get(sname),
                     supplier_name=sname,
                     description=exp.get('description', '')[:500],
-                    qty=qty,
-                    unit_price=unit_price,
-                    category=exp.get('category', 'Other'),
+                    unit_price=safe_decimal(exp.get('unit_price', 0)),
                     amount=safe_decimal(exp.get('amount', 0)),
                     due_date=exp.get('due_date') or None,
                     status=exp.get('status', 'Pending'),
@@ -3397,9 +3381,7 @@ def edit_invoice(request, invoice_id):
             'supplier_name': exp.supplier_name,
             'supplier_id': exp.supplier_id,
             'description': exp.description,
-            'qty': str(exp.qty),
             'unit_price': str(exp.unit_price),
-            'category': exp.category,
             'amount': str(exp.amount),
             'due_date': exp.due_date.isoformat() if exp.due_date else '',
             'status': exp.status,
@@ -3416,7 +3398,6 @@ def edit_invoice(request, invoice_id):
         'supplier_expenses': existing_expenses,
         'suppliers_data': _get_suppliers_data(),
         'invoice_status_choices': Invoice.STATUS_CHOICES,
-        'supplier_expense_categories': SupplierExpense.CATEGORY_CHOICES,
     }
     return render(request, 'tour_quote/edit_invoice.html', context)
 
@@ -3544,12 +3525,7 @@ def invoice_pdf(request, invoice_id):
 @superuser_or_owner_required
 def payment_list_view(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
-    expenses = list(invoice.supplier_expenses.all().order_by('category', 'order'))
-
-    expenses_by_category = {}
-    for exp in expenses:
-        expenses_by_category.setdefault(exp.category, []).append(exp)
-
+    expenses = list(invoice.supplier_expenses.all().order_by('order'))
     total_expenses = sum(e.amount for e in expenses)
 
     if request.GET.get('pdf'):
@@ -3561,7 +3537,7 @@ def payment_list_view(request, invoice_id):
 
         html_string = render_to_string('tour_quote/payment_list_pdf.html', {
             'invoice': invoice,
-            'expenses_by_category': expenses_by_category,
+            'expenses': expenses,
             'total_expenses': total_expenses,
             'logo_data_uri': logo_data_uri,
         })
@@ -3576,7 +3552,7 @@ def payment_list_view(request, invoice_id):
 
     context = {
         'invoice': invoice,
-        'expenses_by_category': expenses_by_category,
+        'expenses': expenses,
         'total_expenses': total_expenses,
     }
     return render(request, 'tour_quote/payment_list.html', context)
@@ -3749,3 +3725,54 @@ def supplier_payment_detail(request, supplier_name):
         'status_choices': SupplierExpense.STATUS_CHOICES,
     }
     return render(request, 'tour_quote/supplier_payment_detail.html', context)
+
+
+@login_required
+@superuser_or_owner_required
+def pending_payment_list(request):
+    """List all supplier payments with filters for status and due date range."""
+    from django.db.models import Q
+
+    # Get filter parameters
+    status_filter = request.GET.get('status', '')
+    due_date_from = request.GET.get('due_date_from', '')
+    due_date_to = request.GET.get('due_date_to', '')
+    supplier_filter = request.GET.get('supplier', '')
+
+    # Base queryset
+    expenses = SupplierExpense.objects.select_related('invoice', 'supplier').all()
+
+    # Apply filters
+    if status_filter:
+        expenses = expenses.filter(status=status_filter)
+    if due_date_from:
+        expenses = expenses.filter(due_date__gte=due_date_from)
+    if due_date_to:
+        expenses = expenses.filter(due_date__lte=due_date_to)
+    if supplier_filter:
+        expenses = expenses.filter(supplier_name__icontains=supplier_filter)
+
+    # Order by due date (nulls last), then by supplier name
+    expenses = expenses.order_by('due_date', 'supplier_name')
+
+    # Calculate totals
+    total_amount = sum(e.amount for e in expenses)
+    pending_amount = sum(e.amount for e in expenses if e.status == 'Pending')
+    paid_amount = sum(e.amount for e in expenses if e.status == 'Paid')
+
+    # Get unique suppliers for filter dropdown
+    suppliers = SupplierExpense.objects.exclude(supplier_name__isnull=True).values_list('supplier_name', flat=True).distinct().order_by('supplier_name')
+
+    context = {
+        'expenses': expenses,
+        'total_amount': total_amount,
+        'pending_amount': pending_amount,
+        'paid_amount': paid_amount,
+        'status_filter': status_filter,
+        'due_date_from': due_date_from,
+        'due_date_to': due_date_to,
+        'supplier_filter': supplier_filter,
+        'suppliers': suppliers,
+        'status_choices': SupplierExpense.STATUS_CHOICES,
+    }
+    return render(request, 'tour_quote/pending_payment_list.html', context)

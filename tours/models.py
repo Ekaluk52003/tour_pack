@@ -388,25 +388,11 @@ class SupplierExpense(models.Model):
         (STATUS_CANCELLED, 'Cancelled'),
     ]
 
-    CATEGORY_HOTEL = 'Hotel'
-    CATEGORY_TRANSPORT = 'Transport'
-    CATEGORY_GUIDE = 'Guide'
-    CATEGORY_OTHER = 'Other'
-
-    CATEGORY_CHOICES = [
-        (CATEGORY_HOTEL, 'Hotel'),
-        (CATEGORY_TRANSPORT, 'Transport'),
-        (CATEGORY_GUIDE, 'Guide'),
-        (CATEGORY_OTHER, 'Other'),
-    ]
-
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='supplier_expenses')
     supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True, related_name='expenses')
     supplier_name = models.CharField(max_length=200)
     description = models.CharField(max_length=500)
-    qty = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default=CATEGORY_OTHER)
     amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     due_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
@@ -414,7 +400,7 @@ class SupplierExpense(models.Model):
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ['order', 'category', 'id']
+        ordering = ['order', 'id']
 
     def __str__(self):
         return f"{self.supplier_name} - {self.description} ({self.amount})"

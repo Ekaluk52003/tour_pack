@@ -7,6 +7,7 @@
 
 {{ suppliers_data|json_script:"suppliers-data" }}
 {{ grouped_items|json_script:"grouped-items-data" }}
+{{ supplier_expenses|json_script:"supplier-expenses-data" }}
 
 <div x-data="invoiceForm">
 
@@ -168,13 +169,11 @@
         <table class="w-full text-xs text-left table-fixed">
           <thead class="bg-orange-50 dark:bg-gray-700">
             <tr>
-              <th class="px-2 py-2 w-36 font-medium text-gray-600 dark:text-gray-300">Supplier</th>
-              <th class="px-2 py-2 w-32 font-medium text-gray-600 dark:text-gray-300">Service / Description</th>
-              <th class="px-2 py-2 w-12 font-medium text-center text-gray-600 dark:text-gray-300">Qty</th>
-              <th class="px-2 py-2 w-20 font-medium text-gray-600 dark:text-gray-300">Category</th>
-              <th class="px-2 py-2 w-20 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
+              <th class="px-2 py-2 w-40 font-medium text-gray-600 dark:text-gray-300">Supplier</th>
+              <th class="px-2 py-2 w-36 font-medium text-gray-600 dark:text-gray-300">Service / Description</th>
+              <th class="px-2 py-2 w-24 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
               <th class="px-2 py-2 w-24 font-medium text-gray-600 dark:text-gray-300">Due Date</th>
-              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300 w-18">Status</th>
+              <th class="px-2 py-2 w-14 font-medium text-gray-600 dark:text-gray-300">Status</th>
               <th class="px-1 py-2 w-6"></th>
             </tr>
           </thead>
@@ -183,18 +182,20 @@
               <tr class="border-b border-gray-100 dark:border-gray-700">
 
                 <!-- Supplier combobox -->
-                <td class="px-1 py-1">
-                  <div @click.outside="closeSupplierDrop(exp)">
+                <td class="px-1 py-1 relative">
+                  <div @click.outside="exp.supplierOpen = false">
                     <input type="text"
                            x-model="exp.supplierQuery"
                            @focus="openSupplierDrop(exp, $el)"
-                           @input="exp.supplierOpen = true"
+                           @blur="exp.supplierOpen = false; exp.supplierQuery = exp.supplier_name || ''"
+                           @input="exp.supplierQuery = exp.supplierQuery"
                            placeholder="Search supplier…"
                            class="px-2 py-1 w-full text-xs rounded border dark:bg-gray-700 dark:text-gray-200"
                            :class="exp.supplier_name ? 'border-orange-300 dark:border-orange-600 font-medium' : 'border-gray-200 dark:border-gray-600'">
                     <div x-show="exp.supplierOpen"
                          :style="exp.supplierDropStyle"
-                         class="overflow-y-auto max-h-48 bg-white rounded-lg border border-gray-200 shadow-xl dark:bg-gray-800 dark:border-gray-600">
+                         @click.stop
+                         class="overflow-y-auto fixed max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
                       <template x-for="s in filteredSuppliers(exp.supplierQuery)" :key="s.id">
                         <div @mousedown.prevent="selectSupplier(exp, s)"
                              class="px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700"
@@ -208,17 +209,20 @@
                 </td>
 
                 <!-- Service combobox -->
-                <td class="px-1 py-1">
+                <td class="px-1 py-1 relative">
                   <div @click.outside="exp.serviceOpen = false">
                     <input type="text"
                            x-model="exp.description"
+                           :disabled="!exp.supplierId"
                            @focus="openServiceDrop(exp, $el); exp.serviceQuery = exp.description"
-                           @input="exp.serviceQuery = exp.description; if(exp.supplierId) exp.serviceOpen = true"
-                           placeholder="Service / description…"
-                           class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                    <div x-show="exp.serviceOpen && exp.supplierId"
+                           @blur="exp.serviceOpen = false"
+                           @input="exp.serviceQuery = exp.description"
+                           :placeholder="exp.supplierId ? 'Service / description…' : 'Select supplier first'"
+                           class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div x-show="exp.serviceOpen && exp.supplierId && filteredServices(exp).length > 0"
                          :style="exp.serviceDropStyle"
-                         class="overflow-y-auto max-h-48 bg-white rounded-lg border border-gray-200 shadow-xl dark:bg-gray-800 dark:border-gray-600">
+                         @click.stop
+                         class="overflow-y-auto fixed max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
                       <template x-for="s in filteredServices(exp)" :key="s.id">
                         <div @mousedown.prevent="selectService(exp, s)"
                              class="flex gap-2 justify-between items-center px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700">
@@ -226,26 +230,10 @@
                           <span class="text-gray-400 shrink-0" x-text="'฿' + Number(s.cost).toLocaleString('th-TH')"></span>
                         </div>
                       </template>
-                      <div x-show="filteredServices(exp).length === 0"
-                           class="px-3 py-2 italic text-gray-400">No matching services</div>
                     </div>
                   </div>
                 </td>
 
-                <!-- Qty -->
-                <td class="px-1 py-1">
-                  <input type="number" x-model="exp.qty" step="1" min="1"
-                         @input="calcExpenseAmount(exp)"
-                         class="px-1 py-1 w-full text-xs text-center rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                </td>
-
-                <td class="px-1 py-1">
-                  <select x-model="exp.category" class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                    {% for value, label in supplier_expense_categories %}
-                      <option value="{{ value }}">{{ label }}</option>
-                    {% endfor %}
-                  </select>
-                </td>
                 <td class="px-1 py-1">
                   <input type="number" x-model="exp.amount" step="0.01" min="0"
                          class="px-2 py-1 w-full text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
@@ -269,7 +257,7 @@
           </tbody>
           <tfoot>
             <tr class="bg-orange-50 dark:bg-gray-700">
-              <td colspan="4" class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Total</td>
+              <td colspan="2" class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Total</td>
               <td class="px-2 py-2 font-bold text-right text-orange-600 dark:text-orange-400"
                   x-text="parseFloat(expenseTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></td>
               <td colspan="3"></td>

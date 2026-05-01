@@ -131,6 +131,7 @@ def save_tour_package(request, package_reference=None):
 
             # all login users can update these field
             package.hotel_costs = data['hotelCosts']
+            package.alternative_hotels = data.get('alternativeHotels', [])
             package.remark_of_hotels = data.get('remark_of_hotels', '')
             package.special_note = data.get('special_note', '')
             package.billing_name = data.get('billing_name', '')
@@ -215,6 +216,24 @@ def save_tour_package(request, package_reference=None):
         return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
 
 
+def _build_alternative_hotels_with_total(alternative_hotels):
+    result = []
+    for alt in alternative_hotels:
+        try:
+            room_cost = float(alt.get('room') or 0) * float(alt.get('nights') or 0) * float(alt.get('price') or 0)
+        except (ValueError, TypeError):
+            room_cost = 0
+        extra_bed_price = alt.get('extraBedPrice', '')
+        try:
+            extra_bed_cost = float(extra_bed_price) * float(alt.get('nights') or 0) if extra_bed_price and str(extra_bed_price).strip() else 0
+        except (ValueError, TypeError):
+            extra_bed_cost = 0
+        alt_with_total = alt.copy()
+        alt_with_total['total'] = room_cost + extra_bed_cost
+        result.append(alt_with_total)
+    return result
+
+
 @login_required
 def tour_package_pdf(request, pk):
     package = get_object_or_404(TourPackageQuote, pk=pk)
@@ -291,7 +310,8 @@ def tour_package_pdf(request, pk):
         'remark2': remark2,
         'remark_of_hotels': remark_of_hotels,
         'special_note': special_note,
-        'logo_data_uri': logo_data_uri
+        'logo_data_uri': logo_data_uri,
+        'alternative_hotels': _build_alternative_hotels_with_total(package.alternative_hotels),
     })
 
     # Create response and set filename
@@ -614,6 +634,7 @@ def tour_package_detail(request, package_reference):
         'package': package,
         # Pass hotel costs with total calculation
         'hotel_costs_with_total': hotel_costs_with_total,
+        'alternative_hotels': _build_alternative_hotels_with_total(package.alternative_hotels),
         'tour_pack_type': package.tour_pack_type,  # Add this line
         'discounts': discounts,
         'total_discount': total_discount,
@@ -699,7 +720,8 @@ def tour_package_edit(request, package_reference):
             }
             for extra_cost in package.extra_costs
         ],
-        'hotelCosts': package.hotel_costs
+        'hotelCosts': package.hotel_costs,
+        'alternativeHotels': package.alternative_hotels,
 
     }
 

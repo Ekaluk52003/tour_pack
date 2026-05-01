@@ -48,6 +48,7 @@ window.tourPackage = function () {
     ],
     guideServices: [],
     hotelCosts: [],
+    alternativeHotels: [],
     allHotels: [],
     discounts: [],
     extraCosts: [],
@@ -163,6 +164,39 @@ window.tourPackage = function () {
         },
         validateInput() {
           this.search = '';
+        }
+      };
+    },
+
+    altHotelSearch(alt) {
+      const root = this;
+      return {
+        root,
+        open: false,
+        search: '',
+        selectedIndex: -1,
+        openDropdown() {
+          this.open = true;
+          this.search = '';
+          this.selectedIndex = -1;
+        },
+        filteredHotels() {
+          const term = (this.search || '').toLowerCase();
+          const hotels = this.root.allHotels || [];
+          if (!term) return hotels.slice(0, 20);
+          return hotels.filter(h => (h.name || '').toLowerCase().includes(term));
+        },
+        selectHotel(hotel) {
+          if (!hotel) return;
+          alt.name = hotel.name;
+          this.search = '';
+          this.open = false;
+          this.selectedIndex = -1;
+        },
+        validateInput() {
+          if (this.search.trim()) alt.name = this.search.trim();
+          this.search = '';
+          this.open = false;
         }
       };
     },
@@ -353,6 +387,11 @@ window.tourPackage = function () {
           },
         }));
         this.hotelCosts = existingData.hotelCosts || [];
+        this.alternativeHotels = (existingData.alternativeHotels || []).map(alt => ({
+          ...alt,
+          _prefillIndex: '',
+          _swapTargetIndex: '',
+        }));
         this.discounts = existingData.discounts || [];
         this.extraCosts = (existingData.extraCosts || []).map(cost => ({
             item: cost.item || "",
@@ -1018,6 +1057,17 @@ window.tourPackage = function () {
           nights: parseInt(cost.nights) || 0,
           price: formatNumber(cost.price),
           extraBedPrice: formatNumber(cost.extraBedPrice),
+          alternativeHotels: undefined,
+        })),
+        alternativeHotels: this.alternativeHotels.map(alt => ({
+          name: alt.name || '',
+          date: alt.date || '',
+          type: alt.type || '',
+          promotion: alt.promotion || '',
+          room: parseInt(alt.room) || 0,
+          nights: parseInt(alt.nights) || 0,
+          price: formatNumber(alt.price),
+          extraBedPrice: formatNumber(alt.extraBedPrice),
         })),
         name: this.name,
         customer_name: this.customerName,
@@ -1099,7 +1149,38 @@ window.tourPackage = function () {
   removeHotelCost(index) {
     // Simply remove the item at the specified index
     this.hotelCosts.splice(index, 1);
-},
+  },
+
+    addAlternativeHotel() {
+      this.alternativeHotels.push({
+        name: '', date: '', type: '', promotion: '',
+        room: 0, nights: 0, price: null, extraBedPrice: null,
+        _prefillIndex: '', _swapTargetIndex: '',
+      });
+    },
+
+    removeAlternativeHotel(altIndex) {
+      this.alternativeHotels.splice(altIndex, 1);
+    },
+
+    prefillAlternativeFromCost(altIndex, costIndex) {
+      const cost = this.hotelCosts[costIndex];
+      if (!cost) return;
+      const alt = this.alternativeHotels[altIndex];
+      alt.date = cost.date || '';
+      alt.room = cost.room;
+      alt.nights = cost.nights;
+    },
+
+    swapAlternativeWithCost(altIndex, costIndex) {
+      const alt = this.alternativeHotels[altIndex];
+      const cost = this.hotelCosts[costIndex];
+      const fields = ['date', 'name', 'type', 'promotion', 'room', 'nights', 'price', 'extraBedPrice'];
+      const snapshot = {};
+      fields.forEach(f => snapshot[f] = cost[f]);
+      fields.forEach(f => cost[f] = alt[f]);
+      fields.forEach(f => alt[f] = snapshot[f]);
+    },
 
     addDiscount() {
       this.discounts.push({ item: "", amount: 0 });

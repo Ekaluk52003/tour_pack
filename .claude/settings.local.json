@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dir \"D:\\\\Django\\\\tour_pack\\\\\" 2>/dev/null | head -20)",
       "Bash(python *)",
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "Bash(grep -E \"\\\\.\\(py|html\\)$\")"
     ]
   }
 }

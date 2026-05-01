@@ -134,6 +134,44 @@
             </div>
             {% endif %}
 
+            <!-- Alternative Hotel Options -->
+            {% if alternative_hotels %}
+            <div class="mb-6">
+                <h3 class="mb-3 text-xl font-semibold dark:text-gray-200">Alternative Hotel Options</h3>
+                <div class="overflow-x-auto">
+                    <table class="mb-2 w-full">
+                        <thead class="bg-amber-100 dark:bg-amber-900/40">
+                            <tr>
+                                <th class="p-2 text-left text-amber-800 dark:text-amber-300">Date</th>
+                                <th class="p-2 text-left text-amber-800 dark:text-amber-300">Hotel</th>
+                                <th class="p-2 text-center text-amber-800 dark:text-amber-300">Rooms</th>
+                                <th class="p-2 text-center text-amber-800 dark:text-amber-300">Nights</th>
+                                <th class="p-2 text-right text-amber-800 dark:text-amber-300">Price/Night</th>
+                                <th class="p-2 text-right text-amber-800 dark:text-amber-300">Extra Bed</th>
+                                <th class="p-2 text-right text-amber-800 dark:text-amber-300">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="dark:text-gray-300">
+                            {% for alt in alternative_hotels %}
+                            <tr class="border-b border-amber-100 dark:border-amber-900/40">
+                                <td class="p-2">{{ alt.date|default:"-" }}</td>
+                                <td class="p-2">
+                                    <span class="font-medium">{{ alt.name|default:"-" }}</span>
+                                    {% if alt.type %}<div class="text-sm text-gray-500 dark:text-gray-400">({{ alt.type }})</div>{% endif %}
+                                    {% if alt.promotion %}<div class="text-sm text-green-600 dark:text-green-400">{{ alt.promotion }}</div>{% endif %}
+                                </td>
+                                <td class="p-2 text-center">{{ alt.room|default:"-" }}</td>
+                                <td class="p-2 text-center">{{ alt.nights|default:"-" }}</td>
+                                <td class="p-2 text-right">{% if alt.price %}{{ alt.price|floatformat:"0"|intcomma }}{% else %}-{% endif %}</td>
+                                <td class="p-2 text-right">{% if alt.extraBedPrice %}{{ alt.extraBedPrice|floatformat:"0"|intcomma }}{% else %}-{% endif %}</td>
+                                <td class="p-2 font-semibold text-right">{% if alt.total %}{{ alt.total|floatformat:"2"|intcomma }}{% else %}-{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
 
             <div class="mt-8">
                 <h3 class="mb-2 text-xl text-blue-600 font-semibolddark:text-gray-200">Additional Costs</h3>

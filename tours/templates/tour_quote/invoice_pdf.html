@@ -114,7 +114,7 @@
         {{ item.description }}
         {% if item_with_meta.meta and item_with_meta.meta.room_price %}
           <div style="font-size:10px; color:#64748b; margin-top:2px;">
-            {{ item_with_meta.meta.room_price|floatformat:0 }} THB/night x {{ item_with_meta.meta.nights }} nights{% if item_with_meta.meta.room_count > 1 %} x {{ item_with_meta.meta.room_count }} rooms{% endif %}
+            {{ item_with_meta.meta.room_price|floatformat:0|intcomma }} THB/night x {{ item_with_meta.meta.nights }} nights{% if item_with_meta.meta.room_count > 1 %} x {{ item_with_meta.meta.room_count }} rooms{% endif %}
           </div>
         {% endif %}
       </td>

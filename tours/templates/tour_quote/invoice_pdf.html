@@ -6,12 +6,13 @@
 <style>
   @page {
     size: A4;
-    margin: 4.5cm 2cm 2cm 2cm;
-    @top-center { content: element(pageHeader); }
+    margin: 4.2cm 2cm 2cm 2cm;
+    @top-left { content: element(pageHeader); }
   }
   body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; color: #333; margin: 0; padding: 0; }
-  .page-header { position: running(pageHeader); width: 100%; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+  .page-header { position: running(pageHeader); width: 170mm; padding: 10px 0 0; box-sizing: border-box; }
   .header-table { width: 100%; border-collapse: collapse; }
+  .header-divider { border-top: 1px solid #e2e8f0; margin-top: 8px; }
   .header-table td { vertical-align: top; padding: 0; border: none; }
   .header-logo { width: 160px; }
   .header-logo img { max-height: 100px; max-width: 150px; }
@@ -24,7 +25,7 @@
   .header-right .thai { font-size: 13px; color: #444; margin: 2px 0 6px; }
   .header-right .tax-id { font-size: 10px; color: #555; margin-top: 8px; }
   h1 { font-size: 24px; color: #1e40af; margin: 0 0 4px; }
-  .meta-box { background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; min-height: 140px; }
+  .meta-box { background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; min-height: 70px; height: 100%; box-sizing: border-box; }
   .meta-box dt { font-size: 10px; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
   .meta-box dd { font-weight: 600; margin: 0; }
   .status-badge {
@@ -43,6 +44,8 @@
   tfoot td { font-weight: 700; background: #eff6ff; font-size: 13px; }
   .notes { margin-top: 16px; padding: 10px; background: #fffbeb; border-left: 3px solid #f59e0b; font-size: 11px; color: #78350f; }
   .footer { margin-top: 40px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+  dl { margin: 0; padding: 0; }
+  dd { margin: 0; padding: 0; }
 </style>
 </head>
 <body>
@@ -56,10 +59,11 @@
         {% endif %}
       </td>
       <td class="header-company">
-        <p class="company-name">Animo Tours Limited Partnership </p><span style="font-weight:normal; font-size:10px; color:#555;">(TAT licence 24 00096)</span></p>
+        <p class="company-name">Animo Tours Limited Partnership</p>
+        <p>(TAT licence 24 00096)</p>
         <p>213/2 Moo 6, Soi Lomsakthong, Tambon Sanphaned</p>
         <p>Amphur San Sai, Chiang Mai, Thailand 50210</p>
-        <p>Tel. +66 (0)81-564-6771</p>
+        <p>Tel. +66 (0)81-884-2075</p>
       </td>
       <td class="header-right">
         <h2>INVOICE#</h2>
@@ -67,33 +71,33 @@
       </td>
     </tr>
   </table>
+  <div class="header-divider"></div>
 </div>
 
-<div style="margin-bottom: 20px;">
-  <table style="width: 100%; border-collapse: collapse; margin: 0;">
-    <tr>
-      <td style="width: 50%; vertical-align: top; padding-right: 10px;">
-        <dl class="meta-box" style="margin: 0;">
-          <dt>Bill To</dt>
-          <dd>{{ invoice.agency.name|default:invoice.tour_package.customer_name }}</dd>
-          {% if invoice.agency.address %}<dd style="font-weight:normal; font-size:11px; color:#555; margin-top:4px;">{{ invoice.agency.address }}</dd>{% endif %}
-        </dl>
-      </td>
-      <td style="width: 50%; vertical-align: top; padding-left: 10px;">
-        <dl class="meta-box" style="margin: 0;">
-          {% if invoice.tour_package.connection_ref %}
-            <dt>Connection Ref</dt>
-            <dd>{{ invoice.tour_package.connection_ref }}</dd>
-          {% endif %}
-          {% if invoice.tour_package.billing_name %}
-            <dt style="margin-top: 8px;">Billing Name</dt>
-            <dd style="font-size: 11px; font-weight: normal; white-space: pre-line;">{{ invoice.tour_package.billing_name }}</dd>
-          {% endif %}
-        </dl>
-      </td>
-    </tr>
-  </table>
-</div>
+<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed;">
+  <tr>
+    <td style="vertical-align: top; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; box-sizing: border-box; width: calc(50% - 10px);">
+      <dl>
+        <dt style="font-size: 10px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Bill To</dt>
+        <dd style="font-weight: 600;">{{ invoice.agency.name|default:invoice.tour_package.customer_name }}</dd>
+        {% if invoice.agency.address %}<dd style="font-weight: normal; font-size: 11px; color: #555; margin-top: 4px;">{{ invoice.agency.address }}</dd>{% endif %}
+      </dl>
+    </td>
+    <td style="width: 20px; border: none; background: transparent; padding: 0;"></td>
+    <td style="vertical-align: top; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; box-sizing: border-box; width: calc(50% - 10px);">
+      <dl>
+        {% if invoice.tour_package.connection_ref %}
+          <dt style="font-size: 10px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Connection Ref</dt>
+          <dd style="font-weight: 600;">{{ invoice.tour_package.connection_ref }}</dd>
+        {% endif %}
+        {% if invoice.tour_package.billing_name %}
+          <dt style="font-size: 10px; color: #64748b; text-transform: uppercase; margin-bottom: 2px; {% if invoice.tour_package.connection_ref %}margin-top: 8px;{% endif %}">Billing Name</dt>
+          <dd style="font-size: 11px; font-weight: normal; white-space: pre-line;">{{ invoice.tour_package.billing_name }}</dd>
+        {% endif %}
+      </dl>
+    </td>
+  </tr>
+</table>
 
 <table>
   <thead>
@@ -108,8 +112,8 @@
     {% for item_with_meta in items_with_meta %}
     {% with item=item_with_meta.item %}
     <tr {% if item.item_type == 'Discount' %}class="discount"{% endif %}>
-      <td>{% if item_with_meta.meta and item_with_meta.meta.arrival_date %}{{ item_with_meta.meta.arrival_date|date:"d M y" }}{% endif %}</td>
-      <td>{% if item_with_meta.meta and item_with_meta.meta.departure_date %}{{ item_with_meta.meta.departure_date|date:"d M y" }}{% endif %}</td>
+      <td style="font-size:10px; white-space:nowrap;">{% if item_with_meta.meta and item_with_meta.meta.arrival_date %}{{ item_with_meta.meta.arrival_date|date:"d-M-Y" }}{% endif %}</td>
+      <td style="font-size:10px; white-space:nowrap;">{% if item_with_meta.meta and item_with_meta.meta.departure_date %}{{ item_with_meta.meta.departure_date|date:"d-M-Y" }}{% endif %}</td>
       <td>
         {{ item.description }}
         {% if item_with_meta.meta and item_with_meta.meta.room_price %}

@@ -630,11 +630,18 @@ def tour_package_detail(request, package_reference):
     # Check if user should see commission info (not in assistance group)
     show_commission = not request.user.groups.filter(name='assistance').exists()
     
+    tour_day_hotel_names = {day.hotel.name for day in ordered_tour_days if day.hotel}
+    hotel_cost_names = {cost.get('name', '') for cost in package.hotel_costs if cost.get('name')}
+    hotel_mismatch_missing = sorted(tour_day_hotel_names - hotel_cost_names)
+    hotel_mismatch_orphaned = sorted(hotel_cost_names - tour_day_hotel_names)
+
     context = {
         'package': package,
         # Pass hotel costs with total calculation
         'hotel_costs_with_total': hotel_costs_with_total,
         'alternative_hotels': _build_alternative_hotels_with_total(package.alternative_hotels),
+        'hotel_mismatch_missing': hotel_mismatch_missing,
+        'hotel_mismatch_orphaned': hotel_mismatch_orphaned,
         'tour_pack_type': package.tour_pack_type,  # Add this line
         'discounts': discounts,
         'total_discount': total_discount,

@@ -66,32 +66,32 @@
         $data.modalMessage = '';
         $data.confirmAction = null;
         $data.draggedDayIndex = null;
-        
+
         // Initialize drag and drop functionality with auto-scrolling
         $nextTick(() => {
           let autoScrollInterval = null;
           const scrollSpeed = 20;
           const scrollThreshold = 150; // pixels from edge to trigger scrolling
-          
+
           // Auto-scroll function for drag and drop
           document.addEventListener('dragover', function(e) {
             e.preventDefault();
-            
+
             // Clear any existing interval
             if (autoScrollInterval) {
               clearInterval(autoScrollInterval);
               autoScrollInterval = null;
             }
-            
+
             // Get viewport dimensions
             const viewportHeight = window.innerHeight;
             const viewportTop = window.scrollY;
             const viewportBottom = viewportTop + viewportHeight;
-            
+
             // Calculate distance from edges
             const distanceFromTop = e.clientY;
             const distanceFromBottom = viewportHeight - e.clientY;
-            
+
             // Auto-scroll if near edges
             if (distanceFromTop < scrollThreshold) {
               // Near top - scroll up
@@ -105,7 +105,7 @@
               }, 20);
             }
           });
-          
+
           // Stop auto-scrolling when drag ends
           document.addEventListener('dragend', function() {
             if (autoScrollInterval) {
@@ -113,7 +113,7 @@
               autoScrollInterval = null;
             }
           });
-          
+
           // Also stop auto-scrolling when drop occurs
           document.addEventListener('drop', function() {
             if (autoScrollInterval) {
@@ -143,30 +143,30 @@
 
   <div class="mb-4">
     <label for="package-name" class="block mb-2 text-gray-900 dark:text-white">Package Name</label>
-    <input type="text" id="package-name" x-model="name" :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+    <input type="text" id="package-name" x-model="name" :disabled="!canEdit" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
     <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.name" x-text="errors.name"></p>
 
   </div>
 
   <div class="mb-4">
     <label for="customer-name" class="block mb-2 text-gray-900 dark:text-white">Customer Name</label>
-    <input type="text" id="customer-name" x-model="customerName"  :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+    <input type="text" id="customer-name" x-model="customerName"  :disabled="!canEdit" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
     <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.customerName" x-text="errors.customerName"></p>
   </div>
 
   <div class="mb-4">
     <label class="block mb-2 text-gray-900 dark:text-white">Prepared by</label>
-    <div class="px-3 py-2 text-gray-700 bg-gray-100 rounded border dark:bg-gray-600 dark:text-gray-300">
+    <div class="px-3 py-2 text-gray-700 bg-gray-100 border rounded dark:bg-gray-600 dark:text-gray-300">
       {% if package.prepare_by_user %}{{ package.prepare_by_user.username }}{% else %}N/A{% endif %}
     </div>
   </div>
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark</label>
-    <textarea id="remark" x-model="remark"  :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
+    <textarea id="remark" x-model="remark"  :disabled="!canEdit" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
 </div>
 <div class="mb-4">
     <label for="connection-ref" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Connections Ref</label>
-    <input type="text" id="connection-ref" x-model="connectionRef" :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+    <input type="text" id="connection-ref" x-model="connectionRef" :disabled="!canEdit" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
 </div>
 
 <div class="mb-4" x-show="canEdit">
@@ -203,7 +203,7 @@
 
   <div class="space-y-2" x-show="canEdit">
     <template x-for="(day, index) in days" :key="index">
-      <div class="p-4 rounded-lg border dark:bg-gray-700 drop-zone"
+      <div class="p-4 border rounded-lg dark:bg-gray-700 drop-zone"
            draggable="true"
            @dragstart="
              $event.dataTransfer.setData('application/json', JSON.stringify({index: index}));
@@ -231,15 +231,15 @@
              }
              document.querySelectorAll('.drop-zone-active').forEach(el => el.classList.remove('drop-zone-active'));
            ">
-           <div class="flex justify-between items-center mb-2">
+           <div class="flex items-center justify-between mb-2">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white" x-text="`Day ${index + 1}`"></h2>  <div class="flex items-center">
             <span class="mr-2 text-gray-500 dark:text-gray-400">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
               </svg>
             </span>
-            <button @click="removeDay(index)" class="px-3 py-1 text-white bg-red-500 rounded transition duration-150 ease-in-out hover:bg-red-600">Remove Day</button>
-            <button @click="copyDay(index)" class="flex px-3 py-1 ml-2 text-white bg-blue-600 rounded duration-150 al">
+            <button @click="removeDay(index)" class="px-3 py-1 text-white transition duration-150 ease-in-out bg-red-500 rounded hover:bg-red-600">Remove Day</button>
+            <button @click="copyDay(index)" class="flex px-3 py-1 ml-2 text-white duration-150 bg-blue-600 rounded al">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
               </svg>
@@ -258,15 +258,15 @@
               :value="dateValue ? formatDateForDisplay(dateValue) : ''"
               @click="showDatepicker = !showDatepicker"
               readonly
-              class="px-3 py-2 w-full font-extrabold text-gray-900 bg-white rounded border cursor-pointer dark:bg-gray-700 dark:text-white"
+              class="w-full px-3 py-2 font-extrabold text-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white"
               :class="{'border-red-500': !dateValue}"
               placeholder="Select Date">
 
               <div x-show="showDatepicker"
-              class="absolute z-50 p-4 mt-2 w-64 bg-white rounded-lg shadow-lg dark:bg-gray-800"
+              class="absolute z-50 w-64 p-4 mt-2 bg-white rounded-lg shadow-lg dark:bg-gray-800"
               @click.away="showDatepicker = false"
               x-transition>
-            <div class="flex justify-between items-center mb-2">
+            <div class="flex items-center justify-between mb-2">
               <div>
                 <span x-text="MONTH_NAMES[month]" class="text-lg font-bold"></span>
                 <span x-text="year" class="ml-1 text-lg font-bold"></span>
@@ -312,7 +312,7 @@
                 <label class="block mb-2 text-gray-900 dark:text-white">City</label>
                 <select x-model="day.city"
                         @change="updateCityServices(day); day.hotel = '';"
-                        class="px-3 py-2 w-full font-extrabold text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
+                        class="w-full px-3 py-2 font-extrabold text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                         :class="{'border-red-500': !day.city}">
                   <option value="">Select City</option>
                   {% for city in cities %}
@@ -325,7 +325,7 @@
               <div class="mb-2 md:col-span-3">
                 <label class="block mb-2 text-gray-900 dark:text-white">Hotel</label>
                 <select x-model="day.hotel"
-                        class="px-3 py-2 w-full font-extrabold text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
+                        class="w-full px-3 py-2 font-extrabold text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                         :class="{'border-red-500': !day.hotel}">
                   <option value="">Select Hotel</option>
                   <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
@@ -340,14 +340,14 @@
        <div class="mb-4">
           <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Services</h3>
           <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
-            <div class="flex relative flex-col p-2 mb-2 bg-white rounded border dark:bg-gray-600 service-item">
+            <div class="relative flex flex-col p-2 mb-2 bg-white border rounded dark:bg-gray-600 service-item">
               <div class="flex flex-col p-4 mb-4 bg-white dark:bg-gray-800 dark:border-gray-700">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
                 <div class="md:col-span-2">
                 <select
                   x-model="service.type"
                   @change="service.name = ''"
-                  class="p-2 w-full text-sm text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
+                  class="w-full p-2 text-sm text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                   :class="{'border-red-500': !service.type}"
                 >
                   <option value="">Select Service Type</option>
@@ -361,8 +361,8 @@
 
                 <div class="md:col-span-8">
 
-               
-                <div class="flex relative flex-col flex-grow" x-data="{
+
+                <div class="relative flex flex-col flex-grow" x-data="{
                   open: false,
                   search: '',
                   selectedIndex: -1,
@@ -411,7 +411,7 @@
                       const serviceObj = getServiceNames(day, service.type)?.find(s => String(s.id) === String(service.name));
                       return serviceObj ? `${serviceObj.name} (${formatCommaNumber(serviceObj.price)} THB)` : 'Search service...';
                     })()"
-                    class="p-2 w-full placeholder-gray-900 text-gray-900 bg-white rounded border cursor-pointer dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
+                    class="w-full p-2 text-gray-900 placeholder-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
                     :class="{'border-red-500': service.type && !service.name}"
                   >
                   <template x-if="service.price_at_booking !== undefined && service.price_at_booking !== service.price">
@@ -442,12 +442,12 @@
                     </div>
                   </div>
                 </div>
-                
-           
+
+
                 </div>
                 <div class="md:col-span-2">
-                <button @click="removeService(day, serviceIndex)" class="flex justify-center items-center p-2 w-full text-red-600 bg-red-100 rounded transition-colors duration-200 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 dark:bg-red-900/20">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button @click="removeService(day, serviceIndex)" class="flex items-center justify-center w-full p-2 text-red-600 transition-colors duration-200 bg-red-100 rounded dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 dark:bg-red-900/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   <span class="hidden md:inline">Delete</span>
@@ -480,11 +480,11 @@
                 <input type="text"
                        :value="formatCommaNumber(service.price) + ' THB'"
                        disabled
-                       class="px-3 py-2 w-full text-right bg-gray-100 rounded-md border dark:bg-gray-700 dark:text-white">
+                       class="w-full px-3 py-2 text-right bg-gray-100 border rounded-md dark:bg-gray-700 dark:text-white">
             </div>
 
               <!-- Delete Button - 1 column -->
-              <div class="flex justify-center items-center md:col-span-1">
+              <div class="flex items-center justify-center md:col-span-1">
                   <button @click="removeService(day, serviceIndex)"
                           class="text-red-500 hover:text-red-700">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -509,7 +509,7 @@
               <template x-if="guideService.price_at_booking !== guideService.price">
                 <div class="text-red-500" x-text="`*Previous Price: ${formatCommaNumber(guideService.price_at_booking)} THB`"></div>
               </template>
-              <select x-model="guideService.name" @change="updateGuideService(guideService)" class="px-3 py-2 mr-2 w-3/4 text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+              <select x-model="guideService.name" @change="updateGuideService(guideService)" class="w-3/4 px-3 py-2 mr-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
                 <option value="">Select Guide Service</option>
                 <template x-for="option in guideServices" :key="option.id">
                   <option :value="String(option.id)" x-text="`${option.name} (${formatCommaNumber(option.price)} THB)`" :selected="guideService.name == option.id"></option>
@@ -533,7 +533,7 @@
          <!-- Plus button to add day between (except after the last day) -->
          <template x-if="index < days.length - 1">
           <button @click="insertDayBelow(index)"
-                  class="flex justify-center items-center px-4 py-1 mb-2 w-full text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 dark:text-blue-200"
+                  class="flex items-center justify-center w-full px-4 py-1 mb-2 text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 dark:text-blue-200"
                   title="Insert day here">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -549,8 +549,8 @@
 
     <!-- Add Day button at the end -->
     <button @click="insertDayBelow(days.length - 1)"
-            class="flex justify-center items-center px-4 py-2 w-full font-bold text-white bg-blue-500 rounded hover:bg-blue-600">
-      <svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            class="flex items-center justify-center w-full px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
       </svg>
       Add Day
@@ -564,29 +564,62 @@
 
 <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Hotel Costs</h2>
 
+<!-- Hotel cost mismatch alert -->
+<template x-if="getHotelMismatches().missingFromCosts.length > 0 || getHotelMismatches().orphanedCosts.length > 0">
+  <div class="p-3 mb-3 border border-yellow-300 rounded-lg bg-yellow-50 dark:bg-yellow-900 dark:border-yellow-700">
+    <div class="flex items-start gap-2">
+      <svg class="mt-0.5 w-5 h-5 text-yellow-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+      </svg>
+      <div class="flex-1 text-sm text-yellow-800 dark:text-yellow-300">
+        <p class="mb-1 font-semibold">Hotel Cost Mismatch Detected</p>
+        <template x-if="getHotelMismatches().missingFromCosts.length > 0">
+          <div class="mb-1">
+            <p class="font-medium">Tour day hotels with no matching hotel cost <span class="font-normal">(will show 0 in invoice/Excel):</span></p>
+            <ul class="mt-0.5 ml-4 list-disc">
+              <template x-for="name in getHotelMismatches().missingFromCosts" :key="name">
+                <li x-text="name"></li>
+              </template>
+            </ul>
+          </div>
+        </template>
+        <template x-if="getHotelMismatches().orphanedCosts.length > 0">
+          <div>
+            <p class="font-medium">Hotel costs not used in any tour day:</p>
+            <ul class="mt-0.5 ml-4 list-disc">
+              <template x-for="name in getHotelMismatches().orphanedCosts" :key="name">
+                <li x-text="name"></li>
+              </template>
+            </ul>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</template>
 
 <div class="mb-8">
   <table class="block w-full border-collapse md:table">
     <tbody class="contents md:table-row-group">
       <template x-for="(cost, index) in hotelCosts" :key="index">
         <tr class="block w-full border-b md:table-row md:border-none">
-          <td class="block p-0 w-full md:table-cell">
+          <td class="block w-full p-0 md:table-cell">
             <!-- First TR: Main hotel cost row -->
             <div class="w-full" :data-hotel-index="index">
               <table class="block w-full md:table">
                 <tbody class="block w-full md:table-row-group">
                   <tr class="flex flex-col bg-gray-100 border-b md:table-row dark:border-gray-600 dark:bg-gray-900">
-                    <td class="block p-2 w-full md:w-56 md:table-cell">
+                    <td class="block w-full p-2 md:w-56 md:table-cell">
                       <label class="block mb-1 text-xs text-gray-500">Date In/Out</label>
                       <input
                         type="text"
                         x-model="cost.date"
-                        class="p-2 w-full whitespace-pre-line rounded border dark:bg-gray-700"
+                        class="w-full p-2 whitespace-pre-line border rounded dark:bg-gray-700"
                         placeholder="e.g., 25-27-Nov-24"
                       />
                     </td>
 
-                    <td class="block p-2 w-full md:w-96 md:table-cell">
+                    <td class="block w-full p-2 md:w-96 md:table-cell">
                       <label class="block mb-1 text-xs text-gray-500">Hotel Name</label>
                       <div class="relative" x-data="hotelCostHotelSearch(cost)" :class="open ? 'z-50' : ''" @click.outside="if(open){ open = false; validateInput(); }">
                         <input
@@ -615,23 +648,23 @@
                               open = true;
                             }
                           "
-                          class="p-2 w-full placeholder-gray-900 rounded border dark:bg-gray-700 dark:placeholder-gray-300"
+                          class="w-full p-2 placeholder-gray-900 border rounded dark:bg-gray-700 dark:placeholder-gray-300"
                           :placeholder="cost.name || 'Search hotel...'"
                         />
 
                         <div
                         x-show="open"
-                        class="overflow-y-auto absolute z-50 w-full max-h-60 bg-white rounded-md border shadow-xl dark:bg-gray-700"
+                        class="absolute z-50 w-full overflow-y-auto bg-white border rounded-md shadow-xl max-h-60 dark:bg-gray-700"
                         style="top: 100%; left: 0;"
                         @mousedown.prevent
-                        @click.outside="open = false" 
+                        @click.outside="open = false"
                       >
                           <template x-for="(hotel, index) in filteredHotels()" :key="hotel.id">
                             <div
                               class="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                              :class="{ 
+                              :class="{
                                 'bg-green-100 dark:bg-green-800': hotel.name === cost.name,
-                                'bg-blue-100 dark:bg-blue-800': selectedIndex === index 
+                                'bg-blue-100 dark:bg-blue-800': selectedIndex === index
                               }"
                               @click="selectHotel(hotel)"
                             >
@@ -643,30 +676,30 @@
                       </div>
                     </td>
 
-                    <td class="block p-2 w-full md:w-96 md:table-cell">
+                    <td class="block w-full p-2 md:w-96 md:table-cell">
                       <label class="block mb-1 text-xs text-gray-500">Room Type</label>
                       <input
                         type="text"
                         x-model="cost.type"
-                        class="p-2 w-full rounded border dark:bg-gray-700"
+                        class="w-full p-2 border rounded dark:bg-gray-700"
                         placeholder="Enter hotel Type"
                       />
                     </td>
-                    <td class="block p-2 w-full md:w-96 md:table-cell">
+                    <td class="block w-full p-2 md:w-96 md:table-cell">
                       <label class="block mb-1 text-xs text-gray-500">Promotion</label>
                       <input
                         type="text"
                         x-model="cost.promotion"
-                        class="p-2 w-full rounded border dark:bg-gray-700"
+                        class="w-full p-2 border rounded dark:bg-gray-700"
                         placeholder="Enter promotion"
                       />
                     </td>
-                    
+
                   </tr>
 
                   <tr class="block border-b md:table-row dark:border-gray-600">
                     <td colspan="5" class="block w-full md:table-cell">
-                      <div class="flex flex-wrap gap-4 items-center px-2 py-3">
+                      <div class="flex flex-wrap items-center gap-4 px-2 py-3">
 
                         <div class="flex items-center">
                           <label class="block w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -675,7 +708,7 @@
                           <input
                             type="number"
                             x-model="cost.room"
-                            class="p-2 w-20 text-center rounded border dark:bg-gray-700"
+                            class="w-20 p-2 text-center border rounded dark:bg-gray-700"
                             min="1"
                             placeholder="0"
                           />
@@ -686,7 +719,7 @@
                           </label>
                           <input
                             type="number"
-                            class="p-2 w-20 text-center rounded border dark:bg-gray-700"
+                            class="w-20 p-2 text-center border rounded dark:bg-gray-700"
                             min="1"
                             x-model="cost.nights"
                             placeholder="0"
@@ -697,7 +730,7 @@
                           <label class="block w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
                             Price/Night:
                           </label>
-                          <input type="text" class="px-2 py-1 w-24 text-right rounded border dark:bg-gray-700"
+                          <input type="text" class="w-24 px-2 py-1 text-right border rounded dark:bg-gray-700"
                           x-bind:value="formatCommaNumber(cost.price || 0)"
                           @input="cost.price = unformatCommaNumber($event.target.value); calculateHotelCostTotal()">
                         </div>
@@ -710,7 +743,7 @@
                           type="text"
                           :value="cost.extraBedPrice === null ? '' : formatCommaNumber(cost.extraBedPrice)"
                           @input="cost.extraBedPrice = unformatCommaNumber($event.target.value) || null"
-                          class="p-2 w-24 text-center rounded border dark:bg-gray-700"
+                          class="w-24 p-2 text-center border rounded dark:bg-gray-700"
                           placeholder="0"
                         />
                         </div>
@@ -719,28 +752,33 @@
                             Total THB:
                           </label>
                           <span className="w-56 pl-8 font-medium text-right" x-text="formatCommaNumber(((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) + (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2))"></span>
-                        
-                           <div class="ml-4 w-full">
-                    <button class="px-2 py-2 w-full text-white bg-red-500 rounded hover:bg-red-600" @click="removeHotelCost(index)">
+
+                           <div class="flex gap-1 ml-4">
+
+                    <button class="px-2 py-2 text-white bg-red-500 rounded hover:bg-red-600" @click="removeHotelCost(index)">
                         Delete
-                    </button>                         
+                    </button>
+
+                         <button class="px-2 py-2 text-xs text-white bg-blue-500 rounded whitespace-nowrap hover:bg-teal-600" @click="addAlternativeFromCost(index)" title="Add as alternative hotel (pre-filled)">
+                        + Alternative
+                    </button>
               </div>
                         </div>
-                        
+
                       </div>
-                    </td>                    
-                  </tr>                  
+                    </td>
+                  </tr>
                 </tbody>
               </table>
-               
+
             </div>
-           
+
 
             <!-- Insert button row - appears after each hotel cost except the last one -->
             <template x-if="index < hotelCosts.length - 1">
-              <div class="py-2 w-full">
+              <div class="w-full py-2">
                 <button @click="insertHotelCostBelow(index)"
-                        class="flex justify-center items-center px-4 py-2 space-x-2 w-full text-blue-600 bg-blue-100 rounded-lg border border-blue-200 transition-colors duration-200 hover:bg-blue-200 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-800">
+                        class="flex items-center justify-center w-full px-4 py-2 space-x-2 text-blue-600 transition-colors duration-200 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-800">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                   </svg>
@@ -776,14 +814,14 @@
 
 <!-- ===== Alternative Hotel Options Section ===== -->
 <div class="mt-8 mb-6">
-  <div class="p-5 bg-amber-50 rounded-xl border border-amber-200 shadow-sm dark:bg-gray-800 dark:border-amber-700/50">
-    <div class="flex gap-2 items-center mb-3">
+  <div class="p-5 border shadow-sm bg-amber-50 rounded-xl border-amber-200 dark:bg-gray-800 dark:border-amber-700/50">
+    <div class="flex items-center gap-2 mb-3">
       <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
       </svg>
       <h2 class="text-xl font-semibold text-amber-900 dark:text-amber-300">Alternative Hotel Options</h2>
     </div>
-    <div class="flex gap-3 items-start p-3 text-sm text-amber-800 bg-white rounded-lg border border-amber-200 dark:bg-gray-700/60 dark:border-amber-700/40 dark:text-yellow-300">
+    <div class="flex items-start gap-3 p-3 text-sm bg-white border rounded-lg text-amber-800 border-amber-200 dark:bg-gray-700/60 dark:border-amber-700/40 dark:text-yellow-900">
       <svg class="mt-0.5 w-4 h-4 shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
         <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
       </svg>
@@ -806,8 +844,8 @@
 
   <!-- Empty state -->
   <div x-show="alternativeHotels.length === 0"
-       class="py-10 text-center text-gray-400 rounded-xl border-2 border-gray-200 border-dashed dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-500">
-    <svg class="mx-auto mb-3 w-10 h-10 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+       class="py-10 text-center text-gray-400 border-2 border-gray-200 border-dashed rounded-xl dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-500">
+    <svg class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
     </svg>
     <p class="text-sm">No alternatives yet. Click <strong>Add Alternative</strong> to begin.</p>
@@ -815,19 +853,19 @@
 
   <!-- Alternative cards -->
   <template x-for="(alt, altIndex) in alternativeHotels" :key="altIndex">
-    <div class="mb-4 bg-white rounded-xl border border-amber-200 shadow-sm dark:bg-gray-800 dark:border-amber-700/60">
+    <div class="mb-4 bg-white border shadow-sm rounded-xl border-amber-200 dark:bg-gray-800 dark:border-amber-700/60">
 
       <!-- Card header -->
-      <div class="flex justify-between items-center px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-t-xl border-b border-amber-100 dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800">
-        <div class="flex gap-2 items-center">
-          <span class="flex justify-center items-center w-6 h-6 text-xs font-bold text-white bg-amber-500 rounded-full" x-text="altIndex + 1"></span>
+      <div class="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-amber-50 to-orange-50 rounded-t-xl border-amber-100 dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800">
+        <div class="flex items-center gap-2">
+          <span class="flex items-center justify-center w-6 h-6 text-xs font-bold text-white rounded-full bg-amber-500" x-text="altIndex + 1"></span>
           <span class="font-medium text-amber-900 dark:text-amber-200"
                 x-text="alt.name || 'Alternative Hotel ' + (altIndex + 1)"></span>
           <span x-show="alt.date" class="px-2 py-0.5 text-xs text-amber-600 bg-amber-100 rounded-full dark:text-amber-300 dark:bg-amber-900/50"
                 x-text="alt.date"></span>
         </div>
         <button @click="removeAlternativeHotel(altIndex)"
-                class="flex gap-1 items-center px-3 py-1 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 dark:text-red-400 dark:bg-red-900/30 dark:hover:bg-red-900/50">
+                class="flex items-center gap-1 px-3 py-1 text-xs font-medium text-red-600 rounded-lg bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-900/30 dark:hover:bg-red-900/50">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
@@ -854,20 +892,20 @@
                    :placeholder="alt.name || 'Search or type any hotel name…'" />
             <!-- Selected indicator -->
             <div x-show="alt.name && !open"
-                 class="flex absolute inset-y-0 right-3 items-center pointer-events-none">
+                 class="absolute inset-y-0 flex items-center pointer-events-none right-3">
               <span class="px-2 py-0.5 text-xs text-amber-700 bg-amber-100 rounded-full dark:text-amber-300 dark:bg-amber-900/50"
                     x-text="alt.name"></span>
             </div>
             <!-- Dropdown -->
             <div x-show="open"
-                 class="overflow-y-auto absolute left-0 z-50 w-full max-h-56 bg-white rounded-lg border border-gray-200 shadow-xl dark:bg-gray-700 dark:border-gray-600"
+                 class="absolute left-0 z-50 w-full overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl max-h-56 dark:bg-gray-700 dark:border-gray-600"
                  style="top: 100%; margin-top: 2px;"
                  @mousedown.prevent>
               <!-- Free-text option shown when user typed something not matching -->
               <div x-show="search.trim() && !filteredHotels().some(h => h.name.toLowerCase() === search.trim().toLowerCase())"
-                   class="flex items-center px-3 py-2 text-sm text-blue-700 bg-blue-50 border-b border-gray-100 cursor-pointer hover:bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30 dark:border-gray-600 dark:hover:bg-blue-900/50"
+                   class="flex items-center px-3 py-2 text-sm text-blue-700 border-b border-gray-100 cursor-pointer bg-blue-50 hover:bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30 dark:border-gray-600 dark:hover:bg-blue-900/50"
                    @click="alt.name = search.trim(); search = ''; open = false">
-                <svg class="mr-2 w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
                 Use "<span class="ml-1 font-medium" x-text="search.trim()"></span>"
@@ -890,19 +928,19 @@
           <div>
             <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Date In/Out</label>
             <input type="text" x-model="alt.date"
-                   class="p-2 w-full text-sm rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                   class="w-full p-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                    placeholder="e.g., 25-27-Nov-24" />
           </div>
           <div>
             <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Room Type</label>
             <input type="text" x-model="alt.type"
-                   class="p-2 w-full text-sm rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                   class="w-full p-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                    placeholder="Deluxe, Superior…" />
           </div>
           <div>
             <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Promotion</label>
             <input type="text" x-model="alt.promotion"
-                   class="p-2 w-full text-sm rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                   class="w-full p-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                    placeholder="Early bird, etc." />
           </div>
         </div>
@@ -912,26 +950,26 @@
           <div class="flex flex-col">
             <label class="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Rooms</label>
             <input type="number" x-model="alt.room" min="1"
-                   class="p-2 w-20 text-sm text-center rounded-lg border dark:bg-gray-700 dark:border-gray-600" placeholder="0" />
+                   class="w-20 p-2 text-sm text-center border rounded-lg dark:bg-gray-700 dark:border-gray-600" placeholder="0" />
           </div>
           <div class="flex flex-col">
             <label class="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Nights</label>
             <input type="number" x-model="alt.nights" min="1"
-                   class="p-2 w-20 text-sm text-center rounded-lg border dark:bg-gray-700 dark:border-gray-600" placeholder="0" />
+                   class="w-20 p-2 text-sm text-center border rounded-lg dark:bg-gray-700 dark:border-gray-600" placeholder="0" />
           </div>
           <div class="flex flex-col">
             <label class="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Price / Night</label>
             <input type="text"
                    :value="formatCommaNumber(alt.price || 0)"
                    @input="alt.price = unformatCommaNumber($event.target.value)"
-                   class="p-2 w-32 text-sm text-right rounded-lg border dark:bg-gray-700 dark:border-gray-600" />
+                   class="w-32 p-2 text-sm text-right border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
           </div>
           <div class="flex flex-col">
             <label class="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Extra Bed / Night</label>
             <input type="text"
                    :value="alt.extraBedPrice === null ? '' : formatCommaNumber(alt.extraBedPrice)"
                    @input="alt.extraBedPrice = unformatCommaNumber($event.target.value) || null"
-                   class="p-2 w-32 text-sm text-center rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                   class="w-32 p-2 text-sm text-center border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                    placeholder="0" />
           </div>
           <!-- Calculated preview -->
@@ -943,7 +981,7 @@
         </div>
 
         <!-- Action bar: Pre-fill + Swap -->
-        <div class="flex flex-wrap gap-4 items-end pt-4 border-t border-gray-100 dark:border-gray-700">
+        <div class="flex flex-wrap items-end gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
 
           <!-- Pre-fill from hotel cost -->
           <div class="flex flex-col flex-1 min-w-48">
@@ -952,7 +990,7 @@
             </label>
             <div class="flex gap-2">
               <select x-model="alt._prefillIndex"
-                      class="flex-1 p-2 text-sm rounded-lg border dark:bg-gray-700 dark:border-gray-600">
+                      class="flex-1 p-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600">
                 <option value="">— select hotel cost —</option>
                 <template x-for="(cost, ci) in hotelCosts" :key="ci">
                   <option :value="ci"
@@ -975,7 +1013,7 @@
             </label>
             <div class="flex gap-2">
               <select x-model="alt._swapTargetIndex"
-                      class="flex-1 p-2 text-sm rounded-lg border dark:bg-gray-700 dark:border-gray-600">
+                      class="flex-1 p-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600">
                 <option value="">— select hotel cost —</option>
                 <template x-for="(cost, ci) in hotelCosts" :key="ci">
                   <option :value="ci"
@@ -1001,12 +1039,12 @@
 <div class="mt-2 text-gray-900 dark:text-white">
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark hotels</label>
-    <textarea rows="8" id="remark_of_hotels" x-model="remark_of_hotels"   class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
+    <textarea rows="8" id="remark_of_hotels" x-model="remark_of_hotels"   class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
   </div>
 
   <div class="mb-4">
     <label for="special_note" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Special Note</label>
-    <textarea rows="8" id="special_note" x-model="special_note" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
+    <textarea rows="8" id="special_note" x-model="special_note" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
   </div>
 </div>
 
@@ -1029,7 +1067,7 @@
         <template x-for="(extraCost, index) in extraCosts" :key="index">
           <tr>
             <td class="px-2 border">
-              <input type="text" x-model="extraCost.item" class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+              <input type="text" x-model="extraCost.item" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
 
             <td class="px-2 border" x-data="{ displayValue: formatCommaNumber(extraCost.price || 0), actualValue: extraCost.price || 0 }">
@@ -1039,14 +1077,14 @@
                              extraCost.price = actualValue;
                              extraCost.amount = (parseFloat(extraCost.price || 0) * (isNaN(parseFloat(extraCost.qty)) ? 1 : parseFloat(extraCost.qty))).toFixed(2);
                              displayValue = formatCommaNumber(actualValue);"
-                     class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+                     class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
 
             <td class="px-2 border">
-                <input type="number" 
-                       x-model="extraCost.qty" 
+                <input type="number"
+                       x-model="extraCost.qty"
                        @input="extraCost.amount = (parseFloat(extraCost.price || 0) * (isNaN(parseFloat($event.target.value)) ? 1 : parseFloat($event.target.value))).toFixed(2);"
-                       class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+                       class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
 
             <td class="px-2 border">
@@ -1085,7 +1123,7 @@
         <template x-for="(discount, index) in discounts" :key="index">
           <tr>
             <td class="px-2 border">
-              <input type="text" x-model="discount.item" class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+              <input type="text" x-model="discount.item" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
 
 
@@ -1095,7 +1133,7 @@
                      @input="actualValue = unformatCommaNumber($event.target.value);
                              discount.amount = actualValue;
                              displayValue = formatCommaNumber(actualValue);"
-                     class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+                     class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
 
 
@@ -1121,7 +1159,7 @@
 <div class="mt-8 mb-4">
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2 (Only Superuser/Assitance are allowed to edit)</label>
-    <textarea id="remark2" x-model="remark2" :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
+    <textarea id="remark2" x-model="remark2" :disabled="!canEdit" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
   </div>
 
   <div class="p-4 mb-4 bg-blue-100 rounded-lg dark:bg-blue-900">
@@ -1138,7 +1176,7 @@
 
 <div class="mb-4">
     <label for="billing-name" class="block mb-2 text-gray-900 dark:text-white">Billing Name</label>
-    <textarea id="billing-name" x-model="billingName" rows="3" :disabled="!canEdit" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white" placeholder="Enter billing name (supports multiple lines)"></textarea>
+    <textarea id="billing-name" x-model="billingName" rows="3" :disabled="!canEdit" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white" placeholder="Enter billing name (supports multiple lines)"></textarea>
     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Press Enter for new lines</p>
   </div>
 
@@ -1236,7 +1274,7 @@
       // Validate Hotel Costs
       for (let i = 0; i < hotelCosts.length; i++) {
           const cost = hotelCosts[i];
-          
+
           // Calculate total cost
           const totalCost = ((parseFloat(cost.room) || 0) * (parseFloat(cost.nights) || 0) * (parseFloat(cost.price) || 0) +
                             (parseFloat(cost.nights) || 0) * (parseFloat(cost.extraBedPrice) || 0)).toFixed(2);
@@ -1271,7 +1309,7 @@
 
       saveTourPackage();
   })()"
-    class="fixed right-8 bottom-8 z-50 p-4 text-white bg-green-600 rounded-full shadow-lg transition-transform duration-300 transform hover:bg-green-700 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-800"
+    class="fixed z-50 p-4 text-white transition-transform duration-300 transform bg-green-600 rounded-full shadow-lg right-8 bottom-8 hover:bg-green-700 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-800"
     :title="packageReference ? 'Update Package' : 'Create Package'">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -1279,11 +1317,11 @@
   </button>
 
   <!-- Custom modal component -->
-  <div x-show="showModal" class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50" x-cloak>
-    <div class="p-6 max-w-md bg-white rounded-lg shadow-xl dark:bg-gray-800">
+  <div x-show="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" x-cloak>
+    <div class="max-w-md p-6 bg-white rounded-lg shadow-xl dark:bg-gray-800">
 
-      <div class="flex flex-col justify-center items-center text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto w-32 h-32 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div class="flex flex-col items-center justify-center text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-32 h-32 mx-auto text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         <h3 class="text-lg font-bold text-red-600 dark:text-red-400">Warning</h3>
@@ -1292,7 +1330,7 @@
 
       <div class="mb-4" x-html="modalMessage"></div>
       <div class="flex justify-center space-x-3">
-        <button @click="showModal = false" class="px-4 py-2 w-full text-gray-600 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+        <button @click="showModal = false" class="w-full px-4 py-2 text-gray-600 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
           Cancel
         </button>
         <button @click="if(confirmAction) { confirmAction(); showModal = false; }" class="w-full text-white bg-red-600 rounded hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">

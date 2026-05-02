@@ -1159,6 +1159,23 @@ window.tourPackage = function () {
       });
     },
 
+    addAlternativeFromCost(index) {
+      const cost = this.hotelCosts[index];
+      if (!cost) return;
+      this.alternativeHotels.push({
+        name: cost.name || '',
+        date: cost.date || '',
+        type: cost.type || '',
+        promotion: cost.promotion || '',
+        room: cost.room || 0,
+        nights: cost.nights || 0,
+        price: null,
+        extraBedPrice: null,
+        _prefillIndex: String(index),
+        _swapTargetIndex: '',
+      });
+    },
+
     removeAlternativeHotel(altIndex) {
       this.alternativeHotels.splice(altIndex, 1);
     },
@@ -1167,9 +1184,12 @@ window.tourPackage = function () {
       const cost = this.hotelCosts[costIndex];
       if (!cost) return;
       const alt = this.alternativeHotels[altIndex];
+      alt.name = cost.name || '';
       alt.date = cost.date || '';
-      alt.room = cost.room;
-      alt.nights = cost.nights;
+      alt.type = cost.type || '';
+      alt.promotion = cost.promotion || '';
+      alt.room = cost.room || 0;
+      alt.nights = cost.nights || 0;
     },
 
     swapAlternativeWithCost(altIndex, costIndex) {
@@ -1196,6 +1216,23 @@ window.tourPackage = function () {
 
     removeExtraCost(index) {
       this.extraCosts.splice(index, 1);
+    },
+
+    getHotelMismatches() {
+      const tourDayNames = new Set();
+      for (const day of this.days) {
+        if (!day.hotel) continue;
+        const hotels = day.cityServices?.hotels || [];
+        const info = hotels.find(h => h.id.toString() === day.hotel);
+        if (info?.name) tourDayNames.add(info.name);
+      }
+      const costNames = new Set(
+        this.hotelCosts.map(c => c.name).filter(Boolean)
+      );
+      return {
+        missingFromCosts: [...tourDayNames].filter(n => !costNames.has(n)),
+        orphanedCosts: [...costNames].filter(n => !tourDayNames.has(n)),
+      };
     },
 
     calculateHotelCostTotal() {

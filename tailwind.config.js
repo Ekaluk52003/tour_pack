@@ -1,10 +1,13 @@
 module.exports = {
-  purge: ["./tours/templates/**/*.html", "./static/**/*.js"],
+  content: [
+    "./templates/**/*.html",
+    "./tours/templates/**/*.html",
+    "./backup_manager/templates/**/*.html",
+    "./static/**/*.js",
+    "./static/**/*.css",
+  ],
   darkMode: 'class',
   theme: {
-    extend: {},
-  },
-  variants: {
     extend: {},
   },
   plugins: [],

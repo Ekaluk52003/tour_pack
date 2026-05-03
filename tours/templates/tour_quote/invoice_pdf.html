@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load invoice_filters %}<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -115,10 +115,10 @@
       <td style="font-size:10px; white-space:nowrap;">{% if item_with_meta.meta and item_with_meta.meta.arrival_date %}{{ item_with_meta.meta.arrival_date|date:"d-M-Y" }}{% endif %}</td>
       <td style="font-size:10px; white-space:nowrap;">{% if item_with_meta.meta and item_with_meta.meta.departure_date %}{{ item_with_meta.meta.departure_date|date:"d-M-Y" }}{% endif %}</td>
       <td>
-        {{ item.description }}
+        {{ item.description|strip_date_meta }}
         {% if item_with_meta.meta and item_with_meta.meta.room_price %}
           <div style="font-size:10px; color:#64748b; margin-top:2px;">
-            {{ item_with_meta.meta.room_price|floatformat:0|intcomma }} THB/night x {{ item_with_meta.meta.nights }} nights{% if item_with_meta.meta.room_count > 1 %} x {{ item_with_meta.meta.room_count }} rooms{% endif %}
+            {{ item_with_meta.meta.room_price|floatformat:0|intcomma }} THB/night{% if item_with_meta.meta.room_count > 1 %} × {{ item_with_meta.meta.room_count }} rooms{% endif %} × {{ item_with_meta.meta.nights }} nights{% if item_with_meta.meta.extra_bed_price %} + extra bed {{ item_with_meta.meta.extra_bed_price|floatformat:0|intcomma }}{% endif %}
           </div>
         {% endif %}
       </td>

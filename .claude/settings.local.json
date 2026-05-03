@@ -4,7 +4,10 @@
       "Bash(dir \"D:\\\\Django\\\\tour_pack\\\\\" 2>/dev/null | head -20)",
       "Bash(python *)",
       "Bash(docker compose *)",
-      "Bash(grep -E \"\\\\.\\(py|html\\)$\")"
+      "Bash(grep -E \"\\\\.\\(py|html\\)$\")",
+      "Bash(Get-ChildItem -Path \"D:\\\\Django\\\\tour_pack\" -Recurse -Name)",
+      "Bash(Select-String \"tours[/\\\\\\\\]\")",
+      "Bash(xargs grep *)"
     ]
   }
 }

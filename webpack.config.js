@@ -36,14 +36,13 @@ module.exports = {
     port: 8080,
     writeToDisk: true,
   },
+  watchOptions: {
+    poll: 1000,
+    aggregateTimeout: 300,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "static/js"),
     },
   },
-  watch: true,
-  watchOptions: {
-    ignored: /node_modules/,
-    poll: 1000 // Check for changes every second
-  }
 };

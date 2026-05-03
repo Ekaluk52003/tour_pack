@@ -4,6 +4,7 @@ export default function invoiceForm() {
     supplierExpenses: [],
     allSuppliers: JSON.parse(document.getElementById('suppliers-data').textContent),
     groupedItems: JSON.parse(document.getElementById('grouped-items-data').textContent),
+    insertMenuIdx: null,
 
     init() {
       // Initialize groupedItems with edit flags and hotel defaults
@@ -11,6 +12,7 @@ export default function invoiceForm() {
         ...item,
         arrivalEdit: false,
         departureEdit: false,
+        insertOpen: false,
         room_count: item.room_count || 1,
         nights: item.nights || 1,
         room_price: item.room_price || 0,
@@ -43,6 +45,10 @@ export default function invoiceForm() {
       document.addEventListener('mousedown', (e) => {
         if (!e.target.closest || !e.target.closest('[data-combobox]')) {
           this._closeAllDrops();
+        }
+        if (!e.target.closest || !e.target.closest('[data-insert-menu]')) {
+          this.groupedItems.forEach(i => { i.insertOpen = false; });
+          this.insertMenuIdx = null;
         }
       });
     },
@@ -165,10 +171,50 @@ export default function invoiceForm() {
         service_name: '', price: '0',
         is_hotel: false, is_discount: false, is_extra_cost: false,
         arrivalEdit: false, departureEdit: false,
+        insertOpen: false,
         room_count: 1, room_price: 0, extra_bed_price: 0,
       });
     },
     removeGroupedItem(idx) { this.groupedItems.splice(idx, 1); },
+
+    openInsertMenu(idx, item) {
+      const wasOpen = item.insertOpen;
+      this.groupedItems.forEach(i => { i.insertOpen = false; });
+      if (!wasOpen) {
+        item.insertOpen = true;
+        this.insertMenuIdx = idx;
+      } else {
+        this.insertMenuIdx = null;
+      }
+    },
+
+    insertServiceAfter(idx) {
+      if (idx === null) return;
+      this.groupedItems[idx].insertOpen = false;
+      this.groupedItems.splice(idx + 1, 0, {
+        arrival_date: '', departure_date: '', nights: '',
+        service_name: '', price: '0',
+        is_hotel: false, is_discount: false, is_extra_cost: false,
+        arrivalEdit: false, departureEdit: false,
+        insertOpen: false,
+        room_count: 1, room_price: 0, extra_bed_price: 0,
+      });
+      this.insertMenuIdx = null;
+    },
+
+    insertHotelAfter(idx) {
+      if (idx === null) return;
+      this.groupedItems[idx].insertOpen = false;
+      this.groupedItems.splice(idx + 1, 0, {
+        arrival_date: '', departure_date: '', nights: 1,
+        service_name: '', price: '0',
+        is_hotel: true, is_discount: false, is_extra_cost: false,
+        arrivalEdit: false, departureEdit: false,
+        insertOpen: false,
+        room_count: 1, room_price: 0, extra_bed_price: 0,
+      });
+      this.insertMenuIdx = null;
+    },
 
     addExpense() {
       this.supplierExpenses.push({
@@ -192,8 +238,10 @@ export default function invoiceForm() {
         ...rest
       }) => rest);
       // Derive invoice items from grouped items
+      // Encode arrival/departure/nights into description using ||| separator so
+      // the edit form can restore them without a model change.
       const derivedInvoiceItems = this.groupedItems.map((item, idx) => ({
-        description: item.service_name || '',
+        description: `${item.service_name || ''}|||${item.arrival_date || ''}|||${item.departure_date || ''}|||${item.nights || ''}|||${item.room_count || ''}|||${item.room_price || ''}|||${item.extra_bed_price || ''}`,
         quantity: '1',
         unit_price: String(item.price || 0),
         amount: String(item.price || 0),

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load humanize %}
+{% load humanize invoice_filters %}
 
 {% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
 
@@ -79,10 +79,10 @@
               {% endif %}
             </td>
             <td class="px-2 py-1 text-gray-800 dark:text-gray-200 {% if item.item_type == 'Discount' %}text-red-600 dark:text-red-400{% endif %}">
-              {{ item.description }}
+              {{ item.description|strip_date_meta }}
               {% if item_with_meta.meta and item_with_meta.meta.room_price %}
                 <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {{ item_with_meta.meta.room_price|floatformat:0|intcomma }} THB/night x {{ item_with_meta.meta.nights }} nights{% if item_with_meta.meta.room_count > 1 %} x {{ item_with_meta.meta.room_count }} rooms{% endif %}
+                  {{ item_with_meta.meta.room_price|floatformat:0|intcomma }} THB/night{% if item_with_meta.meta.room_count > 1 %} × {{ item_with_meta.meta.room_count }} rooms{% endif %} × {{ item_with_meta.meta.nights }} nights{% if item_with_meta.meta.extra_bed_price %} + extra bed {{ item_with_meta.meta.extra_bed_price|floatformat:0|intcomma }}{% endif %}
                 </div>
               {% endif %}
             </td>

@@ -27,7 +27,7 @@
 
   <!-- Invoice metadata -->
   <div class="grid grid-cols-1 gap-4 p-4 mb-6 bg-white rounded-lg shadow dark:bg-gray-800 md:grid-cols-3">
-    <div class="md:col-span-3">
+    <div class="md:col-span-1">
       <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Agency</label>
       <select name="agency" class="px-3 py-2 w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500">
         <option value="">— No Agency —</option>
@@ -35,6 +35,14 @@
           <option value="{{ agency.id }}" {% if invoice.agency_id == agency.id %}selected{% endif %}>{{ agency.name }}</option>
         {% endfor %}
       </select>
+    </div>
+    <div class="md:col-span-1">
+      <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Connection Ref</label>
+      <p class="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">{{ invoice.tour_package.connection_ref|default:"—" }}</p>
+    </div>
+    <div class="md:col-span-1">
+      <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Billing Name</label>
+      <p class="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">{{ invoice.tour_package.billing_name|linebreaksbr|default:"—" }}</p>
     </div>
     <div class="md:col-span-1">
       <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Issue Date</label>
@@ -67,7 +75,7 @@
     <!-- LEFT: Invoice to Client -->
     <div class="p-4 min-w-0 bg-white rounded-lg shadow dark:bg-gray-800">
       <h2 class="mb-3 text-lg font-semibold text-blue-700 dark:text-blue-400">Invoice to Client</h2>
-      <div class="overflow-x-auto">
+      <div>
         <table class="w-full text-xs text-left table-fixed">
           <thead class="bg-blue-50 dark:bg-gray-700">
             <tr>
@@ -75,6 +83,7 @@
               <th class="px-2 py-2 w-24 font-medium text-gray-600 dark:text-gray-300">Dep.</th>
               <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Detail</th>
               <th class="px-2 py-2 w-28 font-medium text-gray-600 dark:text-gray-300">Price</th>
+              <th class="px-1 py-2 w-12"></th>
             </tr>
           </thead>
           <tbody>
@@ -91,7 +100,7 @@
                   <template x-if="!item.arrivalEdit">
                     <div @click="item.arrivalEdit = true" tabindex="0"
                          x-text="formatDateShort(item.arrival_date)"
-                         class="cursor-pointer px-1 py-1 w-full text-xs text-gray-700 dark:text-gray-300 min-h-[1.5rem]"></div>
+                         class="cursor-pointer px-1 py-1 w-full text-xs text-gray-700 dark:text-gray-300 min-h-[1.5rem] rounded border border-dashed border-blue-300 dark:border-blue-600 hover:border-blue-500 dark:hover:border-blue-400"></div>
                   </template>
                 </td>
                 <td class="px-1 py-1 w-24">
@@ -104,7 +113,7 @@
                   <template x-if="!item.departureEdit">
                     <div @click="item.departureEdit = true" tabindex="0"
                          x-text="formatDateShort(item.departure_date)"
-                         class="cursor-pointer px-1 py-1 w-full text-xs text-gray-700 dark:text-gray-300 min-h-[1.5rem]"></div>
+                         class="cursor-pointer px-1 py-1 w-full text-xs text-gray-700 dark:text-gray-300 min-h-[1.5rem] rounded border border-dashed border-blue-300 dark:border-blue-600 hover:border-blue-500 dark:hover:border-blue-400"></div>
                   </template>
                 </td>
                 <td class="px-1 py-1">
@@ -143,6 +152,30 @@
                 <td class="px-1 py-1 w-28">
                   <input type="number" x-model="item.price" step="0.01"
                          class="px-2 py-1 w-full text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </td>
+                <td class="px-1 py-1 w-12">
+                  <div class="flex gap-1 justify-center items-center">
+                    <div data-insert-menu class="relative">
+                      <button type="button" @click="openInsertMenu(idx, item)"
+                              title="Insert row below"
+                              class="font-bold text-blue-400 hover:text-blue-600">+</button>
+                      <div x-show="item.insertOpen"
+                           data-insert-menu
+                           class="absolute right-0 top-full z-50 mt-px overflow-hidden text-xs bg-white rounded border border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-600">
+                        <button type="button" @click="insertServiceAfter(insertMenuIdx)"
+                                class="block px-3 py-2 w-full text-left text-gray-700 whitespace-nowrap hover:bg-blue-50 dark:text-gray-200 dark:hover:bg-gray-700">
+                          + Service
+                        </button>
+                        <button type="button" @click="insertHotelAfter(insertMenuIdx)"
+                                class="block px-3 py-2 w-full text-left text-blue-600 whitespace-nowrap border-t border-gray-100 hover:bg-blue-50 dark:text-blue-400 dark:border-gray-700 dark:hover:bg-gray-700">
+                          + Hotel
+                        </button>
+                      </div>
+                    </div>
+                    <button type="button" @click="removeGroupedItem(idx)"
+                            title="Delete row"
+                            class="text-red-400 hover:text-red-600">✕</button>
+                  </div>
                 </td>
               </tr>
             </template>

@@ -24,10 +24,8 @@ services:
     container_name: webpack
     build:
       context: .
-      dockerfile: Dockerfile.webpack  # Create a separate Dockerfile for Webpack
-    command: npm run watch  # Using watch mode
-    stdin_open: true        # Add for interactive inputs
-    tty: true               # Keep the terminal session open
+      dockerfile: Dockerfile.webpack
+    command: npm run watch
     volumes:
       - .:/app
     depends_on:

@@ -200,6 +200,13 @@
             color: #0077b6;
         }
 
+        .table.alt-table th {
+            color: #888888;
+        }
+        .table.alt-table td {
+            color: #888888;
+        }
+
         .table tr {
             page-break-inside: avoid;
         }
@@ -391,6 +398,39 @@
         <div style="white-space: pre-wrap; color: green;"><div class="special-items">{{ special_note|safe }}</div></div>
         <br>
 {% endif %}
+
+   {% if alternative_hotels %}
+        <div style="color: #666666;">
+            <h3 style="margin-bottom: 6px; color: #888888; font-weight: normal;">Alternative Hotel Options</h3>
+            <table class="table alt-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Hotel Name</th>
+                        <th>Room type</th>
+                        <th>Rooms</th>
+                        <th>Nights</th>
+                   
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for alt in alternative_hotels %}
+                    <tr>
+                        <td>{{ alt.date|default:"-" }}</td>
+                        <td>{{ alt.name|default:"-" }}
+                            {% if alt.promotion %}
+                            <div style="white-space: pre-wrap;"><div class="">{{ alt.promotion }}</div></div>
+                            {% endif %}
+                        </td>
+                        <td>{{ alt.type|default:"-" }}</td>
+                        <td>{{ alt.room|default:"-" }}</td>
+                        <td>{{ alt.nights|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
 </div>
 </body>
 </html>

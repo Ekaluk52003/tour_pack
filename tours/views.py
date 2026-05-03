@@ -412,7 +412,8 @@ def tour_package_pdf_no_cost(request, pk):
         'remark_of_hotels': remark_of_hotels,
         'special_note': special_note,
         'logo_data_uri': logo_data_uri,
-        'hide_costs': True  # Flag to hide costs in template
+        'hide_costs': True,  # Flag to hide costs in template
+        'alternative_hotels': package.alternative_hotels,
     })
     
     # Create response and set filename
@@ -3206,6 +3207,40 @@ def build_prepopulated_invoice_data(package):
     return invoice_items, supplier_expenses
 
 
+def _parse_item_meta(description):
+    """Parse InvoiceItem description encoded as:
+    service_name|||arrival|||departure|||nights|||room_count|||room_price|||extra_bed_price
+    Returns a dict; all date/numeric fields are None when absent.
+    """
+    parts = description.split('|||')
+
+    def _date(s):
+        if not s or not s.strip():
+            return None
+        try:
+            return datetime.strptime(s.strip(), '%Y-%m-%d').date()
+        except ValueError:
+            return None
+
+    def _num(s, default=None):
+        if s is None or str(s).strip() == '':
+            return default
+        try:
+            return float(str(s).strip())
+        except (ValueError, TypeError):
+            return default
+
+    return {
+        'service_name':    parts[0] if parts else description,
+        'arrival_date':    _date(parts[1]) if len(parts) > 1 else None,
+        'departure_date':  _date(parts[2]) if len(parts) > 2 else None,
+        'nights':          parts[3].strip() if len(parts) > 3 and parts[3].strip() else None,
+        'room_count':      _num(parts[4], None) if len(parts) > 4 else None,
+        'room_price':      _num(parts[5], None) if len(parts) > 5 else None,
+        'extra_bed_price': _num(parts[6], None) if len(parts) > 6 else None,
+    }
+
+
 def _get_suppliers_data():
     return [
         {
@@ -3379,18 +3414,27 @@ def edit_invoice(request, invoice_id):
         inv = existing_items[i] if i < len(existing_items) else None
 
         if inv:
+            saved = _parse_item_meta(inv.description)
+
+            def _pkg_date_str(key):
+                val = pkg.get(key, '') if pkg else ''
+                return val.strftime('%Y-%m-%d') if hasattr(val, 'strftime') else str(val or '')
+
+            arr = (saved['arrival_date'].strftime('%Y-%m-%d') if saved['arrival_date'] else '') or _pkg_date_str('arrival_date')
+            dep = (saved['departure_date'].strftime('%Y-%m-%d') if saved['departure_date'] else '') or _pkg_date_str('departure_date')
+
             grouped_items.append({
-                'arrival_date': pkg.get('arrival_date', '') if pkg else '',
-                'departure_date': pkg.get('departure_date', '') if pkg else '',
-                'nights': pkg.get('nights', '') if pkg else '',
-                'service_name': inv.description,
-                'price': str(inv.amount),
-                'is_hotel': inv.item_type == InvoiceItem.ITEM_TYPE_HOTEL,
-                'is_discount': inv.item_type == InvoiceItem.ITEM_TYPE_DISCOUNT,
-                'is_extra_cost': inv.item_type == InvoiceItem.ITEM_TYPE_EXTRA,
-                'room_price': pkg.get('room_price', 0) if pkg else 0,
-                'room_count': pkg.get('room_count', 1) if pkg else 1,
-                'extra_bed_price': pkg.get('extra_bed_price', 0) if pkg else 0,
+                'arrival_date':    arr,
+                'departure_date':  dep,
+                'nights':          saved['nights'] or (str(pkg.get('nights', '')) if pkg else ''),
+                'service_name':    saved['service_name'],
+                'price':           str(inv.amount),
+                'is_hotel':        inv.item_type == InvoiceItem.ITEM_TYPE_HOTEL,
+                'is_discount':     inv.item_type == InvoiceItem.ITEM_TYPE_DISCOUNT,
+                'is_extra_cost':   inv.item_type == InvoiceItem.ITEM_TYPE_EXTRA,
+                'room_price':      saved['room_price']      if saved['room_price']      is not None else (pkg.get('room_price', 0)      if pkg else 0),
+                'room_count':      saved['room_count']      if saved['room_count']      is not None else (pkg.get('room_count', 1)      if pkg else 1),
+                'extra_bed_price': saved['extra_bed_price'] if saved['extra_bed_price'] is not None else (pkg.get('extra_bed_price', 0) if pkg else 0),
             })
         elif pkg:
             # Package item not saved to invoice (shouldn't happen, but handle)
@@ -3440,23 +3484,29 @@ def invoice_detail(request, invoice_id):
     total_expenses = sum(e.amount for e in expenses)
     margin = invoice.total_amount - total_expenses
 
-    # Build per-night pricing from current package grouped data for hotel items
+    # Dates and hotel pricing come from saved description metadata,
+    # falling back to current package data only when absent.
     grouped_items, _ = get_grouped_tour_data(invoice.tour_package)
     items_with_meta = []
     for i, item in enumerate(items):
-        meta = None
-        if i < len(grouped_items):
-            gi = grouped_items[i]
-            meta = {
-                'arrival_date': gi.get('arrival_date'),
-                'departure_date': gi.get('departure_date'),
-            }
-            if gi.get('is_hotel') and gi.get('room_price'):
-                meta.update({
-                    'room_price': gi.get('room_price', 0),
-                    'room_count': gi.get('room_count', 1),
-                    'nights': gi.get('nights', 1),
-                })
+        saved = _parse_item_meta(item.description)
+        gi = grouped_items[i] if i < len(grouped_items) else None
+
+        arrival   = saved['arrival_date']   or (gi.get('arrival_date')   if gi else None)
+        departure = saved['departure_date'] or (gi.get('departure_date') if gi else None)
+        nights      = saved['nights']          or (str(gi.get('nights', ''))      if gi else '')
+        room_price  = saved['room_price']      if saved['room_price']      is not None else (gi.get('room_price', 0)      if gi else 0)
+        room_count  = saved['room_count']      if saved['room_count']      is not None else (gi.get('room_count', 1)      if gi else 1)
+        extra_bed   = saved['extra_bed_price'] if saved['extra_bed_price'] is not None else (gi.get('extra_bed_price', 0) if gi else 0)
+
+        meta = {'arrival_date': arrival, 'departure_date': departure}
+        if item.item_type == InvoiceItem.ITEM_TYPE_HOTEL and room_price:
+            meta.update({
+                'room_price':      room_price,
+                'room_count':      int(room_count),
+                'nights':          nights,
+                'extra_bed_price': extra_bed,
+            })
         items_with_meta.append({'item': item, 'meta': meta})
 
     context = {
@@ -3508,23 +3558,29 @@ def invoice_pdf(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
     items = list(invoice.items.all().order_by('order'))
 
-    # Build items_with_meta with arrival/departure dates and hotel pricing
+    # Dates and hotel pricing come from saved description metadata,
+    # falling back to current package data only when absent.
     grouped_items, _ = get_grouped_tour_data(invoice.tour_package)
     items_with_meta = []
     for i, item in enumerate(items):
-        meta = None
-        if i < len(grouped_items):
-            gi = grouped_items[i]
-            meta = {
-                'arrival_date': gi.get('arrival_date'),
-                'departure_date': gi.get('departure_date'),
-            }
-            if gi.get('is_hotel') and gi.get('room_price'):
-                meta.update({
-                    'room_price': gi.get('room_price', 0),
-                    'room_count': gi.get('room_count', 1),
-                    'nights': gi.get('nights', 1),
-                })
+        saved = _parse_item_meta(item.description)
+        gi = grouped_items[i] if i < len(grouped_items) else None
+
+        arrival   = saved['arrival_date']   or (gi.get('arrival_date')   if gi else None)
+        departure = saved['departure_date'] or (gi.get('departure_date') if gi else None)
+        nights      = saved['nights']          or (str(gi.get('nights', ''))      if gi else '')
+        room_price  = saved['room_price']      if saved['room_price']      is not None else (gi.get('room_price', 0)      if gi else 0)
+        room_count  = saved['room_count']      if saved['room_count']      is not None else (gi.get('room_count', 1)      if gi else 1)
+        extra_bed   = saved['extra_bed_price'] if saved['extra_bed_price'] is not None else (gi.get('extra_bed_price', 0) if gi else 0)
+
+        meta = {'arrival_date': arrival, 'departure_date': departure}
+        if item.item_type == InvoiceItem.ITEM_TYPE_HOTEL and room_price:
+            meta.update({
+                'room_price':      room_price,
+                'room_count':      int(room_count),
+                'nights':          nights,
+                'extra_bed_price': extra_bed,
+            })
         items_with_meta.append({'item': item, 'meta': meta})
 
     logo_data_uri = None

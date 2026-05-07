@@ -31,6 +31,7 @@ urlpatterns = [
     path('tour-package/<int:pk>/export-excel/', views.export_tourday_excel, name='export_tourday_excel'),
 
     # Invoice URLs
+    path('invoices/service-search/', views.invoice_service_search, name='invoice_service_search'),
     path('invoices/', views.invoice_list, name='invoice_list'),
     path('invoices/<str:package_reference>/create/', views.create_invoice, name='create_invoice'),
     path('invoices/<int:invoice_id>/', views.invoice_detail, name='invoice_detail'),

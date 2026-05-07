@@ -13,7 +13,8 @@ from .models import (
     PredefinedTourQuote, PredefinedTourDay, PredefinedTourDayService,
     PredefinedTourDayGuideService, TourPackageQuote, TourDay,
     TourDayService, TourDayGuideService, ServicePrice, ReferenceID,
-    Agency, Invoice, InvoiceItem, SupplierExpense, InvoiceReferenceID, Supplier, SupplierService
+    Agency, Invoice, InvoiceItem, SupplierExpense, InvoiceReferenceID,
+    Supplier, SupplierService, ServiceExpenseTemplate,
 )
 from import_export.formats import base_formats
 from import_export.results import Result, RowResult
@@ -21,6 +22,7 @@ from import_export.signals import post_import, post_export
 from import_export.fields import Field
 from django.db import IntegrityError
 import logging
+from decimal import Decimal
 
 
 logger = logging.getLogger(__name__)
@@ -32,16 +34,15 @@ class CityWidget(widgets.ForeignKeyWidget):
             try:
                 city, created = City.objects.get_or_create(name=value)
             except IntegrityError:
-                # If the city already exists, just get it
                 city = City.objects.get(name=value)
             return city
         return None
+
 
 class HotelResource(resources.ModelResource):
     city = fields.Field(
         column_name='city',
         attribute='city',
-        widget=CityWidget(City, 'name')
     )
 
     class Meta:
@@ -89,6 +90,13 @@ class ServiceTypeAdmin(admin.ModelAdmin):
 class ServicePriceInline(admin.TabularInline):
     model = ServicePrice
     extra = 1
+
+
+class ServiceExpenseTemplateInline(admin.TabularInline):
+    model = ServiceExpenseTemplate
+    extra = 1
+    autocomplete_fields = ['supplier', 'supplier_service']
+    fields = ('supplier', 'supplier_service', 'order')
 
 
 class CustomManyToManyWidget:
@@ -241,6 +249,143 @@ class ServiceAdmin(ImportExportModelAdmin):
                 pass  # If any error occurs, fall back to unfiltered queryset
 
         return queryset, use_distinct
+
+
+class ServiceExpenseTemplateResource(resources.ModelResource):
+    service_name = fields.Field(
+        column_name='service_name',
+        attribute='service_name',
+    )
+    tour_pack_type = fields.Field(
+        column_name='tour_pack_type',
+        attribute='tour_pack_type',
+    )
+    service_price = fields.Field(
+        column_name='service_price',
+        attribute='service_price',
+        widget=ForeignKeyWidget(ServicePrice, 'id')
+    )
+    supplier = fields.Field(
+        column_name='supplier',
+        attribute='supplier',
+        widget=ForeignKeyWidget(Supplier, 'id')
+    )
+    supplier_service = fields.Field(
+        column_name='supplier_service',
+        attribute='supplier_service',
+        widget=ForeignKeyWidget(SupplierService, 'id')
+    )
+
+    class Meta:
+        model = ServiceExpenseTemplate
+        fields = ('id', 'service_name', 'tour_pack_type', 'service_price', 'supplier', 'supplier_service', 'unit_price', 'order')
+        export_order = ('id', 'service_name', 'tour_pack_type', 'service_price', 'supplier', 'supplier_service', 'unit_price', 'order')
+        import_id_fields = ()
+        skip_unchanged = True
+        report_skipped = True
+
+    def get_instance(self, instance_loader, row):
+        # After before_import_row, service_price and supplier_service are resolved to IDs.
+        # Use them to find an existing template and update instead of duplicating.
+        sp_id = row.get('service_price')
+        ss_id = row.get('supplier_service')
+        if sp_id and ss_id:
+            try:
+                return self._meta.model.objects.get(
+                    service_price_id=sp_id,
+                    supplier_service_id=ss_id,
+                )
+            except self._meta.model.DoesNotExist:
+                pass
+        return None
+
+    def dehydrate_service_name(self, obj):
+        val = getattr(obj, 'service_name', None)
+        if val:
+            return val
+        return obj.service_price.service.name if obj.service_price else ''
+
+    def dehydrate_tour_pack_type(self, obj):
+        val = getattr(obj, 'tour_pack_type', None)
+        if val:
+            return val
+        return obj.service_price.tour_pack_type.name if obj.service_price else ''
+
+    def before_import_row(self, row, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Resolve service_price from service_name + tour_pack_type
+        service_name = str(row.get('service_name') or '').strip()
+        tour_pack_type_name = str(row.get('tour_pack_type') or '').strip()
+        if service_name and tour_pack_type_name:
+            try:
+                sp = ServicePrice.objects.get(
+                    service__name=service_name,
+                    tour_pack_type__name=tour_pack_type_name
+                )
+                row['service_price'] = sp.id
+                logger.info(f"[IMPORT] Resolved service_price: {sp.id} ({sp})")
+            except ServicePrice.DoesNotExist:
+                raise ValueError(f"ServicePrice not found for service '{service_name}' and tour_pack_type '{tour_pack_type_name}'")
+
+        # Resolve supplier name to ID
+        supplier_name = str(row.get('supplier') or '').strip()
+        supplier = None
+        if supplier_name:
+            supplier, _ = Supplier.objects.get_or_create(name=supplier_name)
+            row['supplier'] = supplier.id
+            logger.info(f"[IMPORT] Resolved supplier: {supplier.id} ({supplier.name})")
+
+        # Resolve supplier_service name to ID
+        supplier_service_name = str(row.get('supplier_service') or '').strip()
+        if supplier_service_name and supplier:
+            try:
+                ss = SupplierService.objects.get(supplier=supplier, name=supplier_service_name)
+                logger.info(f"[IMPORT] Found existing supplier_service: {ss.id} ({ss.name})")
+            except SupplierService.DoesNotExist:
+                unit_price = Decimal('0.00')
+                if row.get('unit_price'):
+                    try:
+                        unit_price = Decimal(str(float(row['unit_price'])))
+                    except (ValueError, TypeError):
+                        pass
+                ss = SupplierService.objects.create(
+                    supplier=supplier, name=supplier_service_name, cost=unit_price
+                )
+                logger.info(f"[IMPORT] Created new supplier_service: {ss.id} ({ss.name})")
+            except SupplierService.MultipleObjectsReturned:
+                ss = SupplierService.objects.filter(supplier=supplier, name=supplier_service_name).first()
+                logger.info(f"[IMPORT] Found multiple supplier_service, using first: {ss.id}")
+            row['supplier_service'] = ss.id
+        elif supplier_service_name:
+            # Try find by name alone (any supplier)
+            ss = SupplierService.objects.filter(name=supplier_service_name).first()
+            if ss:
+                row['supplier_service'] = ss.id
+                logger.info(f"[IMPORT] Found supplier_service by name alone: {ss.id}")
+
+        # Normalize numeric fields
+        try:
+            if row.get('unit_price'):
+                row['unit_price'] = "{:.2f}".format(float(row['unit_price']))
+        except ValueError:
+            raise ValueError("Invalid unit_price format in row.")
+        try:
+            row['order'] = int(row['order']) if row.get('order') else 0
+        except ValueError:
+            row['order'] = 0
+
+
+@admin.register(ServiceExpenseTemplate)
+class ServiceExpenseTemplateAdmin(ImportExportModelAdmin):
+    resource_class = ServiceExpenseTemplateResource
+    list_display = ('service_price', 'supplier', 'supplier_service', 'unit_price', 'order')
+    list_filter = ('service_price__service__service_type', 'service_price__tour_pack_type', 'supplier')
+    search_fields = ('service_price__service__name', 'supplier__name', 'supplier_service__name')
+    list_select_related = ('service_price__service', 'service_price__tour_pack_type', 'supplier', 'supplier_service')
+    autocomplete_fields = ['service_price', 'supplier', 'supplier_service']
+    fields = ('service_price', 'supplier', 'supplier_service', 'order')
 
 
 @admin.register(GuideService)
@@ -520,6 +665,7 @@ class ServicePriceAdmin(ImportExportModelAdmin):
     list_filter = ('service__service_type', 'tour_pack_type')
     search_fields = ('service__name', 'service__service_type__name', 'tour_pack_type__name')
     autocomplete_fields = ['service', 'tour_pack_type']
+    inlines = [ServiceExpenseTemplateInline]
 
     def get_service_type(self, obj):
         return obj.service.service_type
@@ -568,6 +714,14 @@ class SupplierAdmin(admin.ModelAdmin):
     list_display = ('name', 'contact_person', 'email', 'phone')
     search_fields = ('name', 'contact_person')
     inlines = [SupplierServiceInline]
+
+
+@admin.register(SupplierService)
+class SupplierServiceAdmin(admin.ModelAdmin):
+    list_display = ('supplier', 'name', 'cost')
+    search_fields = ('name', 'supplier__name')
+    list_select_related = ('supplier',)
+    autocomplete_fields = ['supplier']
 
 
 class SupplierExpenseInline(admin.TabularInline):

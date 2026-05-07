@@ -2,14 +2,18 @@ export default function invoiceForm() {
   return {
     invoiceItems: [],
     supplierExpenses: [],
+    tourPackTypeId: null,
     allSuppliers: JSON.parse(document.getElementById('suppliers-data').textContent),
     groupedItems: JSON.parse(document.getElementById('grouped-items-data').textContent),
     insertMenuIdx: null,
 
     init() {
-      // Initialize groupedItems with edit flags and hotel defaults
+      this.tourPackTypeId = document.getElementById('invoice-meta')?.dataset.tourPackType || null;
+
+      // Initialize groupedItems with edit flags, hotel defaults, stable key, and autocomplete state
       this.groupedItems = this.groupedItems.map(item => ({
         ...item,
+        _key: crypto.randomUUID(),
         arrivalEdit: false,
         departureEdit: false,
         insertOpen: false,
@@ -17,19 +21,28 @@ export default function invoiceForm() {
         nights: item.nights || 1,
         room_price: item.room_price || 0,
         extra_bed_price: item.extra_bed_price || 0,
+        serviceAcOpen: false,
+        serviceAcResults: [],
       }));
+
       // Load supplier expenses from the JSON script if available
       const expensesData = document.getElementById('supplier-expenses-data');
       if (expensesData) {
         this.supplierExpenses = JSON.parse(expensesData.textContent);
       }
-      // Initialize supplierExpenses with UI state
+      // Initialize supplierExpenses with UI state, linking to grouped items via source_item_index
       this.supplierExpenses = this.supplierExpenses.map(exp => {
         const matched = this.allSuppliers.find(s =>
           exp.supplier_id ? s.id === exp.supplier_id : s.name === exp.supplier_name
         );
+        let sourceKey = null;
+        if (exp.source_item_index != null) {
+          const sourceItem = this.groupedItems[exp.source_item_index];
+          if (sourceItem) sourceKey = sourceItem._key;
+        }
         return {
           ...exp,
+          _source_key: sourceKey,
           supplierId: matched ? matched.id : null,
           supplierQuery: exp.supplier_name || '',
           serviceQuery: exp.description || '',
@@ -40,8 +53,7 @@ export default function invoiceForm() {
         };
       });
 
-      // Robust outside-click close: if the user mousedowns anywhere that
-      // isn't inside a combobox wrapper, close every open dropdown.
+      // Robust outside-click close for supplier dropdowns and insert menus
       document.addEventListener('mousedown', (e) => {
         if (!e.target.closest || !e.target.closest('[data-combobox]')) {
           this._closeAllDrops();
@@ -49,6 +61,9 @@ export default function invoiceForm() {
         if (!e.target.closest || !e.target.closest('[data-insert-menu]')) {
           this.groupedItems.forEach(i => { i.insertOpen = false; });
           this.insertMenuIdx = null;
+        }
+        if (!e.target.closest || !e.target.closest('[data-service-ac]')) {
+          this.groupedItems.forEach(i => { i.serviceAcOpen = false; });
         }
       });
     },
@@ -114,7 +129,7 @@ export default function invoiceForm() {
       exp.serviceOpen = false;
     },
 
-    // --- Supplier combobox ---
+    // --- Supplier combobox (right panel) ---
     filteredSuppliers(query) {
       if (!query || !query.trim()) return this.allSuppliers;
       const q = query.toLowerCase();
@@ -131,6 +146,7 @@ export default function invoiceForm() {
       exp.description = '';
       exp.serviceQuery = '';
       exp.unit_price = '0';
+      exp.supplier_service_id = null;
     },
 
     closeSupplierDrop(exp) {
@@ -138,7 +154,7 @@ export default function invoiceForm() {
       exp.supplierQuery = exp.supplier_name || '';
     },
 
-    // --- Service combobox ---
+    // --- SupplierService combobox (right panel) ---
     filteredServices(exp) {
       if (!exp.supplierId) return [];
       const supplier = this.allSuppliers.find(s => s.id === exp.supplierId);
@@ -152,8 +168,66 @@ export default function invoiceForm() {
       exp.description = service.name;
       exp.serviceQuery = service.name;
       exp.unit_price = service.cost;
+      exp.supplier_service_id = service.id;
       exp.serviceOpen = false;
       exp.amount = parseFloat(service.cost).toFixed(2);
+    },
+
+    // --- Service autocomplete (left panel grouped items) ---
+    async searchServices(item) {
+      if (!this.tourPackTypeId || !item.service_name.trim()) {
+        item.serviceAcOpen = false;
+        item.serviceAcResults = [];
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/invoices/service-search/?q=${encodeURIComponent(item.service_name)}&tour_pack_type=${this.tourPackTypeId}`
+        );
+        item.serviceAcResults = await res.json();
+        item.serviceAcOpen = item.serviceAcResults.length > 0;
+      } catch (_) {
+        item.serviceAcOpen = false;
+      }
+    },
+
+    selectServiceAc(item, svc) {
+      item.service_name = svc.name;
+      item.price = svc.price;
+      item.serviceAcOpen = false;
+      item.serviceAcResults = [];
+      if (svc.expense_templates && svc.expense_templates.length) {
+        this.addExpensesFromTemplates(item, svc.expense_templates);
+      }
+    },
+
+    addExpensesFromTemplates(item, templates) {
+      console.log('[addExpensesFromTemplates] item._key=', item._key, 'templates=', templates.length);
+      templates.forEach(t => {
+        const matched = this.allSuppliers.find(s => t.supplier_id ? s.id === t.supplier_id : s.name === t.supplier_name);
+        const sourceKey = item._key;
+        console.log('[addExpensesFromTemplates] pushing expense with _source_key=', sourceKey);
+        this.supplierExpenses.push({
+          supplier_name: t.supplier_name,
+          supplier_id: t.supplier_id,
+          supplier_service_id: t.supplier_service_id || null,
+          description: t.description || item.service_name,
+          unit_price: t.unit_price,
+          amount: t.unit_price,
+          due_date: '',
+          status: 'Pending',
+          reference_number: '',
+          order: this.supplierExpenses.length,
+          _source_key: sourceKey,
+          supplierId: matched ? matched.id : null,
+          supplierQuery: t.supplier_name,
+          serviceQuery: t.description || '',
+          supplierOpen: false,
+          serviceOpen: false,
+          supplierDropStyle: '',
+          serviceDropStyle: '',
+        });
+      });
     },
 
     // --- Row management ---
@@ -167,15 +241,32 @@ export default function invoiceForm() {
 
     addGroupedItem() {
       this.groupedItems.push({
+        _key: crypto.randomUUID(),
         arrival_date: '', departure_date: '', nights: '',
         service_name: '', price: '0',
         is_hotel: false, is_discount: false, is_extra_cost: false,
         arrivalEdit: false, departureEdit: false,
         insertOpen: false,
         room_count: 1, room_price: 0, extra_bed_price: 0,
+        serviceAcOpen: false, serviceAcResults: [],
       });
     },
-    removeGroupedItem(idx) { this.groupedItems.splice(idx, 1); },
+
+    removeGroupedItem(idx) {
+      const key = this.groupedItems[idx]._key;
+      console.log('[removeGroupedItem] idx=', idx, 'key=', key);
+      console.log('[removeGroupedItem] expense _source_keys=', this.supplierExpenses.map(e => e._source_key));
+      this.groupedItems.splice(idx, 1);
+      if (key) {
+        for (let i = this.supplierExpenses.length - 1; i >= 0; i--) {
+          const sk = this.supplierExpenses[i]._source_key;
+          console.log('[removeGroupedItem] checking expense[', i, '] _source_key=', sk, 'match=', sk === key);
+          if (sk === key) {
+            this.supplierExpenses.splice(i, 1);
+          }
+        }
+      }
+    },
 
     openInsertMenu(idx, item) {
       const wasOpen = item.insertOpen;
@@ -192,12 +283,14 @@ export default function invoiceForm() {
       if (idx === null) return;
       this.groupedItems[idx].insertOpen = false;
       this.groupedItems.splice(idx + 1, 0, {
+        _key: crypto.randomUUID(),
         arrival_date: '', departure_date: '', nights: '',
         service_name: '', price: '0',
         is_hotel: false, is_discount: false, is_extra_cost: false,
         arrivalEdit: false, departureEdit: false,
         insertOpen: false,
         room_count: 1, room_price: 0, extra_bed_price: 0,
+        serviceAcOpen: false, serviceAcResults: [],
       });
       this.insertMenuIdx = null;
     },
@@ -205,13 +298,27 @@ export default function invoiceForm() {
     insertHotelAfter(idx) {
       if (idx === null) return;
       this.groupedItems[idx].insertOpen = false;
+      const hotelKey = crypto.randomUUID();
       this.groupedItems.splice(idx + 1, 0, {
+        _key: hotelKey,
         arrival_date: '', departure_date: '', nights: 1,
         service_name: '', price: '0',
         is_hotel: true, is_discount: false, is_extra_cost: false,
         arrivalEdit: false, departureEdit: false,
         insertOpen: false,
         room_count: 1, room_price: 0, extra_bed_price: 0,
+        serviceAcOpen: false, serviceAcResults: [],
+      });
+      this.supplierExpenses.push({
+        supplier_name: '', supplier_id: null,
+        supplier_service_id: null,
+        description: '', unit_price: '0', amount: '0',
+        due_date: '', status: 'Pending', reference_number: '',
+        order: this.supplierExpenses.length,
+        _source_key: hotelKey,
+        supplierId: null, supplierQuery: '', serviceQuery: '',
+        supplierOpen: false, serviceOpen: false,
+        supplierDropStyle: '', serviceDropStyle: '',
       });
       this.insertMenuIdx = null;
     },
@@ -219,6 +326,7 @@ export default function invoiceForm() {
     addExpense() {
       this.supplierExpenses.push({
         supplier_name: '', supplier_id: null,
+        supplier_service_id: null,
         description: '', unit_price: '0',
         amount: '0',
         due_date: '', status: 'Pending', reference_number: '',
@@ -235,11 +343,16 @@ export default function invoiceForm() {
         supplierId, supplierQuery, serviceQuery,
         supplierOpen, serviceOpen,
         supplierDropStyle, serviceDropStyle,
+        _source_key,
+        source_item_index: _oldIdx,
         ...rest
-      }) => rest);
-      // Derive invoice items from grouped items
-      // Encode arrival/departure/nights into description using ||| separator so
-      // the edit form can restore them without a model change.
+      }) => {
+        const sourceIdx = _source_key
+          ? this.groupedItems.findIndex(item => item._key === _source_key)
+          : null;
+        return { ...rest, source_item_index: sourceIdx >= 0 ? sourceIdx : null };
+      });
+
       const derivedInvoiceItems = this.groupedItems.map((item, idx) => ({
         description: `${item.service_name || ''}|||${item.arrival_date || ''}|||${item.departure_date || ''}|||${item.nights || ''}|||${item.room_count || ''}|||${item.room_price || ''}|||${item.extra_bed_price || ''}`,
         quantity: '1',

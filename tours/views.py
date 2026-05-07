@@ -2944,6 +2944,7 @@ def get_grouped_tour_data(package):
                 'name': service_name,
                 'price': service.price_at_booking,
                 'supplier': supplier_name,
+                'service_id': service.service.id,
             })
 
         # Collect guide services
@@ -2955,6 +2956,7 @@ def get_grouped_tour_data(package):
                 'name': guide_service.guide_service.name,
                 'price': guide_service.price_at_booking,
                 'supplier': guide_service.guide_service.name,
+                'service_id': None,
             })
 
     # Build final items grouped by hotel
@@ -3067,6 +3069,7 @@ def get_grouped_tour_data(package):
                     'price': float(svc['price']) if svc['price'] else 0,
                     'is_hotel': False,
                     'supplier': svc.get('supplier', svc['name']),
+                    'service_id': svc.get('service_id'),
                 })
             # Hotel rows
             for hotel_row in hotel_rows:
@@ -3081,6 +3084,7 @@ def get_grouped_tour_data(package):
                     'price': float(svc['price']) if svc['price'] else 0,
                     'is_hotel': False,
                     'supplier': svc.get('supplier', svc['name']),
+                    'service_id': svc.get('service_id'),
                 })
         else:
             # No transfers - hotel first, then services
@@ -3095,6 +3099,7 @@ def get_grouped_tour_data(package):
                     'price': float(svc['price']) if svc['price'] else 0,
                     'is_hotel': False,
                     'supplier': svc.get('supplier', svc['name']),
+                    'service_id': svc.get('service_id'),
                 })
 
     # Add extra costs at the end
@@ -3140,9 +3145,31 @@ def build_prepopulated_invoice_data(package):
     pre-populated from the TourPackageQuote data, following the same
     grouping and ordering as export_tourday_excel.
     """
+    from .models import ServiceExpenseTemplate, ServicePrice
+
     grouped_items, _ = get_grouped_tour_data(package)
     invoice_items = []
     supplier_expenses = []
+
+    # Build service_id → service_price_id lookup using the package's tour_pack_type
+    service_ids = [item['service_id'] for item in grouped_items if item.get('service_id')]
+    tour_pack_type_id = package.tour_pack_type_id if package.tour_pack_type_id else None
+
+    service_price_by_service = {}
+    if service_ids and tour_pack_type_id:
+        for sp in ServicePrice.objects.filter(
+            service_id__in=service_ids, tour_pack_type_id=tour_pack_type_id
+        ):
+            service_price_by_service[sp.service_id] = sp.id
+
+    # Prefetch expense templates keyed by service_price_id
+    service_price_ids = list(service_price_by_service.values())
+    templates_qs = ServiceExpenseTemplate.objects.filter(
+        service_price_id__in=service_price_ids
+    ).select_related('supplier', 'supplier_service')
+    templates_by_service_price = {}
+    for tmpl in templates_qs:
+        templates_by_service_price.setdefault(tmpl.service_price_id, []).append(tmpl)
 
     for i, item in enumerate(grouped_items):
         # Handle discounts
@@ -3189,20 +3216,46 @@ def build_prepopulated_invoice_data(package):
             'order': i,
         })
 
-        # Build supplier expense
-        supplier_name = item.get('supplier', '')
-        if not supplier_name and item.get('is_hotel'):
-            supplier_name = item['service_name'].split(',')[0] if ',' in item['service_name'] else item['service_name']
+        # Build supplier expenses: use templates if defined, otherwise fall back to single derived expense
+        service_id = item.get('service_id')
+        service_price_id = service_price_by_service.get(service_id) if service_id else None
+        templates = templates_by_service_price.get(service_price_id, []) if service_price_id else []
 
-        supplier_expenses.append({
-            'supplier_name': supplier_name,
-            'description': desc,
-            'amount': amt,
-            'due_date': '',
-            'status': 'Pending',
-            'reference_number': '',
-            'order': i,
-        })
+        if templates:
+            for tmpl in templates:
+                sname = tmpl.supplier_name or (tmpl.supplier.name if tmpl.supplier else '')
+                supplier_expenses.append({
+                    'supplier_name': sname,
+                    'supplier_id': tmpl.supplier_id,
+                    'supplier_service_id': tmpl.supplier_service_id,
+                    'description': (tmpl.supplier_service.name if tmpl.supplier_service else '') or desc,
+                    'unit_price': str(tmpl.unit_price),
+                    'amount': str(tmpl.unit_price),
+                    'due_date': '',
+                    'status': 'Pending',
+                    'reference_number': '',
+                    'order': len(supplier_expenses),
+                    'source_item_index': i,
+                })
+        else:
+            is_hotel = item.get('is_hotel')
+            supplier_name = item.get('supplier', '')
+            if not supplier_name and is_hotel:
+                supplier_name = item['service_name'].split(',')[0] if ',' in item['service_name'] else item['service_name']
+            # Hotels have no cost template — pre-fill with selling price so they show
+            # meaningfully in pending payment; staff can overwrite with actual supplier cost.
+            default_amount = amt
+            supplier_expenses.append({
+                'supplier_name': supplier_name,
+                'description': desc,
+                'unit_price': default_amount,
+                'amount': default_amount,
+                'due_date': '',
+                'status': 'Pending',
+                'reference_number': '',
+                'order': len(supplier_expenses),
+                'source_item_index': i,
+            })
 
     return invoice_items, supplier_expenses
 
@@ -3239,6 +3292,41 @@ def _parse_item_meta(description):
         'room_price':      _num(parts[5], None) if len(parts) > 5 else None,
         'extra_bed_price': _num(parts[6], None) if len(parts) > 6 else None,
     }
+
+
+@login_required
+def invoice_service_search(request):
+    q = request.GET.get('q', '').strip()
+    tour_pack_type_id = request.GET.get('tour_pack_type')
+    if not tour_pack_type_id or not q:
+        return JsonResponse([], safe=False)
+
+    prices = ServicePrice.objects.filter(
+        tour_pack_type_id=tour_pack_type_id,
+        service__name__icontains=q,
+    ).select_related('service').prefetch_related(
+        'expense_templates__supplier',
+        'expense_templates__supplier_service',
+    )[:20]
+
+    results = []
+    for sp in prices:
+        results.append({
+            'service_id': sp.service_id,
+            'name': sp.service.name,
+            'price': str(sp.price),
+            'expense_templates': [
+                {
+                    'supplier_id': t.supplier_id,
+                    'supplier_name': t.supplier_name or (t.supplier.name if t.supplier else ''),
+                    'description': t.supplier_service.name if t.supplier_service else '',
+                    'unit_price': str(t.unit_price),
+                    'supplier_service_id': t.supplier_service_id,
+                }
+                for t in sp.expense_templates.all()
+            ],
+        })
+    return JsonResponse(results, safe=False)
 
 
 def _get_suppliers_data():
@@ -3279,6 +3367,7 @@ def create_invoice(request, package_reference):
         with transaction.atomic():
             invoice = Invoice.objects.create(
                 tour_package=package,
+                tour_pack_type=package.tour_pack_type,
                 agency_id=agency_id,
                 issue_date=issue_date,
                 due_date=due_date,
@@ -3301,11 +3390,22 @@ def create_invoice(request, package_reference):
                 )
 
             supplier_cache = {s.name: s for s in Supplier.objects.all()}
+            service_id_set = {
+                int(exp['supplier_service_id'])
+                for exp in expenses_data if exp.get('supplier_service_id')
+            }
+            supplier_service_cache = (
+                {ss.id: ss for ss in SupplierService.objects.filter(id__in=service_id_set)}
+                if service_id_set else {}
+            )
             for i, exp in enumerate(expenses_data):
                 sname = exp.get('supplier_name', '')[:200]
+                src_idx = exp.get('source_item_index')
+                ss_id = exp.get('supplier_service_id')
                 SupplierExpense.objects.create(
                     invoice=invoice,
                     supplier=supplier_cache.get(sname),
+                    supplier_service=supplier_service_cache.get(int(ss_id)) if ss_id else None,
                     supplier_name=sname,
                     description=exp.get('description', '')[:500],
                     unit_price=safe_decimal(exp.get('unit_price', 0)),
@@ -3314,6 +3414,7 @@ def create_invoice(request, package_reference):
                     status=exp.get('status', 'Pending'),
                     reference_number=exp.get('reference_number', '')[:100],
                     order=i,
+                    source_item_index=int(src_idx) if src_idx is not None else None,
                 )
 
             invoice.recalculate_total()
@@ -3335,6 +3436,7 @@ def create_invoice(request, package_reference):
         'invoice_status_choices': Invoice.STATUS_CHOICES,
         'invoice_item_types': InvoiceItem.ITEM_TYPE_CHOICES,
         'today': today,
+        'tour_pack_type_id': package.tour_pack_type_id or '',
     }
     return render(request, 'tour_quote/create_invoice.html', context)
 
@@ -3385,11 +3487,22 @@ def edit_invoice(request, invoice_id):
                 )
 
             supplier_cache = {s.name: s for s in Supplier.objects.all()}
+            service_id_set = {
+                int(exp['supplier_service_id'])
+                for exp in expenses_data if exp.get('supplier_service_id')
+            }
+            supplier_service_cache = (
+                {ss.id: ss for ss in SupplierService.objects.filter(id__in=service_id_set)}
+                if service_id_set else {}
+            )
             for i, exp in enumerate(expenses_data):
                 sname = exp.get('supplier_name', '')[:200]
+                src_idx = exp.get('source_item_index')
+                ss_id = exp.get('supplier_service_id')
                 SupplierExpense.objects.create(
                     invoice=invoice,
                     supplier=supplier_cache.get(sname),
+                    supplier_service=supplier_service_cache.get(int(ss_id)) if ss_id else None,
                     supplier_name=sname,
                     description=exp.get('description', '')[:500],
                     unit_price=safe_decimal(exp.get('unit_price', 0)),
@@ -3398,6 +3511,7 @@ def edit_invoice(request, invoice_id):
                     status=exp.get('status', 'Pending'),
                     reference_number=exp.get('reference_number', '')[:100],
                     order=i,
+                    source_item_index=int(src_idx) if src_idx is not None else None,
                 )
 
             invoice.recalculate_total()
@@ -3453,6 +3567,7 @@ def edit_invoice(request, invoice_id):
         {
             'supplier_name': exp.supplier_name,
             'supplier_id': exp.supplier_id,
+            'supplier_service_id': exp.supplier_service_id,
             'description': exp.description,
             'unit_price': str(exp.unit_price),
             'amount': str(exp.amount),
@@ -3460,6 +3575,7 @@ def edit_invoice(request, invoice_id):
             'status': exp.status,
             'reference_number': exp.reference_number or '',
             'order': exp.order,
+            'source_item_index': exp.source_item_index,
         }
         for exp in invoice.supplier_expenses.all().order_by('order')
     ]
@@ -3471,6 +3587,7 @@ def edit_invoice(request, invoice_id):
         'supplier_expenses': existing_expenses,
         'suppliers_data': _get_suppliers_data(),
         'invoice_status_choices': Invoice.STATUS_CHOICES,
+        'tour_pack_type_id': (invoice.tour_pack_type_id or invoice.tour_package.tour_pack_type_id or ''),
     }
     return render(request, 'tour_quote/edit_invoice.html', context)
 
@@ -3846,7 +3963,7 @@ def pending_payment_list(request):
     paid_amount = sum(e.amount for e in expenses if e.status == 'Paid')
 
     # Get unique suppliers for filter dropdown
-    suppliers = SupplierExpense.objects.exclude(supplier_name__isnull=True).values_list('supplier_name', flat=True).distinct().order_by('supplier_name')
+    suppliers = SupplierExpense.objects.exclude(supplier_name__isnull=True).exclude(supplier_name='').values_list('supplier_name', flat=True).distinct().order_by('supplier_name')
 
     context = {
         'expenses': expenses,

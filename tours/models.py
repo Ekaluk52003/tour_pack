@@ -95,6 +95,29 @@ class ServicePrice(models.Model):
         return f"{self.service} - {self.tour_pack_type} - ${self.price}"
 
 
+class ServiceExpenseTemplate(models.Model):
+    service_price = models.ForeignKey('ServicePrice', on_delete=models.CASCADE, related_name='expense_templates')
+    supplier = models.ForeignKey('Supplier', on_delete=models.SET_NULL, null=True, blank=True, related_name='service_expense_templates')
+    supplier_service = models.ForeignKey('SupplierService', on_delete=models.SET_NULL, null=True, blank=True, related_name='expense_templates')
+    supplier_name = models.CharField(max_length=200, blank=True)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default='0.00')
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def save(self, *args, **kwargs):
+        if self.supplier and not self.supplier_name:
+            self.supplier_name = self.supplier.name
+        if self.supplier_service_id:
+            ss = self.supplier_service
+            self.unit_price = ss.cost
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.service_price} → {self.supplier_name or (self.supplier_service.name if self.supplier_service else '')}"
+
+
 class GuideService(models.Model):
     name = models.CharField(max_length=200)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -143,7 +166,7 @@ class TourPackageQuote(models.Model):
     remark2 = models.TextField(blank=True, null=True)
     remark_of_hotels = models.TextField(blank=True, null=True)
     special_note = models.TextField(blank=True, null=True)
-    
+
     commission_rate_hotel = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     commission_amount_hotel = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     commission_rate_services = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
@@ -158,14 +181,14 @@ class TourPackageQuote(models.Model):
         if not self.package_reference:
             # Fetch the reference from the Reference table (explained below)
             self.package_reference = ReferenceID.get_next_reference()
-        
+
         # Protect prepare_by_user from being changed after creation
         if self.pk is not None:  # This is an update, not a new record
             # Get the original record from database
             original = TourPackageQuote.objects.get(pk=self.pk)
             # Preserve the original prepare_by_user value
             self.prepare_by_user = original.prepare_by_user
-        
+
         super().save(*args, **kwargs)
 
 class TourDay(models.Model):
@@ -286,6 +309,7 @@ class Invoice(models.Model):
 
     invoice_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
     tour_package = models.ForeignKey(TourPackageQuote, on_delete=models.PROTECT, related_name='invoices')
+    tour_pack_type = models.ForeignKey(TourPackType, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
     agency = models.ForeignKey(Agency, on_delete=models.PROTECT, related_name='invoices', null=True, blank=True)
     issue_date = models.DateField(default=timezone.now)
     due_date = models.DateField(null=True, blank=True)
@@ -391,6 +415,7 @@ class SupplierExpense(models.Model):
 
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='supplier_expenses')
     supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True, related_name='expenses')
+    supplier_service = models.ForeignKey('SupplierService', on_delete=models.SET_NULL, null=True, blank=True, related_name='supplier_expenses')
     supplier_name = models.CharField(max_length=200)
     description = models.CharField(max_length=500)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
@@ -399,6 +424,7 @@ class SupplierExpense(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     reference_number = models.CharField(max_length=100, blank=True, null=True)
     order = models.PositiveIntegerField(default=0)
+    source_item_index = models.IntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ['order', 'id']

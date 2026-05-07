@@ -7,7 +7,12 @@
       "Bash(grep -E \"\\\\.\\(py|html\\)$\")",
       "Bash(Get-ChildItem -Path \"D:\\\\Django\\\\tour_pack\" -Recurse -Name)",
       "Bash(Select-String \"tours[/\\\\\\\\]\")",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(Remove-Item *)",
+      "Bash(npx webpack *)",
+      "Bash(del *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\Mill\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Django-tour-pack\\\\6529f4b9-e52a-41a4-9007-af86a2bfd2ad\\\\tasks\\\\bs1xxq7u1.output\" -Wait)",
+      "Bash(Select-String -Pattern \"built|error|Error|failed|done|Done\" --line-buffered)"
     ]
   }
 }

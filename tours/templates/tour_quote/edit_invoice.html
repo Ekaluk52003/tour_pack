@@ -8,6 +8,7 @@
 {{ suppliers_data|json_script:"suppliers-data" }}
 {{ grouped_items|json_script:"grouped-items-data" }}
 {{ supplier_expenses|json_script:"supplier-expenses-data" }}
+<div id="invoice-meta" data-tour-pack-type="{{ tour_pack_type_id }}"></div>
 
 <div x-data="invoiceForm">
 
@@ -117,9 +118,30 @@
                   </template>
                 </td>
                 <td class="px-1 py-1">
-                  <input type="text" x-model="item.service_name"
-                         class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
-                         :class="item.is_discount ? 'text-red-600 dark:text-red-400' : ''">
+                  <template x-if="!item.is_hotel && !item.is_discount">
+                    <div class="relative" data-service-ac>
+                      <input type="text" x-model="item.service_name"
+                             @input.debounce.300ms="searchServices(item)"
+                             @keydown.escape="item.serviceAcOpen = false"
+                             placeholder="Service name…"
+                             class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      <div x-show="item.serviceAcOpen && item.serviceAcResults.length > 0"
+                           class="absolute left-0 top-full z-50 overflow-y-auto max-h-48 w-64 bg-white rounded-lg border border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-600">
+                        <template x-for="svc in item.serviceAcResults" :key="svc.service_id">
+                          <div @mousedown.prevent="selectServiceAc(item, svc)"
+                               class="px-3 py-2 text-xs border-b border-gray-100 cursor-pointer hover:bg-blue-50 dark:border-gray-700 dark:hover:bg-gray-700">
+                            <div class="font-medium text-gray-800 dark:text-gray-100" x-text="svc.name"></div>
+                            <div class="text-gray-400" x-text="'฿' + Number(svc.price).toLocaleString('th-TH')"></div>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="item.is_hotel || item.is_discount">
+                    <input type="text" x-model="item.service_name"
+                           class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                           :class="item.is_discount ? 'text-red-600 dark:text-red-400' : ''">
+                  </template>
                   <template x-if="item.is_hotel">
                     <div class="flex flex-wrap gap-2 items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
                       <label class="flex gap-1 items-center">
@@ -228,7 +250,7 @@
                     <div x-show="exp.supplierOpen"
                          :style="exp.supplierDropStyle"
                          @click.stop
-                         class="overflow-y-auto fixed max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
+                         class="overflow-y-auto max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
                       <template x-for="s in filteredSuppliers(exp.supplierQuery)" :key="s.id">
                         <div @mousedown.prevent="selectSupplier(exp, s)"
                              class="px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700"

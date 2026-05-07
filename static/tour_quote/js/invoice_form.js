@@ -41,6 +41,7 @@ export default function invoiceForm() {
           if (sourceItem) sourceKey = sourceItem._key;
         }
         return {
+          _key: crypto.randomUUID(),
           ...exp,
           _source_key: sourceKey,
           supplierId: matched ? matched.id : null,
@@ -208,6 +209,7 @@ export default function invoiceForm() {
         const sourceKey = item._key;
         console.log('[addExpensesFromTemplates] pushing expense with _source_key=', sourceKey);
         this.supplierExpenses.push({
+          _key: crypto.randomUUID(),
           supplier_name: t.supplier_name,
           supplier_id: t.supplier_id,
           supplier_service_id: t.supplier_service_id || null,
@@ -253,6 +255,7 @@ export default function invoiceForm() {
     },
 
     removeGroupedItem(idx) {
+      this._closeAllDrops();
       const key = this.groupedItems[idx]._key;
       console.log('[removeGroupedItem] idx=', idx, 'key=', key);
       console.log('[removeGroupedItem] expense _source_keys=', this.supplierExpenses.map(e => e._source_key));
@@ -310,6 +313,7 @@ export default function invoiceForm() {
         serviceAcOpen: false, serviceAcResults: [],
       });
       this.supplierExpenses.push({
+        _key: crypto.randomUUID(),
         supplier_name: '', supplier_id: null,
         supplier_service_id: null,
         description: '', unit_price: '0', amount: '0',
@@ -325,6 +329,7 @@ export default function invoiceForm() {
 
     addExpense() {
       this.supplierExpenses.push({
+        _key: crypto.randomUUID(),
         supplier_name: '', supplier_id: null,
         supplier_service_id: null,
         description: '', unit_price: '0',

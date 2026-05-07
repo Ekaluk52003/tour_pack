@@ -89,7 +89,7 @@
             </tr>
           </thead>
           <tbody>
-            <template x-for="(item, idx) in groupedItems" :key="idx">
+            <template x-for="(item, idx) in groupedItems" :key="item._key">
               <tr class="border-b border-blue-100 dark:border-gray-700"
                   :class="item.is_hotel ? 'bg-blue-50 dark:bg-gray-700 border-l-4 border-l-blue-700 dark:border-l-blue-400' : (item.is_discount ? 'bg-red-50 dark:bg-red-900/20' : '')">
                 <td class="px-1 py-1 w-24">
@@ -236,7 +236,7 @@
             </tr>
           </thead>
           <tbody>
-            <template x-for="(exp, idx) in supplierExpenses" :key="idx">
+            <template x-for="(exp, idx) in supplierExpenses" :key="exp._key">
               <tr class="border-b border-gray-100 dark:border-gray-700">
 
                 <!-- Supplier combobox -->
@@ -271,7 +271,6 @@
                   <div @click.outside="exp.serviceOpen = false">
                     <input type="text"
                            x-model="exp.description"
-                           :disabled="!exp.supplierId"
                            @focus="openServiceDrop(exp, $el); exp.serviceQuery = exp.description"
                            @blur="exp.serviceOpen = false"
                            @input="exp.serviceQuery = exp.description"

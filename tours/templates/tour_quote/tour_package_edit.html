@@ -804,6 +804,10 @@
   >
     Fetch Hotels from Tour Days
   </button>
+      <button @click="addAlternativeHotel()"
+      class="px-4 py-2 text-white bg-amber-500 rounded transition-colors duration-150 hover:bg-amber-600 focus:ring-2 focus:ring-amber-300 focus:ring-offset-1 focus:outline-none dark:focus:ring-offset-gray-800">
+    Add Alternative
+    </button>
   </div>
 
 <div class="text-right">
@@ -814,35 +818,6 @@
 
 <!-- ===== Alternative Hotel Options Section ===== -->
 <div class="mt-8 mb-6">
-  <div class="p-5 bg-amber-50 rounded-xl border border-amber-200 shadow-sm dark:bg-gray-800 dark:border-amber-700/50">
-    <div class="flex gap-2 items-center mb-3">
-      <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-      </svg>
-      <h2 class="text-xl font-semibold text-amber-900 dark:text-amber-300">Alternative Hotel Options</h2>
-    </div>
-    <div class="flex gap-3 items-start p-3 text-sm text-amber-800 rounded-lg border border-amber-200 dark:bg-gray-700/60 dark:border-amber-700/40 dark:text-amber-900">
-      <svg class="mt-0.5 w-4 h-4 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-      </svg>
-      <span>
-        <strong class="font-semibold">Note:</strong>
-        Hotel costs on the invoice and Excel export depend on each Tour Day's selected hotel matching the Hotel Cost entries above.
-        If any cost appears as zero, an admin must update the hotel in the relevant Tour Day to match. This may require admin to add alternative hotels in Hotel database as well, if the hotel does not exist in the Database.
-      </span>
-    </div>
-    <div class="mt-4">
-      <button @click="addAlternativeHotel()"
-              class="flex gap-2 items-center px-5 py-2.5 text-sm font-semibold text-white bg-amber-500 rounded-lg shadow-sm transition-colors duration-150 hover:bg-amber-600 focus:ring-2 focus:ring-amber-300 focus:ring-offset-1 focus:outline-none dark:focus:ring-offset-gray-800">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Add Alternative
-      </button>
-    </div>
-  </div>
-
-
 
   <!-- Alternative cards -->
   <template x-for="(alt, altIndex) in alternativeHotels" :key="altIndex">

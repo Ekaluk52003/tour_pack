@@ -304,7 +304,14 @@
                   </select>
                 </td>
                 <td class="px-1 py-1">
-                  <button type="button" @click="removeExpense(idx)" class="text-red-400 hover:text-red-600">✕</button>
+                  <div class="flex gap-1 justify-center items-center">
+                    <button type="button" @click="insertExpenseAfter(idx)"
+                            title="Insert row below"
+                            class="font-bold text-blue-400 hover:text-blue-600">+</button>
+                    <button type="button" @click="removeExpense(idx)"
+                            title="Delete row"
+                            class="text-red-400 hover:text-red-600">✕</button>
+                  </div>
                 </td>
               </tr>
             </template>

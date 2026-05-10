@@ -341,6 +341,20 @@ export default function invoiceForm() {
         supplierDropStyle: '', serviceDropStyle: '',
       });
     },
+    insertExpenseAfter(idx) {
+      this.supplierExpenses.splice(idx + 1, 0, {
+        _key: crypto.randomUUID(),
+        supplier_name: '', supplier_id: null,
+        supplier_service_id: null,
+        description: '', unit_price: '0',
+        amount: '0',
+        due_date: '', status: 'Pending', reference_number: '',
+        order: this.supplierExpenses.length,
+        supplierId: null, supplierQuery: '', serviceQuery: '',
+        supplierOpen: false, serviceOpen: false,
+        supplierDropStyle: '', serviceDropStyle: '',
+      });
+    },
     removeExpense(idx) { this.supplierExpenses.splice(idx, 1); },
 
     submitForm() {

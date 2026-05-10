@@ -16,7 +16,7 @@
 <div class="mb-4">
   <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Create Invoice</h1>
 </div>
-<div class="mb-6 p-4 bg-white rounded-lg shadow dark:bg-gray-800">
+<div class="p-4 mb-6 bg-white rounded-lg shadow dark:bg-gray-800">
   <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
     Package: <span class="font-semibold">{{ package.package_reference }}</span> — {{ package.name }}
   </p>
@@ -128,7 +128,7 @@
                              placeholder="Service name…"
                              class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                       <div x-show="item.serviceAcOpen && item.serviceAcResults.length > 0"
-                           class="absolute left-0 top-full z-50 overflow-y-auto max-h-48 w-64 bg-white rounded-lg border border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-600">
+                           class="overflow-y-auto absolute left-0 top-full z-50 w-64 max-h-48 bg-white rounded-lg border border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-600">
                         <template x-for="svc in item.serviceAcResults" :key="svc.service_id">
                           <div @mousedown.prevent="selectServiceAc(item, svc)"
                                class="px-3 py-2 text-xs border-b border-gray-100 cursor-pointer hover:bg-blue-50 dark:border-gray-700 dark:hover:bg-gray-700">
@@ -186,7 +186,7 @@
                               class="font-bold text-blue-400 hover:text-blue-600">+</button>
                       <div x-show="item.insertOpen"
                            data-insert-menu
-                           class="absolute right-0 top-full z-50 mt-px overflow-hidden text-xs bg-white rounded border border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-600">
+                           class="overflow-hidden absolute right-0 top-full z-50 mt-px text-xs bg-white rounded border border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-600">
                         <button type="button" @click="insertServiceAfter(insertMenuIdx)"
                                 class="block px-3 py-2 w-full text-left text-gray-700 whitespace-nowrap hover:bg-blue-50 dark:text-gray-200 dark:hover:bg-gray-700">
                           + Service
@@ -307,7 +307,14 @@
                   </select>
                 </td>
                 <td class="px-1 py-1">
-                  <button type="button" @click="removeExpense(idx)" class="text-red-400 hover:text-red-600">✕</button>
+                  <div class="flex gap-1 justify-center items-center">
+                    <button type="button" @click="insertExpenseAfter(idx)"
+                            title="Insert row below"
+                            class="font-bold text-blue-400 hover:text-blue-600">+</button>
+                    <button type="button" @click="removeExpense(idx)"
+                            title="Delete row"
+                            class="text-red-400 hover:text-red-600">✕</button>
+                  </div>
                 </td>
               </tr>
             </template>

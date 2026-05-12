@@ -76,12 +76,12 @@
           {% for item_with_meta in items_with_meta %}
           {% with item=item_with_meta.item %}
           <tr class="border-b border-gray-100 dark:border-gray-700 {% if item.item_type == 'Hotel' %}bg-blue-50 dark:bg-gray-700 {% elif item.item_type == 'Discount' %}bg-red-50 dark:bg-red-900/20{% endif %}">
-            <td class="px-2 py-1 w-28 whitespace-nowrap text-gray-700 dark:text-gray-300">
+            <td class="px-2 py-1 w-28 text-gray-700 whitespace-nowrap dark:text-gray-300">
               {% if item_with_meta.meta and item_with_meta.meta.arrival_date %}
                 {{ item_with_meta.meta.arrival_date|date:"d-M-Y" }}
               {% endif %}
             </td>
-            <td class="px-2 py-1 w-28 whitespace-nowrap text-gray-700 dark:text-gray-300">
+            <td class="px-2 py-1 w-28 text-gray-700 whitespace-nowrap dark:text-gray-300">
               {% if item_with_meta.meta and item_with_meta.meta.departure_date %}
                 {{ item_with_meta.meta.departure_date|date:"d-M-Y" }}
               {% endif %}
@@ -121,51 +121,92 @@
   <div class="p-4 mb-6 bg-white rounded-lg shadow dark:bg-gray-800">
     <h2 class="mb-3 text-lg font-semibold text-orange-600 dark:text-orange-400">Supplier Expenses</h2>
     <div class="overflow-x-auto">
-      <table class="w-full text-sm text-left">
-        <thead class="bg-orange-50 dark:bg-gray-700">
-          <tr>
-            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Supplier</th>
-            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Description</th>
-            <th class="px-3 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
-            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Due Date</th>
-            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for exp in expenses %}
-          <tr class="border-b border-gray-100 dark:border-gray-700">
-            <td class="px-3 py-2 font-medium">{{ exp.supplier_name }}</td>
-            <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ exp.description }}</td>
-            <td class="px-3 py-2 text-right">{{ exp.amount|intcomma }}</td>
-            <td class="px-3 py-2">{{ exp.due_date|date:"d M Y"|default:"—" }}</td>
-            <td class="px-3 py-2">
+      <div class="min-w-[900px]">
+        <!-- Header -->
+        <div class="grid grid-cols-[1.2fr_2fr_0.8fr_1.4fr_0.9fr_0.9fr_0.7fr_0.8fr] gap-2 bg-orange-300 dark:bg-gray-600 rounded-t-lg px-3 py-2 text-sm font-medium text-gray-800 dark:text-gray-200">
+          <div>Supplier</div>
+          <div>Description</div>
+          <div class="text-right">Amount</div>
+          <div class="text-orange-800 dark:text-orange-300">Mapped Service</div>
+          <div class="text-right text-orange-800 dark:text-orange-300">Service Price</div>
+          <div class="text-right text-orange-800 dark:text-orange-300">Service Profit</div>
+          <div>Due Date</div>
+          <div>Status</div>
+        </div>
+
+        <!-- Body -->
+        <div class="bg-white dark:bg-gray-800">
+          {% for entry in expenses_with_service %}
+
+          {% if entry.is_first_for_service and entry.service_expense_count > 1 %}
+          <!-- Group summary row -->
+          <div class="grid grid-cols-[1.2fr_2fr_0.8fr_1.4fr_0.9fr_0.9fr_0.7fr_0.8fr] gap-2 px-3 py-2 border-b border-gray-100 dark:border-gray-700 text-sm items-center">
+            <div class="font-semibold text-gray-700 dark:text-gray-200">Total expense for service</div>
+            <div class="text-gray-400 dark:text-gray-500">—</div>
+            <div class="font-bold text-right text-gray-800 dark:text-gray-100">{{ entry.group_total|intcomma }}</div>
+            <div class="text-gray-700 dark:text-gray-300">{{ entry.service_description|strip_date_meta }}</div>
+            <div class="text-right text-gray-500 dark:text-gray-400">฿{{ entry.selling_price|intcomma }}</div>
+            <div class="text-right font-semibold {% if entry.profit >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+              ฿{{ entry.profit|intcomma }}
+            </div>
+            <div class="text-gray-400 dark:text-gray-500">—</div>
+            <div class="text-gray-400 dark:text-gray-500">—</div>
+          </div>
+          {% endif %}
+
+          <!-- Individual expense row -->
+          <div class="grid grid-cols-[1.2fr_2fr_0.8fr_1.4fr_0.9fr_0.9fr_0.7fr_0.8fr] gap-2 px-3 py-2 border-b border-gray-100 dark:border-gray-700 text-sm items-center {% if entry.service_expense_count > 1 %}pl-8{% endif %}">
+            <div class="font-medium text-gray-800 dark:text-gray-200">{{ entry.expense.supplier_name }}</div>
+            <div class="text-gray-600 dark:text-gray-300">{{ entry.expense.description }}</div>
+            <div class="text-right text-gray-700 dark:text-gray-300">{{ entry.expense.amount|intcomma }}</div>
+            <div class="text-gray-600 dark:text-gray-300">
+              {% if entry.service_expense_count == 1 and entry.service_description %}
+                {{ entry.service_description|strip_date_meta }}
+              {% else %}
+                <span class="text-gray-400">—</span>
+              {% endif %}
+            </div>
+            <div class="text-right text-gray-500 dark:text-gray-400">
+              {% if entry.service_expense_count == 1 and entry.selling_price is not None %}
+                ฿{{ entry.selling_price|intcomma }}
+              {% endif %}
+            </div>
+            <div class="text-right">
+              {% if entry.service_expense_count == 1 %}
+                <span class="font-semibold {% if entry.profit >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                  ฿{{ entry.profit|intcomma }}
+                </span>
+              {% endif %}
+            </div>
+            <div class="text-gray-600 dark:text-gray-300">{{ entry.expense.due_date|date:"d M Y"|default:"—" }}</div>
+            <div>
               <span class="px-2 py-0.5 text-xs rounded-full
-                {% if exp.status == 'Paid' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
-                {% elif exp.status == 'Cancelled' %}bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400
+                {% if entry.expense.status == 'Paid' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                {% elif entry.expense.status == 'Cancelled' %}bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400
                 {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300{% endif %}">
-                {{ exp.status }}
+                {{ entry.expense.status }}
               </span>
-            </td>
-          </tr>
+            </div>
+          </div>
           {% empty %}
-          <tr><td colspan="5" class="px-3 py-4 text-center text-gray-400">No expenses</td></tr>
+          <div class="px-3 py-6 text-sm text-center text-gray-400">No expenses</div>
           {% endfor %}
-        </tbody>
-        <tfoot>
-          <tr class="bg-orange-50 dark:bg-gray-700">
-            <td colspan="2" class="px-3 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Total Expenses</td>
-            <td class="px-3 py-2 font-bold text-right text-orange-600 dark:text-orange-400">฿{{ total_expenses|intcomma }}</td>
-            <td colspan="2"></td>
-          </tr>
-          <tr>
-            <td colspan="2" class="px-3 py-2 text-right text-gray-600 dark:text-gray-300">Margin</td>
-            <td class="px-3 py-2 font-bold text-right {% if margin >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-between items-center px-3 py-3 text-sm bg-orange-50 rounded-b-lg border-t border-orange-200 dark:bg-gray-700 dark:border-gray-600">
+          <div class="font-semibold text-gray-700 dark:text-gray-200">
+            Total Expenses
+            <span class="ml-2 font-bold text-orange-600 dark:text-orange-400">฿{{ total_expenses|intcomma }}</span>
+          </div>
+          <div class="font-semibold text-gray-600 dark:text-gray-300">
+            Margin
+            <span class="ml-2 font-bold {% if margin >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
               ฿{{ margin|intcomma }}
-            </td>
-            <td colspan="2"></td>
-          </tr>
-        </tfoot>
-      </table>
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

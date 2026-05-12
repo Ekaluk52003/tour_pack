@@ -3595,11 +3595,50 @@ def edit_invoice(request, invoice_id):
 @login_required
 @superuser_or_owner_required
 def invoice_detail(request, invoice_id):
+    # per-service profit mapping with grouping visuals
     invoice = get_object_or_404(Invoice, id=invoice_id)
     items = list(invoice.items.all().order_by('order'))
-    expenses = invoice.supplier_expenses.all().order_by('order')
+    expenses = list(invoice.supplier_expenses.all().order_by('order'))
     total_expenses = sum(e.amount for e in expenses)
     margin = invoice.total_amount - total_expenses
+
+    # Group expenses by source_item_index and calculate per-service profit
+    expenses_by_item = {}
+    for exp in expenses:
+        idx = exp.source_item_index
+        if idx is not None:
+            expenses_by_item.setdefault(idx, []).append(exp)
+
+    service_profits = {}
+    for idx, item in enumerate(items):
+        item_expenses = expenses_by_item.get(idx, [])
+        total_exp = sum(e.amount for e in item_expenses)
+        service_profits[idx] = {
+            'description': item.description,
+            'selling_price': item.amount,
+            'profit': item.amount - total_exp,
+        }
+
+    service_expense_counts = {idx: len(exps) for idx, exps in expenses_by_item.items()}
+    # total expenses per service group for first-row display
+    group_totals = {idx: sum(e.amount for e in exps) for idx, exps in expenses_by_item.items()}
+
+    expenses_with_service = []
+    seen_indices = set()
+    for exp in expenses:
+        idx = exp.source_item_index
+        sp = service_profits.get(idx)
+        expenses_with_service.append({
+            'expense': exp,
+            'service_description': sp['description'] if sp else None,
+            'selling_price': sp['selling_price'] if sp else None,
+            'profit': sp['profit'] if sp else None,
+            'is_first_for_service': idx is not None and idx not in seen_indices,
+            'service_expense_count': service_expense_counts.get(idx, 0),
+            'group_total': group_totals.get(idx, 0),
+        })
+        if idx is not None:
+            seen_indices.add(idx)
 
     # Dates and hotel pricing come from saved description metadata,
     # falling back to current package data only when absent.
@@ -3629,6 +3668,7 @@ def invoice_detail(request, invoice_id):
     context = {
         'invoice': invoice,
         'items_with_meta': items_with_meta,
+        'expenses_with_service': expenses_with_service,
         'expenses': expenses,
         'total_expenses': total_expenses,
         'margin': margin,

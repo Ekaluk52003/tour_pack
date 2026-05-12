@@ -36,6 +36,20 @@ import io
 logger = logging.getLogger(__name__)
 
 
+def parse_custom_date(value):
+    """Parse a date string in various formats (e.g., '25-Dec-26', '2026-12-25') to a date object."""
+    if not value or value.strip() == '':
+        return None
+    value = value.strip()
+    formats = ['%d-%b-%y', '%d-%b-%Y', '%Y-%m-%d']
+    for fmt in formats:
+        try:
+            return datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
 def safe_decimal(value, default=Decimal('0')):
     if isinstance(value, (list, tuple)):
         return default  # Return default if value is a sequence
@@ -3351,8 +3365,8 @@ def create_invoice(request, package_reference):
 
     if request.method == 'POST':
         agency_id = request.POST.get('agency') or None
-        issue_date = request.POST.get('issue_date')
-        due_date = request.POST.get('due_date') or None
+        issue_date = parse_custom_date(request.POST.get('issue_date'))
+        due_date = parse_custom_date(request.POST.get('due_date'))
         notes = request.POST.get('notes', '')
         status = request.POST.get('status', Invoice.STATUS_DRAFT)
         items_json = request.POST.get('invoice_items_json', '[]')
@@ -3410,7 +3424,7 @@ def create_invoice(request, package_reference):
                     description=exp.get('description', '')[:500],
                     unit_price=safe_decimal(exp.get('unit_price', 0)),
                     amount=safe_decimal(exp.get('amount', 0)),
-                    due_date=exp.get('due_date') or None,
+                    due_date=parse_custom_date(exp.get('due_date')),
                     status=exp.get('status', 'Pending'),
                     reference_number=exp.get('reference_number', '')[:100],
                     order=i,
@@ -3449,8 +3463,8 @@ def edit_invoice(request, invoice_id):
 
     if request.method == 'POST':
         agency_id = request.POST.get('agency') or None
-        issue_date = request.POST.get('issue_date')
-        due_date = request.POST.get('due_date') or None
+        issue_date = parse_custom_date(request.POST.get('issue_date'))
+        due_date = parse_custom_date(request.POST.get('due_date'))
         notes = request.POST.get('notes', '')
         status = request.POST.get('status', Invoice.STATUS_DRAFT)
         items_json = request.POST.get('invoice_items_json', '[]')
@@ -3507,7 +3521,7 @@ def edit_invoice(request, invoice_id):
                     description=exp.get('description', '')[:500],
                     unit_price=safe_decimal(exp.get('unit_price', 0)),
                     amount=safe_decimal(exp.get('amount', 0)),
-                    due_date=exp.get('due_date') or None,
+                    due_date=parse_custom_date(exp.get('due_date')),
                     status=exp.get('status', 'Pending'),
                     reference_number=exp.get('reference_number', '')[:100],
                     order=i,
@@ -3571,7 +3585,7 @@ def edit_invoice(request, invoice_id):
             'description': exp.description,
             'unit_price': str(exp.unit_price),
             'amount': str(exp.amount),
-            'due_date': exp.due_date.isoformat() if exp.due_date else '',
+            'due_date': exp.due_date.strftime('%d-%b-%y') if exp.due_date else '',
             'status': exp.status,
             'reference_number': exp.reference_number or '',
             'order': exp.order,

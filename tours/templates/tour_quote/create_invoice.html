@@ -48,12 +48,12 @@
     </div>
     <div class="md:col-span-1">
       <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Issue Date</label>
-      <input type="date" name="issue_date" value="{{ today|date:'Y-m-d' }}"
+      <input type="text" name="issue_date" value="{{ today|date:'j-M-y' }}" placeholder="25-Mar-26"
              class="px-3 py-2 w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500">
     </div>
     <div>
       <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
-      <input type="date" name="due_date"
+      <input type="text" name="due_date" placeholder="25-Mar-26"
              class="px-3 py-2 w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500">
     </div>
     <div>
@@ -296,7 +296,7 @@
                          class="px-2 py-1 w-full text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                 </td>
                 <td class="px-1 py-1">
-                  <input type="date" x-model="exp.due_date"
+                  <input type="text" x-model="exp.due_date" placeholder="25-Mar-26"
                          class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                 </td>
                 <td class="px-1 py-1">

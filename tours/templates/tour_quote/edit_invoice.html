@@ -168,6 +168,11 @@
                                @input="calcHotelPrice(item)"
                                class="px-1 py-0.5 w-20 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                       </label>
+                      <label class="flex gap-1 items-center">
+                        <span class="text-gray-700 dark:text-gray-200">Promo:</span>
+                        <input type="text" x-model="item.promotion" placeholder="Promo..."
+                               class="px-1 py-0.5 w-32 text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      </label>
                     </div>
                   </template>
                 </td>
@@ -220,7 +225,7 @@
     <!-- RIGHT: Supplier Expenses -->
     <div class="p-4 min-w-0 bg-white rounded-lg shadow dark:bg-gray-800">
       <h2 class="mb-3 text-lg font-semibold text-orange-600 dark:text-orange-400">Supplier Expenses</h2>
-      <div class="overflow-x-auto">
+      <div>
         <table class="w-full text-xs text-left table-fixed">
           <thead class="bg-orange-50 dark:bg-gray-700">
             <tr>
@@ -237,8 +242,8 @@
               <tr class="border-b border-gray-100 dark:border-gray-700">
 
                 <!-- Supplier combobox -->
-                <td class="relative px-1 py-1">
-                  <div @click.outside="exp.supplierOpen = false">
+                <td class="px-1 py-1">
+                  <div class="relative" @click.outside="exp.supplierOpen = false">
                     <input type="text"
                            x-model="exp.supplierQuery"
                            @focus="openSupplierDrop(exp, $el)"
@@ -248,9 +253,8 @@
                            class="px-2 py-1 w-full text-xs rounded border dark:bg-gray-700 dark:text-gray-200"
                            :class="exp.supplier_name ? 'border-orange-300 dark:border-orange-600 font-medium' : 'border-gray-200 dark:border-gray-600'">
                     <div x-show="exp.supplierOpen"
-                         :style="exp.supplierDropStyle"
                          @click.stop
-                         class="overflow-y-auto max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
+                         class="overflow-y-auto absolute left-0 top-full z-50 w-full max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
                       <template x-for="s in filteredSuppliers(exp.supplierQuery)" :key="s.id">
                         <div @mousedown.prevent="selectSupplier(exp, s)"
                              class="px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700"
@@ -264,8 +268,8 @@
                 </td>
 
                 <!-- Service combobox -->
-                <td class="relative px-1 py-1">
-                  <div @click.outside="exp.serviceOpen = false">
+                <td class="px-1 py-1">
+                  <div class="relative" @click.outside="exp.serviceOpen = false">
                     <input type="text"
                            x-model="exp.description"
                            @focus="openServiceDrop(exp, $el); exp.serviceQuery = exp.description"
@@ -274,9 +278,8 @@
                            :placeholder="exp.supplierId ? 'Service / description…' : 'Select supplier first'"
                            class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
                     <div x-show="exp.serviceOpen && exp.supplierId && filteredServices(exp).length > 0"
-                         :style="exp.serviceDropStyle"
                          @click.stop
-                         class="overflow-y-auto fixed max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
+                         class="overflow-y-auto absolute left-0 top-full z-50 w-full max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
                       <template x-for="s in filteredServices(exp)" :key="s.id">
                         <div @mousedown.prevent="selectService(exp, s)"
                              class="flex gap-2 justify-between items-center px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700">
@@ -286,6 +289,41 @@
                       </template>
                     </div>
                   </div>
+                  <!-- Hotel controls for linked hotel items -->
+                  <template x-if="linkedItem(exp)?.is_hotel">
+                    <div class="flex flex-wrap gap-2 items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <label class="flex gap-1 items-center">
+                        <span class="text-gray-700 dark:text-gray-200">Rooms:</span>
+                        <input type="number" :value="exp.room_count" min="1" step="1"
+                               @input="updateExpenseHotel(exp, 'room_count', $event.target.value)"
+                               class="px-1 py-0.5 w-12 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      </label>
+                      <label class="flex gap-1 items-center">
+                        <span class="text-gray-700 dark:text-gray-200">Nights:</span>
+                        <input type="number" :value="exp.nights" min="1" step="1"
+                               @input="updateExpenseHotel(exp, 'nights', $event.target.value)"
+                               class="px-1 py-0.5 w-12 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      </label>
+                      <label class="flex gap-1 items-center">
+                        <span class="text-gray-700 dark:text-gray-200">Price/Night:</span>
+                        <input type="number" :value="exp.room_price" min="0" step="0.01"
+                               @input="updateExpenseHotel(exp, 'room_price', $event.target.value)"
+                               class="px-1 py-0.5 w-20 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      </label>
+                      <label class="flex gap-1 items-center">
+                        <span class="text-gray-700 dark:text-gray-200">Extra Bed:</span>
+                        <input type="number" :value="exp.extra_bed_price" min="0" step="0.01"
+                               @input="updateExpenseHotel(exp, 'extra_bed_price', $event.target.value)"
+                               class="px-1 py-0.5 w-20 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      </label>
+                      <label class="flex gap-1 items-center">
+                        <span class="text-gray-700 dark:text-gray-200">Promo:</span>
+                        <input type="text" :value="exp.promotion"
+                               @input="updateExpenseHotel(exp, 'promotion', $event.target.value)"
+                               class="px-1 py-0.5 w-32 text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                      </label>
+                    </div>
+                  </template>
                 </td>
 
                 <td class="px-1 py-1">

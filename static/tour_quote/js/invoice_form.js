@@ -51,6 +51,11 @@ export default function invoiceForm() {
           serviceOpen: false,
           supplierDropStyle: '',
           serviceDropStyle: '',
+          room_count: exp.room_count || 1,
+          nights: exp.nights || 1,
+          room_price: exp.room_price !== undefined ? exp.room_price : 0,
+          extra_bed_price: exp.extra_bed_price !== undefined ? exp.extra_bed_price : 0,
+          promotion: exp.promotion || '',
         };
       });
 
@@ -94,6 +99,39 @@ export default function invoiceForm() {
       const pricePerNight = parseFloat(item.room_price || 0);
       const extraBed = parseFloat(item.extra_bed_price || 0);
       item.price = ((rooms * pricePerNight + extraBed) * nights).toFixed(2);
+    },
+
+    linkedItem(exp) {
+      if (!exp._source_key) return null;
+      return this.groupedItems.find(i => i._key === exp._source_key);
+    },
+
+    calcExpenseHotelPrice(exp) {
+      const rooms = parseFloat(exp.room_count || 0);
+      const nights = parseFloat(exp.nights || 0);
+      const pricePerNight = parseFloat(exp.room_price || 0);
+      const extraBed = parseFloat(exp.extra_bed_price || 0);
+      exp.amount = ((rooms * pricePerNight + extraBed) * nights).toFixed(2);
+      exp.unit_price = exp.amount;
+    },
+
+    updateExpenseHotel(exp, field, value) {
+      exp[field] = value;
+      if (['room_count','nights','room_price','extra_bed_price'].includes(field)) {
+        this.calcExpenseHotelPrice(exp);
+      }
+      const item = this.linkedItem(exp);
+      if (item) {
+        const parts = [item.service_name || ''];
+        if (item.arrival_date && item.departure_date) {
+          parts.push(`- ${this.formatDateShort(item.arrival_date)} to ${this.formatDateShort(item.departure_date)}, ${item.nights || ''} nights`);
+        }
+        if (exp.promotion) {
+          parts.push(`(${exp.promotion})`);
+        }
+        exp.description = parts.join(' ');
+        exp.serviceQuery = exp.description;
+      }
     },
 
     // --- Dropdown positioning (fixed so it never causes page scroll) ---
@@ -323,6 +361,7 @@ export default function invoiceForm() {
         supplierId: null, supplierQuery: '', serviceQuery: '',
         supplierOpen: false, serviceOpen: false,
         supplierDropStyle: '', serviceDropStyle: '',
+        room_count: 1, nights: 1, room_price: 0, extra_bed_price: 0, promotion: '',
       });
       this.insertMenuIdx = null;
     },
@@ -364,16 +403,34 @@ export default function invoiceForm() {
         supplierDropStyle, serviceDropStyle,
         _source_key,
         source_item_index: _oldIdx,
+        description,
+        room_count, nights, room_price, extra_bed_price, promotion,
         ...rest
       }) => {
         const sourceIdx = _source_key
           ? this.groupedItems.findIndex(item => item._key === _source_key)
           : null;
-        return { ...rest, source_item_index: sourceIdx >= 0 ? sourceIdx : null };
+        let updatedDescription = description;
+        if (sourceIdx >= 0) {
+          const item = this.groupedItems[sourceIdx];
+          const parts = [item.service_name || ''];
+          if (item.is_hotel) {
+            if (item.arrival_date && item.departure_date) {
+              parts.push(`- ${this.formatDateShort(item.arrival_date)} to ${this.formatDateShort(item.departure_date)}, ${item.nights || ''} nights`);
+            }
+            if (promotion) {
+              parts.push(`(${promotion})`);
+            }
+          } else if (item.arrival_date) {
+            parts.push(`(${item.arrival_date})`);
+          }
+          updatedDescription = parts.join(' ');
+        }
+        return { ...rest, description: updatedDescription, source_item_index: sourceIdx >= 0 ? sourceIdx : null };
       });
 
       const derivedInvoiceItems = this.groupedItems.map((item, idx) => ({
-        description: `${item.service_name || ''}|||${item.arrival_date || ''}|||${item.departure_date || ''}|||${item.nights || ''}|||${item.room_count || ''}|||${item.room_price || ''}|||${item.extra_bed_price || ''}`,
+        description: `${item.service_name || ''}|||${item.arrival_date || ''}|||${item.departure_date || ''}|||${item.nights || ''}|||${item.room_count || ''}|||${item.room_price || ''}|||${item.extra_bed_price || ''}|||${item.promotion || ''}`,
         quantity: '1',
         unit_price: String(item.price || 0),
         amount: String(item.price || 0),

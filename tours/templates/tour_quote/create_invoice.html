@@ -250,7 +250,7 @@
                     <input type="text"
                            x-model="exp.supplierQuery"
                            @focus="openSupplierDrop(exp, $el)"
-                           @blur="exp.supplierOpen = false; exp.supplierQuery = exp.supplier_name || ''"
+                           @blur="blurSupplier(exp)"
                            @input="exp.supplierQuery = exp.supplierQuery"
                            placeholder="Search supplier…"
                            class="px-2 py-1 w-full text-xs rounded border dark:bg-gray-700 dark:text-gray-200"

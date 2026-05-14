@@ -188,9 +188,23 @@ export default function invoiceForm() {
       exp.supplier_service_id = null;
     },
 
-    closeSupplierDrop(exp) {
+    blurSupplier(exp) {
       exp.supplierOpen = false;
-      exp.supplierQuery = exp.supplier_name || '';
+      const trimmed = (exp.supplierQuery || '').trim();
+      if (!trimmed) {
+        exp.supplier_name = '';
+        exp.supplier_id = null;
+        exp.supplierId = null;
+        exp.supplierQuery = '';
+        return;
+      }
+      // If query doesn't match the currently selected supplier name, treat as free text
+      if (trimmed !== exp.supplier_name) {
+        exp.supplier_name = trimmed;
+        exp.supplier_id = null;
+        exp.supplierId = null;
+        exp.supplier_service_id = null;
+      }
     },
 
     // --- SupplierService combobox (right panel) ---
@@ -409,7 +423,7 @@ export default function invoiceForm() {
       }) => {
         const sourceIdx = _source_key
           ? this.groupedItems.findIndex(item => item._key === _source_key)
-          : null;
+          : -1;
         let updatedDescription = description;
         if (sourceIdx >= 0) {
           const item = this.groupedItems[sourceIdx];

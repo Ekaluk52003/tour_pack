@@ -199,6 +199,9 @@
                         </button>
                       </div>
                     </div>
+                    <button type="button" @click="addExpenseForItem(item)"
+                            title="Add linked expense"
+                            class="font-bold text-orange-400 hover:text-orange-600">Exp</button>
                     <button type="button" @click="removeGroupedItem(idx)"
                             title="Delete row"
                             class="text-red-400 hover:text-red-600">✕</button>
@@ -244,6 +247,8 @@
                 <!-- Supplier combobox -->
                 <td class="px-1 py-1">
                   <div class="relative" @click.outside="exp.supplierOpen = false">
+                    <div x-show="exp._source_key" class="mb-0.5 text-[10px] text-blue-500 truncate"
+                         x-text="'→ ' + (linkedItem(exp)?.service_name || '')"></div>
                     <input type="text"
                            x-model="exp.supplierQuery"
                            @focus="openSupplierDrop(exp, $el)"

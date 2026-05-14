@@ -394,6 +394,27 @@ export default function invoiceForm() {
         supplierDropStyle: '', serviceDropStyle: '',
       });
     },
+
+    addExpenseForItem(item) {
+      this.supplierExpenses.push({
+        _key: crypto.randomUUID(),
+        supplier_name: '', supplier_id: null,
+        supplier_service_id: null,
+        description: '', unit_price: '0',
+        amount: '0',
+        due_date: '', status: 'Pending', reference_number: '',
+        order: this.supplierExpenses.length,
+        _source_key: item._key,
+        supplierId: null, supplierQuery: '', serviceQuery: '',
+        supplierOpen: false, serviceOpen: false,
+        supplierDropStyle: '', serviceDropStyle: '',
+        room_count: item.room_count || 1,
+        nights: item.nights || 1,
+        room_price: item.room_price !== undefined ? item.room_price : 0,
+        extra_bed_price: item.extra_bed_price !== undefined ? item.extra_bed_price : 0,
+        promotion: item.promotion || '',
+      });
+    },
     insertExpenseAfter(idx) {
       this.supplierExpenses.splice(idx + 1, 0, {
         _key: crypto.randomUUID(),

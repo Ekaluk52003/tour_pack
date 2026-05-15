@@ -35,9 +35,10 @@ export default function invoiceForm() {
         const matched = this.allSuppliers.find(s =>
           exp.supplier_id ? s.id === exp.supplier_id : s.name === exp.supplier_name
         );
+        let sourceItem = null;
         let sourceKey = null;
         if (exp.source_item_index != null) {
-          const sourceItem = this.groupedItems[exp.source_item_index];
+          sourceItem = this.groupedItems[exp.source_item_index];
           if (sourceItem) sourceKey = sourceItem._key;
         }
         return {
@@ -55,7 +56,7 @@ export default function invoiceForm() {
           nights: exp.nights || 1,
           room_price: exp.room_price !== undefined ? exp.room_price : 0,
           extra_bed_price: exp.extra_bed_price !== undefined ? exp.extra_bed_price : 0,
-          promotion: exp.promotion || '',
+          promotion: exp.promotion || (sourceItem?.promotion || ''),
         };
       });
 

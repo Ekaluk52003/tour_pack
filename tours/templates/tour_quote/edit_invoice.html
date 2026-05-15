@@ -73,307 +73,406 @@
   <!-- Two panels -->
   <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
 
-    <!-- LEFT: Invoice to Client -->
-    <div class="p-4 min-w-0 bg-white rounded-lg shadow dark:bg-gray-800">
-      <h2 class="mb-3 text-lg font-semibold text-blue-700 dark:text-blue-400">Invoice to Client</h2>
-      <div>
-        <table class="w-full text-xs text-left table-fixed">
-          <thead class="bg-blue-50 dark:bg-gray-700">
-            <tr>
-              <th class="px-2 py-2 w-24 font-medium text-gray-600 dark:text-gray-300">Arr.</th>
-              <th class="px-2 py-2 w-24 font-medium text-gray-600 dark:text-gray-300">Dep.</th>
-              <th class="px-2 py-2 font-medium text-gray-600 dark:text-gray-300">Detail</th>
-              <th class="px-2 py-2 w-28 font-medium text-gray-600 dark:text-gray-300">Price</th>
-              <th class="px-1 py-2 w-12"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <template x-for="(item, idx) in groupedItems" :key="item._key">
-              <tr class="border-b border-blue-100 dark:border-gray-700"
-                  :class="item.is_hotel ? 'bg-blue-50 dark:bg-gray-700 border-l-4 border-l-blue-700 dark:border-l-blue-400' : (item.is_discount ? 'bg-red-50 dark:bg-red-900/20' : '')">
-                <td class="px-1 py-1 w-24">
-                  <template x-if="item.arrivalEdit">
-                    <input type="date" x-model="item.arrival_date"
-                           @blur="item.arrivalEdit = false"
-                           x-init="$nextTick(() => $el.focus())"
-                           class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                  </template>
-                  <template x-if="!item.arrivalEdit">
-                    <div @click="item.arrivalEdit = true" tabindex="0"
-                         x-text="formatDateShort(item.arrival_date)"
-                         class="cursor-pointer px-1 py-1 w-full text-xs text-gray-700 dark:text-gray-300 min-h-[1.5rem] rounded border border-dashed border-blue-300 dark:border-blue-600 hover:border-blue-500 dark:hover:border-blue-400"></div>
-                  </template>
-                </td>
-                <td class="px-1 py-1 w-24">
-                  <template x-if="item.departureEdit">
-                    <input type="date" x-model="item.departure_date"
-                           @blur="item.departureEdit = false"
-                           x-init="$nextTick(() => $el.focus())"
-                           class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                  </template>
-                  <template x-if="!item.departureEdit">
-                    <div @click="item.departureEdit = true" tabindex="0"
-                         x-text="formatDateShort(item.departure_date)"
-                         class="cursor-pointer px-1 py-1 w-full text-xs text-gray-700 dark:text-gray-300 min-h-[1.5rem] rounded border border-dashed border-blue-300 dark:border-blue-600 hover:border-blue-500 dark:hover:border-blue-400"></div>
-                  </template>
-                </td>
-                <td class="px-1 py-1">
-                  <template x-if="!item.is_hotel && !item.is_discount">
-                    <div class="relative" data-service-ac>
-                      <input type="text" x-model="item.service_name"
-                             @input.debounce.300ms="searchServices(item)"
-                             @keydown.escape="item.serviceAcOpen = false"
-                             placeholder="Service name…"
-                             class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      <div x-show="item.serviceAcOpen && item.serviceAcResults.length > 0"
-                           class="overflow-y-auto absolute left-0 top-full z-50 w-64 max-h-48 bg-white rounded-lg border border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-600">
-                        <template x-for="svc in item.serviceAcResults" :key="svc.service_id">
-                          <div @mousedown.prevent="selectServiceAc(item, svc)"
-                               class="px-3 py-2 text-xs border-b border-gray-100 cursor-pointer hover:bg-blue-50 dark:border-gray-700 dark:hover:bg-gray-700">
-                            <div class="font-medium text-gray-800 dark:text-gray-100" x-text="svc.name"></div>
-                            <div class="text-gray-400" x-text="'฿' + Number(svc.price).toLocaleString('th-TH')"></div>
-                          </div>
-                        </template>
-                      </div>
-                    </div>
-                  </template>
-                  <template x-if="item.is_hotel || item.is_discount">
+    <!-- ===== INVOICE TO CLIENT ===== -->
+    <section class="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm dark:bg-gray-800 dark:border-gray-700">
+
+      <!-- Section header -->
+      <header class="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-100 dark:border-gray-700 bg-gradient-to-r from-blue-50/60 via-white to-white dark:from-gray-800 dark:to-gray-800">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center justify-center w-9 h-9 text-blue-700 bg-blue-100 rounded-xl dark:bg-blue-500/15 dark:text-blue-300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M9 8h1M7 4h10a2 2 0 012 2v14l-3-2-2 2-2-2-2 2-2-2-3 2V6a2 2 0 012-2z"/></svg>
+          </span>
+          <div>
+            <h2 class="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">Invoice to Client</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Line items billed to the customer</p>
+          </div>
+        </div>
+        <span class="hidden items-center px-2.5 py-1 text-[11px] font-medium tracking-wider text-blue-700 uppercase rounded-full bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300 sm:inline-flex">
+          <span x-text="groupedItems.length"></span>&nbsp;items
+        </span>
+      </header>
+
+      <!-- Cards -->
+      <div class="p-4 space-y-3">
+        <template x-for="(item, idx) in groupedItems" :key="item._key">
+          <div class="relative p-4 bg-white border rounded-xl shadow-sm dark:bg-gray-800 dark:border-gray-700"
+               :class="item.is_hotel ? 'border-l-4 border-l-blue-500' : (item.is_discount ? 'border-l-4 border-l-red-400' : '')">
+
+            <!-- Card header: icon + name + actions -->
+            <div class="flex gap-3 items-start mb-3">
+              <span class="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg"
+                    :class="item.is_hotel ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-slate-100 text-slate-500 dark:bg-gray-700 dark:text-gray-400'">
+                <!-- Hotel icon -->
+                <svg x-show="item.is_hotel" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0V12m0 0h4"/></svg>
+                <!-- Service icon -->
+                <svg x-show="!item.is_hotel" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </span>
+              <div class="flex-1 min-w-0">
+                <!-- Service autocomplete -->
+                <template x-if="!item.is_hotel && !item.is_discount">
+                  <div class="relative" data-service-ac>
                     <input type="text" x-model="item.service_name"
-                           class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
-                           :class="item.is_discount ? 'text-red-600 dark:text-red-400' : ''">
-                  </template>
-                  <template x-if="item.is_hotel">
-                    <div class="flex flex-wrap gap-2 items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      <label class="flex gap-1 items-center">
-                        <span class="text-gray-700 dark:text-gray-200">Rooms:</span>
-                        <input type="number" x-model="item.room_count" min="1" step="1"
-                               @input="calcHotelPrice(item)"
-                               class="px-1 py-0.5 w-12 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      </label>
-                      <label class="flex gap-1 items-center">
-                        <span class="text-gray-700 dark:text-gray-200">Nights:</span>
-                        <input type="number" x-model="item.nights" min="1" step="1"
-                               @input="calcHotelPrice(item)"
-                               class="px-1 py-0.5 w-12 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      </label>
-                      <label class="flex gap-1 items-center">
-                        <span class="text-gray-700 dark:text-gray-200">Price/Night:</span>
-                        <input type="number" x-model="item.room_price" min="0" step="0.01"
-                               @input="calcHotelPrice(item)"
-                               class="px-1 py-0.5 w-20 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      </label>
-                      <label class="flex gap-1 items-center">
-                        <span class="text-gray-700 dark:text-gray-200">Extra Bed:</span>
-                        <input type="number" x-model="item.extra_bed_price" min="0" step="0.01"
-                               @input="calcHotelPrice(item)"
-                               class="px-1 py-0.5 w-20 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      </label>
-                      <label class="flex gap-1 items-center">
-                        <span class="text-gray-700 dark:text-gray-200">Promo:</span>
-                        <input type="text" x-model="item.promotion" placeholder="Promo..."
-                               class="px-1 py-0.5 w-32 text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      </label>
-                    </div>
-                  </template>
-                </td>
-                <td class="px-1 py-1 w-28">
-                  <input type="number" x-model="item.price" step="0.01"
-                         class="px-2 py-1 w-full text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                </td>
-                <td class="px-1 py-1 w-12">
-                  <div class="flex gap-1 justify-center items-center">
-                    <div data-insert-menu class="relative">
-                      <button type="button" @click="openInsertMenu(idx, item)"
-                              title="Insert row below"
-                              class="font-bold text-blue-400 hover:text-blue-600">+</button>
-                      <div x-show="item.insertOpen"
-                           data-insert-menu
-                           class="overflow-hidden absolute right-0 top-full z-50 mt-px text-xs bg-white rounded border border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-600">
-                        <button type="button" @click="insertServiceAfter(insertMenuIdx)"
-                                class="block px-3 py-2 w-full text-left text-gray-700 whitespace-nowrap hover:bg-blue-50 dark:text-gray-200 dark:hover:bg-gray-700">
-                          + Service
-                        </button>
-                        <button type="button" @click="insertHotelAfter(insertMenuIdx)"
-                                class="block px-3 py-2 w-full text-left text-blue-600 whitespace-nowrap border-t border-gray-100 hover:bg-blue-50 dark:text-blue-400 dark:border-gray-700 dark:hover:bg-gray-700">
-                          + Hotel
-                        </button>
-                      </div>
-                    </div>
-                    <button type="button" @click="addExpenseForItem(item)"
-                            title="Add linked expense"
-                            class="font-bold text-orange-400 hover:text-orange-600">Exp</button>
-                    <button type="button" @click="removeGroupedItem(idx)"
-                            title="Delete row"
-                            class="text-red-400 hover:text-red-600">✕</button>
-                  </div>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-          <tfoot>
-            <tr class="bg-blue-50 dark:bg-gray-700">
-              <td colspan="3" class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Total</td>
-              <td class="px-2 py-2 font-bold text-right text-blue-600 dark:text-blue-400"
-                  x-text="parseFloat(groupedTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <button type="button" @click="addGroupedItem()"
-              class="px-3 py-1.5 mt-3 text-xs font-medium text-blue-600 rounded border border-blue-400 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-600 dark:hover:bg-gray-700">
-        + Add Row
-      </button>
-    </div>
-
-    <!-- RIGHT: Supplier Expenses -->
-    <div class="p-4 min-w-0 bg-white rounded-lg shadow dark:bg-gray-800">
-      <h2 class="mb-3 text-lg font-semibold text-orange-600 dark:text-orange-400">Supplier Expenses</h2>
-      <div>
-        <table class="w-full text-xs text-left table-fixed">
-          <thead class="bg-orange-50 dark:bg-gray-700">
-            <tr>
-              <th class="px-2 py-2 w-40 font-medium text-gray-600 dark:text-gray-300">Supplier</th>
-              <th class="px-2 py-2 w-36 font-medium text-gray-600 dark:text-gray-300">Service / Description</th>
-              <th class="px-2 py-2 w-24 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
-              <th class="px-2 py-2 w-24 font-medium text-gray-600 dark:text-gray-300">Due Date</th>
-              <th class="px-2 py-2 w-14 font-medium text-gray-600 dark:text-gray-300">Status</th>
-              <th class="px-1 py-2 w-6"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <template x-for="(exp, idx) in supplierExpenses" :key="exp._key">
-              <tr class="border-b border-gray-100 dark:border-gray-700">
-
-                <!-- Supplier combobox -->
-                <td class="px-1 py-1">
-                  <div class="relative" @click.outside="exp.supplierOpen = false">
-                    <div x-show="exp._source_key" class="mb-0.5 text-[10px] text-blue-500 truncate"
-                         x-text="'→ ' + (linkedItem(exp)?.service_name || '')"></div>
-                    <input type="text"
-                           x-model="exp.supplierQuery"
-                           @focus="openSupplierDrop(exp, $el)"
-                           @blur="blurSupplier(exp)"
-                           @input="exp.supplierQuery = exp.supplierQuery"
-                           placeholder="Search supplier…"
-                           class="px-2 py-1 w-full text-xs rounded border dark:bg-gray-700 dark:text-gray-200"
-                           :class="exp.supplier_name ? 'border-orange-300 dark:border-orange-600 font-medium' : 'border-gray-200 dark:border-gray-600'">
-                    <div x-show="exp.supplierOpen"
-                         @click.stop
-                         class="overflow-y-auto absolute left-0 top-full z-50 w-full max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
-                      <template x-for="s in filteredSuppliers(exp.supplierQuery)" :key="s.id">
-                        <div @mousedown.prevent="selectSupplier(exp, s)"
-                             class="px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700"
-                             :class="exp.supplierId === s.id ? 'bg-orange-50 font-semibold dark:bg-gray-700' : ''"
-                             x-text="s.name"></div>
-                      </template>
-                      <div x-show="filteredSuppliers(exp.supplierQuery).length === 0"
-                           class="px-3 py-2 italic text-gray-400">No suppliers found</div>
-                    </div>
-                  </div>
-                </td>
-
-                <!-- Service combobox -->
-                <td class="px-1 py-1">
-                  <div class="relative" @click.outside="exp.serviceOpen = false">
-                    <input type="text"
-                           x-model="exp.description"
-                           @focus="openServiceDrop(exp, $el); exp.serviceQuery = exp.description"
-                           @blur="exp.serviceOpen = false"
-                           @input="exp.serviceQuery = exp.description"
-                           :placeholder="exp.supplierId ? 'Service / description…' : 'Select supplier first'"
-                           class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <div x-show="exp.serviceOpen && exp.supplierId && filteredServices(exp).length > 0"
-                         @click.stop
-                         class="overflow-y-auto absolute left-0 top-full z-50 w-full max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
-                      <template x-for="s in filteredServices(exp)" :key="s.id">
-                        <div @mousedown.prevent="selectService(exp, s)"
-                             class="flex gap-2 justify-between items-center px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700">
-                          <span x-text="s.name"></span>
-                          <span class="text-gray-400 shrink-0" x-text="'฿' + Number(s.cost).toLocaleString('th-TH')"></span>
+                           @input.debounce.300ms="searchServices(item)"
+                           @keydown.escape="item.serviceAcOpen = false"
+                           placeholder="Service name…"
+                           class="w-full px-3 py-1.5 text-sm font-medium rounded-md border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400">
+                    <div x-show="item.serviceAcOpen && item.serviceAcResults.length > 0"
+                         class="absolute left-0 top-full z-50 mt-1 w-72 max-h-56 overflow-y-auto bg-white rounded-lg border border-slate-200 shadow-xl dark:bg-gray-800 dark:border-gray-600">
+                      <template x-for="svc in item.serviceAcResults" :key="svc.service_id">
+                        <div @mousedown.prevent="selectServiceAc(item, svc)"
+                             class="px-3 py-2 text-sm border-b border-slate-50 cursor-pointer hover:bg-blue-50 dark:border-gray-700 dark:hover:bg-gray-700">
+                          <div class="font-medium text-slate-800 dark:text-slate-100" x-text="svc.name"></div>
+                          <div class="text-xs text-slate-400 tabular-nums" x-text="'฿' + Number(svc.price).toLocaleString('th-TH')"></div>
                         </div>
                       </template>
                     </div>
                   </div>
-                  <!-- Hotel controls for linked hotel items -->
-                  <template x-if="linkedItem(exp)?.is_hotel">
-                    <div class="flex flex-wrap gap-2 items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      <label class="flex gap-1 items-center">
-                        <span class="text-gray-700 dark:text-gray-200">Rooms:</span>
-                        <input type="number" :value="exp.room_count" min="1" step="1"
-                               @input="updateExpenseHotel(exp, 'room_count', $event.target.value)"
-                               class="px-1 py-0.5 w-12 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      </label>
-                      <label class="flex gap-1 items-center">
-                        <span class="text-gray-700 dark:text-gray-200">Nights:</span>
-                        <input type="number" :value="exp.nights" min="1" step="1"
-                               @input="updateExpenseHotel(exp, 'nights', $event.target.value)"
-                               class="px-1 py-0.5 w-12 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      </label>
-                      <label class="flex gap-1 items-center">
-                        <span class="text-gray-700 dark:text-gray-200">Price/Night:</span>
-                        <input type="number" :value="exp.room_price" min="0" step="0.01"
-                               @input="updateExpenseHotel(exp, 'room_price', $event.target.value)"
-                               class="px-1 py-0.5 w-20 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      </label>
-                      <label class="flex gap-1 items-center">
-                        <span class="text-gray-700 dark:text-gray-200">Extra Bed:</span>
-                        <input type="number" :value="exp.extra_bed_price" min="0" step="0.01"
-                               @input="updateExpenseHotel(exp, 'extra_bed_price', $event.target.value)"
-                               class="px-1 py-0.5 w-20 text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      </label>
-                      <label class="flex gap-1 items-center">
-                        <span class="text-gray-700 dark:text-gray-200">Promo:</span>
-                        <input type="text" :value="exp.promotion"
-                               @input="updateExpenseHotel(exp, 'promotion', $event.target.value)"
-                               class="px-1 py-0.5 w-32 text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                      </label>
-                    </div>
-                  </template>
-                </td>
+                </template>
 
-                <td class="px-1 py-1">
-                  <input type="number" x-model="exp.amount" step="0.01" min="0"
-                         class="px-2 py-1 w-full text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                </td>
-                <td class="px-1 py-1">
-                  <input type="text" x-model="exp.due_date" placeholder="25-Mar-26"
-                         class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                </td>
-                <td class="px-1 py-1">
-                  <select x-model="exp.status" class="px-1 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                    <option value="Pending">Pending</option>
-                    <option value="Paid">Paid</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-                </td>
-                <td class="px-1 py-1">
-                  <div class="flex gap-1 justify-center items-center">
-                    <button type="button" @click="insertExpenseAfter(idx)"
-                            title="Insert row below"
-                            class="font-bold text-blue-400 hover:text-blue-600">+</button>
-                    <button type="button" @click="removeExpense(idx)"
-                            title="Delete row"
-                            class="text-red-400 hover:text-red-600">✕</button>
+                <!-- Hotel / Discount name -->
+                <template x-if="item.is_hotel || item.is_discount">
+                  <input type="text" x-model="item.service_name"
+                         :placeholder="item.is_hotel ? 'Hotel name…' : 'Discount description…'"
+                         class="w-full px-3 py-1.5 text-sm font-medium rounded-md border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+                         :class="item.is_discount ? 'text-rose-600 dark:text-rose-400' : ''">
+                </template>
+              </div>
+              <div class="flex gap-0.5 items-center shrink-0">
+                <div data-insert-menu class="relative">
+                  <button type="button" @click="openInsertMenu(idx, item)"
+                          title="Insert row below"
+                          class="inline-flex items-center justify-center w-8 h-8 text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                  </button>
+                  <div x-show="item.insertOpen"
+                       data-insert-menu
+                       class="absolute right-0 top-full z-50 mt-1 overflow-hidden text-sm bg-white rounded-lg border border-slate-200 shadow-xl dark:bg-gray-800 dark:border-gray-600">
+                    <button type="button" @click="insertServiceAfter(insertMenuIdx)"
+                            class="flex items-center gap-2 px-4 py-2 w-full text-left text-slate-700 whitespace-nowrap hover:bg-blue-50 dark:text-gray-200 dark:hover:bg-gray-700">
+                      <span class="text-blue-600 dark:text-blue-300">+</span> Service
+                    </button>
+                    <button type="button" @click="insertHotelAfter(insertMenuIdx)"
+                            class="flex items-center gap-2 px-4 py-2 w-full text-left text-blue-700 whitespace-nowrap border-t border-slate-100 hover:bg-blue-50 dark:text-blue-300 dark:border-gray-700 dark:hover:bg-gray-700">
+                      <span>+</span> Hotel
+                    </button>
                   </div>
-                </td>
-              </tr>
+                </div>
+                <button type="button" @click="addExpenseForItem(item)"
+                        title="Add linked expense"
+                        class="inline-flex items-center justify-center w-8 h-8 text-amber-500 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 dark:hover:text-amber-300">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                </button>
+                <button type="button" @click="removeGroupedItem(idx)"
+                        title="Delete row"
+                        class="inline-flex items-center justify-center w-8 h-8 text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Hotel tags + dates row -->
+            <template x-if="item.is_hotel">
+              <div class="flex flex-wrap gap-2 mb-3">
+                <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">Hotel Stay</span>
+                <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-slate-100 text-slate-600 dark:bg-gray-700 dark:text-gray-300" x-text="(item.nights || 1) + ' Nights'"></span>
+                <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-slate-100 text-slate-600 dark:bg-gray-700 dark:text-gray-300" x-text="(item.room_count || 1) + ' Room' + ((item.room_count || 1) > 1 ? 's' : '')"></span>
+                <span x-show="item.promotion" class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" x-text="item.promotion"></span>
+                <span x-show="item.extra_bed_price > 0" class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">Extra Bed</span>
+              </div>
             </template>
-          </tbody>
-          <tfoot>
-            <tr class="bg-orange-50 dark:bg-gray-700">
-              <td colspan="2" class="px-2 py-2 font-semibold text-right text-gray-700 dark:text-gray-200">Total</td>
-              <td class="px-2 py-2 font-bold text-right text-orange-600 dark:text-orange-400"
-                  x-text="parseFloat(expenseTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></td>
-              <td colspan="3"></td>
-            </tr>
-          </tfoot>
-        </table>
+
+            <!-- Dates row -->
+            <div class="grid grid-cols-2 gap-3 mb-3 sm:grid-cols-3">
+              <div>
+                <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Check-In</label>
+                <template x-if="item.arrivalEdit">
+                  <input type="date" x-model="item.arrival_date"
+                         @blur="item.arrivalEdit = false"
+                         x-init="$nextTick(() => $el.focus())"
+                         class="px-2 py-1 w-full text-xs rounded border border-blue-300 dark:border-blue-600 bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+                </template>
+                <template x-if="!item.arrivalEdit">
+                  <button type="button" @click="item.arrivalEdit = true"
+                          class="w-full text-left px-2 py-1 text-xs rounded border border-slate-200 text-slate-700 dark:border-gray-600 dark:text-gray-200 transition hover:bg-white hover:shadow-sm dark:hover:bg-gray-700">
+                    <span x-text="formatDateShort(item.arrival_date) || '— Set date —'"
+                          :class="!item.arrival_date ? 'text-slate-400 italic' : 'font-medium tabular-nums'"></span>
+                  </button>
+                </template>
+              </div>
+              <div>
+                <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Check-Out</label>
+                <template x-if="item.departureEdit">
+                  <input type="date" x-model="item.departure_date"
+                         @blur="item.departureEdit = false"
+                         x-init="$nextTick(() => $el.focus())"
+                         class="px-2 py-1 w-full text-xs rounded border border-blue-300 dark:border-blue-600 bg-white dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+                </template>
+                <template x-if="!item.departureEdit">
+                  <button type="button" @click="item.departureEdit = true"
+                          class="w-full text-left px-2 py-1 text-xs rounded border border-slate-200 text-slate-700 dark:border-gray-600 dark:text-gray-200 transition hover:bg-white hover:shadow-sm dark:hover:bg-gray-700">
+                    <span x-text="formatDateShort(item.departure_date) || '— Set date —'"
+                          :class="!item.departure_date ? 'text-slate-400 italic' : 'font-medium tabular-nums'"></span>
+                  </button>
+                </template>
+              </div>
+              <div class="col-span-2 sm:col-span-1" x-show="item.is_hotel">
+                <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Price</label>
+                <div class="relative">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">฿</span>
+                  <input type="number" x-model="item.price" step="0.01"
+                         class="w-full pl-6 pr-2 py-1 text-xs tabular-nums text-right font-semibold rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                         :class="item.is_discount ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'">
+                </div>
+              </div>
+            </div>
+
+            <!-- Hotel sub-controls -->
+            <template x-if="item.is_hotel">
+              <div class="grid grid-cols-2 gap-3 mb-3 sm:grid-cols-4 lg:grid-cols-5">
+                <div>
+                  <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Rooms</label>
+                  <input type="number" x-model="item.room_count" min="1" step="1"
+                         @input="calcHotelPrice(item)"
+                         class="px-2 py-1 w-12 text-xs tabular-nums text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </div>
+                <div>
+                  <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Nights</label>
+                  <input type="number" x-model="item.nights" min="1" step="1"
+                         @input="calcHotelPrice(item)"
+                         class="px-2 py-1 w-12 text-xs tabular-nums text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </div>
+                <div>
+                  <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Price</label>
+                  <input type="number" x-model="item.room_price" min="0" step="0.01"
+                         @input="calcHotelPrice(item)"
+                         class="px-2 py-1 w-full text-xs tabular-nums text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </div>
+                <div>
+                  <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Extra Bed</label>
+                  <input type="number" x-model="item.extra_bed_price" min="0" step="0.01"
+                         @input="calcHotelPrice(item)"
+                         class="px-2 py-1 w-full text-xs tabular-nums text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </div>
+                <div class="col-span-2 sm:col-span-4 lg:col-span-1">
+                  <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Promo</label>
+                  <input type="text" x-model="item.promotion" placeholder="—"
+                         class="px-2 py-1 w-full text-xs rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </div>
+              </div>
+            </template>
+
+            <!-- Bottom: Price for non-hotel + calc hint -->
+            <div class="flex flex-wrap gap-3 justify-between items-end pt-3 border-t border-slate-100 dark:border-gray-700">
+              <div x-show="item.is_hotel" class="text-[10px] text-slate-400 dark:text-gray-500"
+                   x-text="(item.room_count || 1) + ' x ' + (item.nights || 1) + 'n x ฿' + Number(item.room_price || 0).toLocaleString('th-TH') + ' = ฿' + Number(item.price || 0).toLocaleString('th-TH')"></div>
+              <div class="flex flex-col items-end ml-auto">
+                <div class="flex gap-1 items-baseline">
+                  <span class="text-xs text-slate-400">฿</span>
+                  <input type="number" x-model="item.price" step="0.01"
+                         class="px-2 py-1 w-28 text-sm font-bold text-right text-blue-700 bg-transparent border-0 dark:text-blue-300 focus:ring-0"
+                         :class="item.is_discount ? 'text-rose-600 dark:text-rose-400' : ''">
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Total footer -->
+        <div class="flex justify-between items-center px-4 py-3 bg-slate-50 rounded-lg dark:bg-gray-700">
+          <span class="text-sm font-semibold text-slate-700 dark:text-gray-200">Total</span>
+          <span class="text-lg font-bold text-blue-700 dark:text-blue-300"
+                x-text="'฿' + parseFloat(groupedTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></span>
+        </div>
       </div>
-      <button type="button" @click="addExpense()"
-              class="px-3 py-1.5 mt-3 text-xs font-medium text-orange-600 rounded border border-orange-400 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-600 dark:hover:bg-gray-700">
-        + Add Row
-      </button>
-    </div>
+
+      <!-- Card footer action -->
+      <div class="flex items-center gap-2 px-6 py-3 border-t border-slate-100 dark:border-gray-700 bg-slate-50/40 dark:bg-gray-900/20">
+        <button type="button" @click="addGroupedItem()"
+                class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-blue-700 bg-white border border-blue-200 rounded-lg shadow-sm transition hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-800 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-gray-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Add Row
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== SUPPLIER EXPENSES ===== -->
+    <section class="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm dark:bg-gray-800 dark:border-gray-700">
+
+      <!-- Section header -->
+      <header class="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-100 dark:border-gray-700 bg-gradient-to-r from-orange-50/60 via-white to-white dark:from-gray-800 dark:to-gray-800">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center justify-center w-9 h-9 text-orange-700 bg-orange-100 rounded-xl dark:bg-orange-500/15 dark:text-orange-300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>
+          </span>
+          <div>
+            <h2 class="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">Supplier Expenses</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Costs paid out to vendors and partners</p>
+          </div>
+        </div>
+        <span class="hidden items-center px-2.5 py-1 text-[11px] font-medium tracking-wider text-orange-700 uppercase rounded-full bg-orange-50 dark:bg-orange-900/30 dark:text-orange-300 sm:inline-flex">
+          <span x-text="supplierExpenses.length"></span>&nbsp;expenses
+        </span>
+      </header>
+
+      <!-- Cards -->
+      <div class="p-4 space-y-3">
+        <template x-for="(exp, idx) in supplierExpenses" :key="exp._key">
+          <div class="relative p-4 bg-white rounded-xl border border-slate-200 shadow-sm dark:bg-gray-800 dark:border-gray-700"
+               :class="exp._source_key ? 'border-l-4 border-l-orange-400' : ''">
+
+            <!-- Linked indicator -->
+            <div x-show="exp._source_key" class="flex items-center gap-1 mb-2 text-[11px] text-blue-600 dark:text-blue-400">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+              <span class="truncate" x-text="'Linked to: ' + (linkedItem(exp)?.service_name || '')"></span>
+            </div>
+
+            <!-- Supplier & Service -->
+            <div class="grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2">
+              <div>
+                <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Supplier</label>
+                <div class="relative" @click.outside="exp.supplierOpen = false">
+                  <input type="text"
+                         x-model="exp.supplierQuery"
+                         @focus="openSupplierDrop(exp, $el)"
+                         @blur="blurSupplier(exp)"
+                         @input="exp.supplierQuery = exp.supplierQuery"
+                         placeholder="Search supplier…"
+                         class="px-3 py-1.5 w-full text-sm rounded-lg border dark:bg-gray-700 dark:text-gray-200"
+                         :class="exp.supplier_name ? 'border-orange-300 dark:border-orange-600 font-medium' : 'border-slate-200 dark:border-gray-600'">
+                  <div x-show="exp.supplierOpen"
+                       @click.stop
+                       class="overflow-y-auto absolute left-0 top-full z-50 w-full max-h-48 bg-white rounded-lg border border-slate-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
+                    <template x-for="s in filteredSuppliers(exp.supplierQuery)" :key="s.id">
+                      <div @mousedown.prevent="selectSupplier(exp, s)"
+                           class="px-3 py-2 border-b border-slate-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700"
+                           :class="exp.supplierId === s.id ? 'bg-orange-50 font-semibold dark:bg-gray-700' : ''"
+                           x-text="s.name"></div>
+                    </template>
+                    <div x-show="filteredSuppliers(exp.supplierQuery).length === 0"
+                         class="px-3 py-2 italic text-slate-400">No suppliers found</div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Service / Description</label>
+                <div class="relative" @click.outside="exp.serviceOpen = false">
+                  <input type="text"
+                         x-model="exp.description"
+                         @focus="openServiceDrop(exp, $el); exp.serviceQuery = exp.description"
+                         @blur="exp.serviceOpen = false"
+                         @input="exp.serviceQuery = exp.description"
+                         :placeholder="exp.supplierId ? 'Service / description…' : 'Select supplier first'"
+                         class="px-3 py-1.5 w-full text-sm rounded-lg border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <div x-show="exp.serviceOpen && exp.supplierId && filteredServices(exp).length > 0"
+                       @click.stop
+                       class="overflow-y-auto absolute left-0 top-full z-50 w-full max-h-48 bg-white rounded-lg border border-slate-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
+                    <template x-for="s in filteredServices(exp)" :key="s.id">
+                      <div @mousedown.prevent="selectService(exp, s)"
+                           class="flex gap-2 justify-between items-center px-3 py-2 border-b border-slate-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700">
+                        <span x-text="s.name"></span>
+                        <span class="text-slate-400 shrink-0" x-text="'฿' + Number(s.cost).toLocaleString('th-TH')"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hotel sub-controls (when linked to hotel) -->
+            <template x-if="linkedItem(exp)?.is_hotel">
+              <div>
+                <div class="grid grid-cols-2 gap-3 mb-3 sm:grid-cols-3 lg:grid-cols-6">
+                  <div>
+                    <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Rooms</label>
+                    <input type="number" :value="exp.room_count" min="1" step="1"
+                           @input="updateExpenseHotel(exp, 'room_count', $event.target.value)"
+                           class="px-2 py-1 w-12 text-xs text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                  </div>
+                  <div>
+                    <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Nights</label>
+                    <input type="number" :value="exp.nights" min="1" step="1"
+                           @input="updateExpenseHotel(exp, 'nights', $event.target.value)"
+                           class="px-2 py-1 w-12 text-xs text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                  </div>
+                  <div>
+                    <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Price</label>
+                    <input type="number" :value="exp.room_price" min="0" step="0.01"
+                           @input="updateExpenseHotel(exp, 'room_price', $event.target.value)"
+                           class="px-2 py-1 w-full text-xs text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                  </div>
+                  <div>
+                    <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Extra Bed</label>
+                    <input type="number" :value="exp.extra_bed_price" min="0" step="0.01"
+                           @input="updateExpenseHotel(exp, 'extra_bed_price', $event.target.value)"
+                           class="px-2 py-1 w-full text-xs text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                  </div>
+                  <div>
+                    <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Due Date</label>
+                    <input type="text" x-model="exp.due_date" placeholder="25-Mar-26"
+                           class="px-2 py-1 w-full text-xs rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Promo</label>
+                  <input type="text" :value="exp.promotion || (linkedItem(exp)?.promotion || '')"
+                         @input="updateExpenseHotel(exp, 'promotion', $event.target.value)"
+                         class="px-2 py-1 w-full max-w-xs text-xs rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </div>
+              </div>
+            </template>
+
+            <!-- Non-hotel: Due Date -->
+            <template x-if="!linkedItem(exp)?.is_hotel">
+              <div class="grid grid-cols-2 gap-3 mb-3 sm:grid-cols-4">
+                <div>
+                  <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Due Date</label>
+                  <input type="text" x-model="exp.due_date" placeholder="25-Mar-26"
+                         class="px-2 py-1 w-full text-xs rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                </div>
+              </div>
+            </template>
+
+            <!-- Bottom: Actions & Amount -->
+            <div class="flex flex-wrap gap-3 justify-between items-end pt-3 border-t border-orange-100 dark:border-gray-700">
+              <div class="flex gap-1 items-center">
+                <button type="button" @click="insertExpenseAfter(idx)"
+                        title="Insert row below"
+                        class="inline-flex justify-center items-center w-8 h-8 text-lg font-bold leading-none text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-gray-700">+</button>
+                <button type="button" @click="removeExpense(idx)"
+                        title="Delete row"
+                        class="inline-flex justify-center items-center w-8 h-8 text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700">✕</button>
+              </div>
+              <div class="flex flex-col items-end">
+                <span class="mb-0.5 text-[10px] text-slate-400 dark:text-gray-500" x-show="linkedItem(exp)?.is_hotel"
+                      x-text="(exp.room_count || 1) + ' x ' + (exp.nights || 1) + 'n x ฿' + Number(exp.room_price || 0).toLocaleString('th-TH')"></span>
+                <div class="flex gap-1 items-baseline">
+                  <span class="text-xs text-slate-400">฿</span>
+                  <input type="number" x-model="exp.amount" step="0.01" min="0"
+                         class="px-2 py-1 w-28 text-sm font-bold text-right text-orange-700 bg-transparent border-0 dark:text-orange-400 focus:ring-0">
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Total footer -->
+        <div class="flex justify-between items-center px-4 py-3 bg-orange-50 rounded-lg dark:bg-gray-700">
+          <span class="text-sm font-semibold text-slate-700 dark:text-gray-200">Total</span>
+          <span class="text-lg font-bold text-orange-700 dark:text-orange-400"
+                x-text="'฿' + parseFloat(expenseTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></span>
+        </div>
+      </div>
+
+      <!-- Card footer action -->
+      <div class="flex items-center gap-2 px-6 py-3 border-t border-slate-100 dark:border-gray-700 bg-slate-50/40 dark:bg-gray-900/20">
+        <button type="button" @click="addExpense()"
+                class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-orange-700 bg-white border border-orange-200 rounded-lg shadow-sm transition hover:bg-orange-50 hover:border-orange-300 dark:bg-gray-800 dark:text-orange-300 dark:border-orange-700 dark:hover:bg-gray-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Add Row
+        </button>
+      </div>
+    </section>
   </div>
 
   <!-- Action buttons -->

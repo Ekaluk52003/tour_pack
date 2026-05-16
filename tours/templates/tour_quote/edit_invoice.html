@@ -501,7 +501,7 @@
 
   <!-- Action buttons -->
   <div class="flex flex-col gap-3 md:flex-row">
-    <button type="button" @click="submitForm()"
+    <button type="button" @click="validateAndSubmit()"
             class="px-6 py-3 font-semibold text-white bg-indigo-600 rounded-lg transition hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800">
       Save Changes
     </button>
@@ -512,5 +512,53 @@
   </div>
 
 </form>
+
+  <!-- Validation Modal -->
+  <div x-show="validationModalOpen"
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+       x-cloak
+       @keydown.escape.window="validationModalOpen = false">
+    <div class="w-full max-w-lg mx-4 overflow-hidden bg-white rounded-2xl shadow-2xl dark:bg-gray-800"
+         @click.outside="validationModalOpen = false">
+      <div class="px-6 py-5 border-b border-slate-100 dark:border-gray-700 bg-red-50 dark:bg-red-900/20">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center justify-center w-10 h-10 bg-red-100 rounded-full dark:bg-red-500/20">
+            <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          </span>
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Cannot Save Invoice</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Some items have a zero or missing amount. Please fix them before saving.</p>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 max-h-72 overflow-y-auto">
+        <ul class="space-y-2">
+          <template x-for="err in validationErrors" :key="err.index + err.type">
+            <li class="flex items-start gap-3 p-3 rounded-lg bg-slate-50 dark:bg-gray-700/50">
+              <span class="mt-0.5 text-xs font-bold text-white bg-red-500 rounded-full w-5 h-5 flex items-center justify-center" x-text="err.index"></span>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-semibold text-slate-800 dark:text-slate-100" x-text="err.type"></div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 truncate" x-text="err.name"></div>
+                <div class="text-xs text-red-500 mt-0.5">
+                  <span x-text="err.field === 'price' ? 'Price' : 'Amount'"></span>:
+                  <span class="font-mono" x-text="err.value === '' || err.value == null ? '—' : err.value"></span>
+                </div>
+              </div>
+            </li>
+          </template>
+        </ul>
+      </div>
+      <div class="flex gap-3 justify-end px-6 py-4 bg-slate-50 dark:bg-gray-900/30 border-t border-slate-100 dark:border-gray-700">
+        <button type="button" @click="validationModalOpen = false"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600">
+          Close
+        </button>
+        <button type="button" @click="validationModalOpen = false; submitForm();"
+                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800">
+          Save Anyway
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

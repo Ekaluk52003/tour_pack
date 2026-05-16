@@ -6,6 +6,8 @@ export default function invoiceForm() {
     allSuppliers: JSON.parse(document.getElementById('suppliers-data').textContent),
     groupedItems: JSON.parse(document.getElementById('grouped-items-data').textContent),
     insertMenuIdx: null,
+    validationModalOpen: false,
+    validationErrors: [],
 
     init() {
       this.tourPackTypeId = document.getElementById('invoice-meta')?.dataset.tourPackType || null;
@@ -429,6 +431,28 @@ export default function invoiceForm() {
       });
     },
     removeExpense(idx) { this.supplierExpenses.splice(idx, 1); },
+
+    validateAndSubmit() {
+      const errors = [];
+      this.groupedItems.forEach((item, idx) => {
+        const price = parseFloat(item.price);
+        if (!price || price <= 0 || isNaN(price)) {
+          errors.push({ type: 'Invoice to Client', index: idx + 1, name: item.service_name || 'Unnamed item', field: 'price', value: item.price });
+        }
+      });
+      this.supplierExpenses.forEach((exp, idx) => {
+        const amount = parseFloat(exp.amount);
+        if (!amount || amount <= 0 || isNaN(amount)) {
+          errors.push({ type: 'Supplier Expenses', index: idx + 1, name: exp.description || 'Unnamed expense', field: 'amount', value: exp.amount });
+        }
+      });
+      if (errors.length) {
+        this.validationErrors = errors;
+        this.validationModalOpen = true;
+        return;
+      }
+      this.submitForm();
+    },
 
     submitForm() {
       const cleanedExpenses = this.supplierExpenses.map(({

@@ -83,13 +83,19 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M9 8h1M7 4h10a2 2 0 012 2v14l-3-2-2 2-2-2-2 2-2-2-3 2V6a2 2 0 012-2z"/></svg>
           </span>
           <div>
-            <h2 class="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">Invoice to Client</h2>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">Invoice to Client</h2>
+              <span class="inline-flex items-center px-2.5 py-1 text-[11px] font-medium tracking-wider text-blue-700 uppercase rounded-full bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300">
+                <span x-text="groupedItems.length"></span>&nbsp;items
+              </span>
+            </div>
             <p class="text-xs text-slate-500 dark:text-slate-400">Line items billed to the customer</p>
           </div>
         </div>
-        <span class="hidden items-center px-2.5 py-1 text-[11px] font-medium tracking-wider text-blue-700 uppercase rounded-full bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300 sm:inline-flex">
-          <span x-text="groupedItems.length"></span>&nbsp;items
-        </span>
+        <div class="text-right">
+          <div class="text-[10px] font-medium tracking-wider text-slate-400 uppercase dark:text-slate-500">Subtotal</div>
+          <div class="text-lg font-bold text-blue-700 dark:text-blue-300" x-text="'฿' + parseFloat(groupedTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></div>
+        </div>
       </header>
 
       <!-- Cards -->
@@ -219,7 +225,11 @@
                 <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Price</label>
                 <div class="relative">
                   <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">฿</span>
-                  <input type="number" x-model="item.price" step="0.01"
+                  <input type="text"
+                         x-init="$watch('item.price', v => { if (!$el.matches(':focus')) $el.value = fmtNum(v) }); $el.value = fmtNum(item.price)"
+                         @focus="$el.value = item.price"
+                         @blur="$el.value = fmtNum(item.price)"
+                         @input="item.price = parseNum($event.target.value)"
                          class="w-full pl-6 pr-2 py-1 text-xs tabular-nums text-right font-semibold rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                          :class="item.is_discount ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'">
                 </div>
@@ -243,14 +253,20 @@
                 </div>
                 <div>
                   <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Price</label>
-                  <input type="number" x-model="item.room_price" min="0" step="0.01"
-                         @input="calcHotelPrice(item)"
+                  <input type="text"
+                         x-init="$el.value = fmtNum(item.room_price)"
+                         @focus="$el.value = item.room_price"
+                         @blur="$el.value = fmtNum(item.room_price)"
+                         @input="item.room_price = parseNum($event.target.value); calcHotelPrice(item)"
                          class="px-2 py-1 w-full text-xs tabular-nums text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                 </div>
                 <div>
                   <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Extra Bed</label>
-                  <input type="number" x-model="item.extra_bed_price" min="0" step="0.01"
-                         @input="calcHotelPrice(item)"
+                  <input type="text"
+                         x-init="$el.value = fmtNum(item.extra_bed_price)"
+                         @focus="$el.value = item.extra_bed_price"
+                         @blur="$el.value = fmtNum(item.extra_bed_price)"
+                         @input="item.extra_bed_price = parseNum($event.target.value); calcHotelPrice(item)"
                          class="px-2 py-1 w-full text-xs tabular-nums text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                 </div>
                 <div class="col-span-2 sm:col-span-4 lg:col-span-1">
@@ -268,7 +284,11 @@
               <div class="flex flex-col items-end ml-auto">
                 <div class="flex gap-1 items-baseline">
                   <span class="text-xs text-slate-400">฿</span>
-                  <input type="number" x-model="item.price" step="0.01"
+                  <input type="text"
+                         x-init="$watch('item.price', v => { if (!$el.matches(':focus')) $el.value = fmtNum(v) }); $el.value = fmtNum(item.price)"
+                         @focus="$el.value = item.price"
+                         @blur="$el.value = fmtNum(item.price)"
+                         @input="item.price = parseNum($event.target.value)"
                          class="px-2 py-1 w-28 text-sm font-bold text-right text-blue-700 bg-transparent border-0 dark:text-blue-300 focus:ring-0"
                          :class="item.is_discount ? 'text-rose-600 dark:text-rose-400' : ''">
                 </div>
@@ -277,12 +297,6 @@
           </div>
         </template>
 
-        <!-- Total footer -->
-        <div class="flex justify-between items-center px-4 py-3 bg-slate-50 rounded-lg dark:bg-gray-700">
-          <span class="text-sm font-semibold text-slate-700 dark:text-gray-200">Total</span>
-          <span class="text-lg font-bold text-blue-700 dark:text-blue-300"
-                x-text="'฿' + parseFloat(groupedTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></span>
-        </div>
       </div>
 
       <!-- Card footer action -->
@@ -305,13 +319,19 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>
           </span>
           <div>
-            <h2 class="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">Supplier Expenses</h2>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">Supplier Expenses</h2>
+              <span class="inline-flex items-center px-2.5 py-1 text-[11px] font-medium tracking-wider text-orange-700 uppercase rounded-full bg-orange-50 dark:bg-orange-900/30 dark:text-orange-300">
+                <span x-text="supplierExpenses.length"></span>&nbsp;expenses
+              </span>
+            </div>
             <p class="text-xs text-slate-500 dark:text-slate-400">Costs paid out to vendors and partners</p>
           </div>
         </div>
-        <span class="hidden items-center px-2.5 py-1 text-[11px] font-medium tracking-wider text-orange-700 uppercase rounded-full bg-orange-50 dark:bg-orange-900/30 dark:text-orange-300 sm:inline-flex">
-          <span x-text="supplierExpenses.length"></span>&nbsp;expenses
-        </span>
+        <div class="text-right">
+          <div class="text-[10px] font-medium tracking-wider text-slate-400 uppercase dark:text-slate-500">Subtotal</div>
+          <div class="text-lg font-bold text-orange-700 dark:text-orange-400" x-text="'฿' + parseFloat(expenseTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></div>
+        </div>
       </header>
 
       <!-- Cards -->
@@ -397,14 +417,20 @@
                   </div>
                   <div>
                     <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Price</label>
-                    <input type="number" :value="exp.room_price" min="0" step="0.01"
-                           @input="updateExpenseHotel(exp, 'room_price', $event.target.value)"
+                    <input type="text"
+                           x-init="$el.value = fmtNum(exp.room_price)"
+                           @focus="$el.value = exp.room_price"
+                           @blur="$el.value = fmtNum(exp.room_price)"
+                           @input="updateExpenseHotel(exp, 'room_price', parseNum($event.target.value))"
                            class="px-2 py-1 w-full text-xs text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                   </div>
                   <div>
                     <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Extra Bed</label>
-                    <input type="number" :value="exp.extra_bed_price" min="0" step="0.01"
-                           @input="updateExpenseHotel(exp, 'extra_bed_price', $event.target.value)"
+                    <input type="text"
+                           x-init="$el.value = fmtNum(exp.extra_bed_price)"
+                           @focus="$el.value = exp.extra_bed_price"
+                           @blur="$el.value = fmtNum(exp.extra_bed_price)"
+                           @input="updateExpenseHotel(exp, 'extra_bed_price', parseNum($event.target.value))"
                            class="px-2 py-1 w-full text-xs text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                   </div>
                   <div>
@@ -448,7 +474,11 @@
                       x-text="(exp.room_count || 1) + ' x ' + (exp.nights || 1) + 'n x ฿' + Number(exp.room_price || 0).toLocaleString('th-TH')"></span>
                 <div class="flex gap-1 items-baseline">
                   <span class="text-xs text-slate-400">฿</span>
-                  <input type="number" x-model="exp.amount" step="0.01" min="0"
+                  <input type="text"
+                         x-init="$watch('exp.amount', v => { if (!$el.matches(':focus')) $el.value = fmtNum(v) }); $el.value = fmtNum(exp.amount)"
+                         @focus="$el.value = exp.amount"
+                         @blur="$el.value = fmtNum(exp.amount)"
+                         @input="exp.amount = parseNum($event.target.value)"
                          class="px-2 py-1 w-28 text-sm font-bold text-right text-orange-700 bg-transparent border-0 dark:text-orange-400 focus:ring-0">
                 </div>
               </div>
@@ -456,12 +486,6 @@
           </div>
         </template>
 
-        <!-- Total footer -->
-        <div class="flex justify-between items-center px-4 py-3 bg-orange-50 rounded-lg dark:bg-gray-700">
-          <span class="text-sm font-semibold text-slate-700 dark:text-gray-200">Total</span>
-          <span class="text-lg font-bold text-orange-700 dark:text-orange-400"
-                x-text="'฿' + parseFloat(expenseTotal).toLocaleString('th-TH', {minimumFractionDigits:2})"></span>
-        </div>
       </div>
 
       <!-- Card footer action -->

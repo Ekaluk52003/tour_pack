@@ -90,6 +90,16 @@ export default function invoiceForm() {
       return `${d}-${months[parseInt(m,10)-1]}-${y.slice(-2)}`;
     },
 
+    fmtNum(val) {
+      const n = parseFloat(val || 0);
+      return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    parseNum(str) {
+      if (str === '' || str === null || str === undefined) return 0;
+      const cleaned = String(str).replace(/,/g, '');
+      return parseFloat(cleaned) || 0;
+    },
+
     calcAmount(item) {
       item.amount = (parseFloat(item.quantity || 1) * parseFloat(item.unit_price || 0)).toFixed(2);
     },
@@ -365,19 +375,7 @@ export default function invoiceForm() {
         room_count: 1, room_price: 0, extra_bed_price: 0,
         serviceAcOpen: false, serviceAcResults: [],
       });
-      this.supplierExpenses.push({
-        _key: crypto.randomUUID(),
-        supplier_name: '', supplier_id: null,
-        supplier_service_id: null,
-        description: '', unit_price: '0', amount: '0',
-        due_date: '', status: 'Pending', reference_number: '',
-        order: this.supplierExpenses.length,
-        _source_key: hotelKey,
-        supplierId: null, supplierQuery: '', serviceQuery: '',
-        supplierOpen: false, serviceOpen: false,
-        supplierDropStyle: '', serviceDropStyle: '',
-        room_count: 1, nights: 1, room_price: 0, extra_bed_price: 0, promotion: '',
-      });
+  
       this.insertMenuIdx = null;
     },
 

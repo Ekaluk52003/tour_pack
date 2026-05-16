@@ -1,0 +1,69 @@
+{% if page_obj.has_other_pages %}
+<div class="flex justify-center items-center gap-1.5 mt-6 select-none">
+  <!-- Previous -->
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{{ extra_params }}"
+       class="px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+      Previous
+    </a>
+  {% else %}
+    <span class="px-3 py-1.5 text-sm font-medium text-gray-300 bg-gray-100 border border-gray-200 rounded cursor-not-allowed dark:bg-gray-800 dark:text-gray-600 dark:border-gray-700">
+      Previous
+    </span>
+  {% endif %}
+
+  <!-- First page -->
+  {% if page_obj.number == 1 %}
+    <span class="px-3 py-1.5 text-sm font-semibold text-white bg-indigo-600 border border-indigo-600 rounded dark:bg-indigo-700 dark:border-indigo-700">1</span>
+  {% else %}
+    <a href="?page=1{{ extra_params }}"
+       class="px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">1</a>
+  {% endif %}
+
+  <!-- Left ellipsis -->
+  {% if page_obj.number > 4 %}
+    <span class="px-1.5 py-1.5 text-sm text-gray-400 dark:text-gray-500">…</span>
+  {% endif %}
+
+  <!-- Middle pages -->
+  {% for num in page_obj.paginator.page_range %}
+    {% if num > 1 and num < page_obj.paginator.num_pages %}
+      {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+        {% if num == page_obj.number %}
+          <span class="px-3 py-1.5 text-sm font-semibold text-white bg-indigo-600 border border-indigo-600 rounded dark:bg-indigo-700 dark:border-indigo-700">{{ num }}</span>
+        {% else %}
+          <a href="?page={{ num }}{{ extra_params }}"
+             class="px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">{{ num }}</a>
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+
+  <!-- Right ellipsis -->
+  {% if page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
+    <span class="px-1.5 py-1.5 text-sm text-gray-400 dark:text-gray-500">…</span>
+  {% endif %}
+
+  <!-- Last page -->
+  {% if page_obj.paginator.num_pages > 1 %}
+    {% if page_obj.number == page_obj.paginator.num_pages %}
+      <span class="px-3 py-1.5 text-sm font-semibold text-white bg-indigo-600 border border-indigo-600 rounded dark:bg-indigo-700 dark:border-indigo-700">{{ page_obj.paginator.num_pages }}</span>
+    {% else %}
+      <a href="?page={{ page_obj.paginator.num_pages }}{{ extra_params }}"
+         class="px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">{{ page_obj.paginator.num_pages }}</a>
+    {% endif %}
+  {% endif %}
+
+  <!-- Next -->
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{{ extra_params }}"
+       class="px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+      Next
+    </a>
+  {% else %}
+    <span class="px-3 py-1.5 text-sm font-medium text-gray-300 bg-gray-100 border border-gray-200 rounded cursor-not-allowed dark:bg-gray-800 dark:text-gray-600 dark:border-gray-700">
+      Next
+    </span>
+  {% endif %}
+</div>
+{% endif %}

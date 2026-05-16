@@ -4004,8 +4004,14 @@ def supplier_payment_overview(request):
     grand_total = sum(s['total_amount'] for s in suppliers)
     grand_pending = sum(s['pending_amount'] for s in suppliers)
 
+    paginator = Paginator(suppliers, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'suppliers': suppliers,
+        'page_obj': page_obj,
+        'suppliers': page_obj,
+        'supplier_count': paginator.count,
         'grand_total': grand_total,
         'grand_pending': grand_pending,
     }
@@ -4067,19 +4073,27 @@ def pending_payment_list(request):
     # Order by due date (nulls last), then by supplier name
     expenses = expenses.order_by('due_date', 'supplier_name')
 
-    # Calculate totals
+    # Calculate totals before pagination
     total_amount = sum(e.amount for e in expenses)
     pending_amount = sum(e.amount for e in expenses if e.status == 'Pending')
     paid_amount = sum(e.amount for e in expenses if e.status == 'Paid')
+    expense_count = expenses.count()
+
+    # Paginate
+    paginator = Paginator(expenses, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     # Get unique suppliers for filter dropdown
     suppliers = SupplierExpense.objects.exclude(supplier_name__isnull=True).exclude(supplier_name='').values_list('supplier_name', flat=True).distinct().order_by('supplier_name')
 
     context = {
-        'expenses': expenses,
+        'page_obj': page_obj,
+        'expenses': page_obj,
         'total_amount': total_amount,
         'pending_amount': pending_amount,
         'paid_amount': paid_amount,
+        'expense_count': expense_count,
         'status_filter': status_filter,
         'due_date_from': due_date_from,
         'due_date_to': due_date_to,

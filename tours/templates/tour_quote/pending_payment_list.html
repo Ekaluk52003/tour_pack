@@ -18,7 +18,7 @@
   <div class="grid grid-cols-2 gap-4 mb-6 md:grid-cols-3">
     <div class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
       <p class="text-xs text-gray-500 dark:text-gray-400">Total Payments</p>
-      <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ expenses|length }}</p>
+      <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ expense_count }}</p>
     </div>
     <div class="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
       <p class="text-xs text-gray-500 dark:text-gray-400">Total Amount</p>
@@ -84,7 +84,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for expense in expenses %}
+          {% for expense in page_obj %}
           <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750">
             <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
               {% if expense.supplier_name %}
@@ -156,4 +156,12 @@
   </div>
 
 </div>
+
+{% with "&status="|add:status_filter|default:"" as status_p %}
+{% with "&due_date_from="|add:due_date_from|default:"" as from_p %}
+{% with "&due_date_to="|add:due_date_to|default:"" as to_p %}
+{% with "&supplier="|add:supplier_filter|default:"" as supplier_p %}
+{% include "tour_quote/_pagination.html" with extra_params=status_p|add:from_p|add:to_p|add:supplier_p %}
+{% endwith %}{% endwith %}{% endwith %}{% endwith %}
+
 {% endblock %}

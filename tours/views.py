@@ -2306,9 +2306,9 @@ def export_tourday_excel(request, pk):
     ws.cell(row=current_info_row, column=1, value=connection_ref_value)  # Ref nr.
     cell = ws.cell(row=current_info_row, column=2, value=pax_value)  # Tour Package Type (Pax)
     cell.alignment = Alignment(horizontal='center')
-    ws.cell(row=current_info_row, column=3, value=package.name)  # Tour quote name
     billing_name_value = package.billing_name.replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ') if package.billing_name else ''
-    cell = ws.cell(row=current_info_row, column=7, value=billing_name_value)  # Customer Name at G5 (relative)
+    ws.cell(row=current_info_row, column=3, value=billing_name_value or package.name)  # Tour quote name
+    cell = ws.cell(row=current_info_row, column=7, value=package.customer_name)  # Customer Name at G5 (relative)
     cell.alignment = Alignment(horizontal='center')
     current_info_row += 1
 

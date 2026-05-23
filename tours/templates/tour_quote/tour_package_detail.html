@@ -8,17 +8,15 @@
             <div class="flex flex-wrap gap-2 justify-between items-center mb-2">
                 <h1 class="text-3xl font-bold">{{ package.name }}</h1>
                 <div class="flex gap-2 items-center">
-                    <a href="{% url 'create_invoice' package_reference=package.package_reference %}" class="flex gap-2 items-center px-4 py-2 text-sm font-semibold text-blue-600 bg-white rounded-lg transition duration-300 hover:bg-gray-100 dark:bg-gray-200 dark:hover:bg-gray-300">
+                    <a href="{% url 'create_invoice' package_reference=package.package_reference %}" title="Create Invoice" aria-label="Create Invoice" class="flex gap-2 items-center px-4 py-2 text-sm font-semibold text-blue-600 bg-white rounded-lg transition duration-300 hover:bg-gray-100 dark:bg-gray-200 dark:hover:bg-gray-300">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm1 13h-4v-2h4v2zm0-4h-4V8h4v3zm-1-3V3.5L18.5 9H14z"/>
                         </svg>
-                        
                     </a>
-                    <a href="{% url 'export_tourday_excel' pk=package.id %}" class="flex gap-2 items-center px-4 py-2 text-sm font-semibold text-blue-600 bg-white rounded-lg transition duration-300 hover:bg-gray-100 dark:bg-gray-200 dark:hover:bg-gray-300">
+                    <a href="{% url 'export_tourday_excel' pk=package.id %}" title="Export Excel" aria-label="Export Excel" class="flex gap-2 items-center px-4 py-2 text-sm font-semibold text-blue-600 bg-white rounded-lg transition duration-300 hover:bg-gray-100 dark:bg-gray-200 dark:hover:bg-gray-300">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM8.5 13h1.5v1.5H8.5V13zm0 3h1.5v1.5H8.5V16zm3-3H13v1.5h-1.5V13zm0 3H13v1.5h-1.5V16zm3-3h1.5v1.5H14.5V13zm0 3h1.5v1.5H14.5V16z"/>
                         </svg>
-                    
                     </a>
                 </div>
             </div>

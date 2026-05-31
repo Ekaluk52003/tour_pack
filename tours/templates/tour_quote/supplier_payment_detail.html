@@ -88,7 +88,8 @@
         <thead class="bg-orange-50 dark:bg-gray-700">
           <tr>
             <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Client Invoice</th>
-            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Package</th>
+          
+            <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Connection Ref</th>
             <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Description</th>
             <th class="px-3 py-2 font-medium text-right text-gray-600 dark:text-gray-300">Amount</th>
             <th class="px-3 py-2 font-medium text-gray-600 dark:text-gray-300">Due Date</th>
@@ -104,11 +105,9 @@
                 {{ exp.invoice.invoice_number }}
               </a>
             </td>
+           
             <td class="px-3 py-2 text-gray-600 dark:text-gray-300">
-              <a href="{% url 'tour_package_detail' exp.invoice.tour_package.package_reference %}"
-                 class="hover:underline">
-                {{ exp.invoice.tour_package.package_reference }}
-              </a>
+              {{ exp.invoice.tour_package.connection_ref|default:"—" }}
             </td>
             <td class="px-3 py-2 text-gray-700 dark:text-gray-200">{{ exp.description }}</td>
             <td class="px-3 py-2 font-medium text-right text-gray-800 dark:text-gray-100">

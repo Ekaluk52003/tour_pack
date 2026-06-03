@@ -385,7 +385,7 @@ class ServiceExpenseTemplateAdmin(ImportExportModelAdmin):
     search_fields = ('service_price__service__name', 'supplier__name', 'supplier_service__name')
     list_select_related = ('service_price__service', 'service_price__tour_pack_type', 'supplier', 'supplier_service')
     autocomplete_fields = ['service_price', 'supplier', 'supplier_service']
-    fields = ('service_price', 'supplier', 'supplier_service', 'order')
+    fields = ('service_price', 'supplier', 'supplier_service', 'unit_price', 'order')
 
 
 @admin.register(GuideService)

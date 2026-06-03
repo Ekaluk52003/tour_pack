@@ -1,3 +1,6 @@
+/*!*******************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./static/css/styles.css ***!
+  \*******************************************************************************************************************/
 *, ::before, ::after {
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;
@@ -5417,6 +5420,9 @@ video {
 }
 .grid-cols-none {
   grid-template-columns: none;
+}
+.grid-cols-\[1fr_140px_140px_32px\] {
+  grid-template-columns: 1fr 140px 140px 32px;
 }
 .grid-rows-1 {
   grid-template-rows: repeat(1, minmax(0, 1fr));

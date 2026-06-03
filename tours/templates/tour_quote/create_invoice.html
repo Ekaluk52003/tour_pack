@@ -39,6 +39,10 @@
       </select>
     </div>
     <div class="md:col-span-1">
+      <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Tour Pack Type</label>
+      <p class="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">{{ package.tour_pack_type.name|default:"—" }}</p>
+    </div>
+    <div class="md:col-span-1">
       <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Connection Ref</label>
       <p class="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">{{ package.connection_ref|default:"—" }}</p>
     </div>

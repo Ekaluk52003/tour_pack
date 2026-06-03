@@ -109,7 +109,7 @@ class ServiceExpenseTemplate(models.Model):
     def save(self, *args, **kwargs):
         if self.supplier and not self.supplier_name:
             self.supplier_name = self.supplier.name
-        if self.supplier_service_id:
+        if self.supplier_service_id and not self.unit_price:
             ss = self.supplier_service
             self.unit_price = ss.cost
         super().save(*args, **kwargs)

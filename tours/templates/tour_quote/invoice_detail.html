@@ -32,6 +32,10 @@
       <p class="font-semibold text-gray-800 dark:text-gray-100">{{ invoice.agency.name|default:"—" }}</p>
     </div>
     <div class="p-3 bg-white rounded-lg shadow dark:bg-gray-800">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Tour Pack Type</p>
+      <p class="font-semibold text-gray-800 dark:text-gray-100">{{ invoice.tour_pack_type.name|default:invoice.tour_package.tour_pack_type.name|default:"—" }}</p>
+    </div>
+    <div class="p-3 bg-white rounded-lg shadow dark:bg-gray-800">
       <p class="text-xs text-gray-500 dark:text-gray-400">Connection Ref</p>
       <p class="font-semibold text-gray-800 dark:text-gray-100">{{ invoice.tour_package.connection_ref|default:"—" }}</p>
     </div>

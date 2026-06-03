@@ -251,29 +251,40 @@ class ServiceAdmin(ImportExportModelAdmin):
         return queryset, use_distinct
 
 
+class CachedForeignKeyWidget(ForeignKeyWidget):
+    """Returns the value directly if it is already a model instance."""
+
+    def clean(self, value, row=None, **kwargs):
+        if isinstance(value, self.model):
+            return value
+        return super().clean(value, row, **kwargs)
+
+
 class ServiceExpenseTemplateResource(resources.ModelResource):
     service_name = fields.Field(
         column_name='service_name',
         attribute='service_name',
+        readonly=True,
     )
     tour_pack_type = fields.Field(
         column_name='tour_pack_type',
         attribute='tour_pack_type',
+        readonly=True,
     )
     service_price = fields.Field(
         column_name='service_price',
         attribute='service_price',
-        widget=ForeignKeyWidget(ServicePrice, 'id')
+        widget=CachedForeignKeyWidget(ServicePrice, 'id')
     )
     supplier = fields.Field(
         column_name='supplier',
         attribute='supplier',
-        widget=ForeignKeyWidget(Supplier, 'id')
+        widget=CachedForeignKeyWidget(Supplier, 'id')
     )
     supplier_service = fields.Field(
         column_name='supplier_service',
         attribute='supplier_service',
-        widget=ForeignKeyWidget(SupplierService, 'id')
+        widget=CachedForeignKeyWidget(SupplierService, 'id')
     )
 
     class Meta:
@@ -282,13 +293,100 @@ class ServiceExpenseTemplateResource(resources.ModelResource):
         export_order = ('id', 'service_name', 'tour_pack_type', 'service_price', 'supplier', 'supplier_service', 'unit_price', 'order')
         import_id_fields = ()
         skip_unchanged = True
-        report_skipped = True
+        report_skipped = False
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._service_price_cache = {}
+        self._supplier_cache = {}
+        self._supplier_service_cache = {}
+
+    def _to_int_id(self, value):
+        if isinstance(value, (int, float)):
+            return int(value)
+        if isinstance(value, str):
+            try:
+                return int(float(value))
+            except (ValueError, TypeError):
+                pass
+        return None
+
+    def before_import(self, dataset, **kwargs):
+        # Reset caches
+        self._service_price_cache = {}
+        self._supplier_cache = {}
+        self._supplier_service_cache = {}
+
+        # Collect unique values from the dataset for bulk prefetching
+        sp_keys = set()
+        supplier_names = set()
+        supplier_ids = set()
+        supplier_service_names = set()
+        supplier_service_ids = set()
+
+        for row_data in dataset:
+            row_dict = dict(zip(dataset.headers, row_data))
+            sn = str(row_dict.get('service_name') or '').strip()
+            tpt = str(row_dict.get('tour_pack_type') or '').strip()
+            if sn and tpt:
+                sp_keys.add((sn, tpt))
+
+            sup = row_dict.get('supplier')
+            sup_str = str(sup or '').strip()
+            if sup_str:
+                sup_id = self._to_int_id(sup)
+                if sup_id is not None:
+                    supplier_ids.add(sup_id)
+                else:
+                    supplier_names.add(sup_str)
+
+            ss = row_dict.get('supplier_service')
+            ss_str = str(ss or '').strip()
+            if ss_str:
+                ss_id = self._to_int_id(ss)
+                if ss_id is not None:
+                    supplier_service_ids.add(ss_id)
+                else:
+                    supplier_service_names.add(ss_str)
+
+        # Bulk prefetch ServicePrice by name pair
+        if sp_keys:
+            service_names = {k[0] for k in sp_keys}
+            tour_pack_names = {k[1] for k in sp_keys}
+            for sp in ServicePrice.objects.select_related('service', 'tour_pack_type').filter(
+                service__name__in=service_names,
+                tour_pack_type__name__in=tour_pack_names
+            ):
+                key = (sp.service.name, sp.tour_pack_type.name)
+                if key in sp_keys:
+                    self._service_price_cache[key] = sp
+
+        # Bulk prefetch Supplier by name or ID
+        if supplier_names:
+            for supplier in Supplier.objects.filter(name__in=supplier_names):
+                self._supplier_cache[supplier.name] = supplier
+                self._supplier_cache[str(supplier.id)] = supplier
+        if supplier_ids:
+            for supplier in Supplier.objects.filter(id__in=supplier_ids):
+                self._supplier_cache[str(supplier.id)] = supplier
+                self._supplier_cache[supplier.name] = supplier
+
+        # Bulk prefetch SupplierService by name or ID
+        if supplier_service_names:
+            for ss in SupplierService.objects.select_related('supplier').filter(name__in=supplier_service_names):
+                self._supplier_service_cache[ss.name] = ss
+                self._supplier_service_cache[(ss.supplier_id, ss.name)] = ss
+        if supplier_service_ids:
+            for ss in SupplierService.objects.filter(id__in=supplier_service_ids):
+                self._supplier_service_cache[str(ss.id)] = ss
+
+        super().before_import(dataset, **kwargs)
 
     def get_instance(self, instance_loader, row):
-        # After before_import_row, service_price and supplier_service are resolved to IDs.
-        # Use them to find an existing template and update instead of duplicating.
-        sp_id = row.get('service_price')
-        ss_id = row.get('supplier_service')
+        sp = row.get('service_price')
+        ss = row.get('supplier_service')
+        sp_id = sp.id if isinstance(sp, ServicePrice) else sp
+        ss_id = ss.id if isinstance(ss, SupplierService) else ss
         if sp_id and ss_id:
             try:
                 return self._meta.model.objects.get(
@@ -297,6 +395,11 @@ class ServiceExpenseTemplateResource(resources.ModelResource):
                 )
             except self._meta.model.DoesNotExist:
                 pass
+            except self._meta.model.MultipleObjectsReturned:
+                return self._meta.model.objects.filter(
+                    service_price_id=sp_id,
+                    supplier_service_id=ss_id,
+                ).first()
         return None
 
     def dehydrate_service_name(self, obj):
@@ -311,59 +414,103 @@ class ServiceExpenseTemplateResource(resources.ModelResource):
             return val
         return obj.service_price.tour_pack_type.name if obj.service_price else ''
 
+    def _to_decimal(self, value):
+        if not value:
+            return Decimal('0.00')
+        try:
+            return Decimal(str(float(value)))
+        except (ValueError, TypeError):
+            return Decimal('0.00')
+
     def before_import_row(self, row, **kwargs):
         import logging
         logger = logging.getLogger(__name__)
 
-        # Resolve service_price from service_name + tour_pack_type
+        # Resolve service_price
         service_name = str(row.get('service_name') or '').strip()
         tour_pack_type_name = str(row.get('tour_pack_type') or '').strip()
-        if service_name and tour_pack_type_name:
-            try:
-                sp = ServicePrice.objects.get(
-                    service__name=service_name,
-                    tour_pack_type__name=tour_pack_type_name
-                )
-                row['service_price'] = sp.id
-                logger.info(f"[IMPORT] Resolved service_price: {sp.id} ({sp})")
-            except ServicePrice.DoesNotExist:
-                raise ValueError(f"ServicePrice not found for service '{service_name}' and tour_pack_type '{tour_pack_type_name}'")
+        sp_val = row.get('service_price')
 
-        # Resolve supplier name to ID
-        supplier_name = str(row.get('supplier') or '').strip()
+        sp_id = self._to_int_id(sp_val)
+        if sp_id is not None:
+            try:
+                sp = ServicePrice.objects.get(id=sp_id)
+                row['service_price'] = sp
+                logger.info(f"[IMPORT] Used service_price ID directly: {sp_id}")
+            except ServicePrice.DoesNotExist:
+                raise ValueError(f"ServicePrice with ID {sp_id} not found")
+        elif service_name and tour_pack_type_name:
+            key = (service_name, tour_pack_type_name)
+            sp = self._service_price_cache.get(key)
+            if sp:
+                row['service_price'] = sp
+                logger.info(f"[IMPORT] Resolved service_price from cache: {sp.id} ({sp})")
+            else:
+                raise ValueError(
+                    f"ServicePrice not found for service '{service_name}' "
+                    f"and tour_pack_type '{tour_pack_type_name}'"
+                )
+
+        # Resolve supplier
+        supplier_val = row.get('supplier')
+        supplier_str = str(supplier_val or '').strip()
         supplier = None
-        if supplier_name:
-            supplier, _ = Supplier.objects.get_or_create(name=supplier_name)
-            row['supplier'] = supplier.id
+        if supplier_str:
+            sup_id = self._to_int_id(supplier_val)
+            if sup_id is not None:
+                supplier = self._supplier_cache.get(str(sup_id))
+                if not supplier:
+                    try:
+                        supplier = Supplier.objects.get(id=sup_id)
+                        self._supplier_cache[str(supplier.id)] = supplier
+                        self._supplier_cache[supplier.name] = supplier
+                    except Supplier.DoesNotExist:
+                        raise ValueError(f"Supplier with ID {sup_id} not found")
+            else:
+                supplier = self._supplier_cache.get(supplier_str)
+                if not supplier:
+                    supplier, _ = Supplier.objects.get_or_create(name=supplier_str)
+                    self._supplier_cache[supplier_str] = supplier
+                    self._supplier_cache[str(supplier.id)] = supplier
+            row['supplier'] = supplier
             logger.info(f"[IMPORT] Resolved supplier: {supplier.id} ({supplier.name})")
 
-        # Resolve supplier_service name to ID
-        supplier_service_name = str(row.get('supplier_service') or '').strip()
-        if supplier_service_name and supplier:
-            try:
-                ss = SupplierService.objects.get(supplier=supplier, name=supplier_service_name)
-                logger.info(f"[IMPORT] Found existing supplier_service: {ss.id} ({ss.name})")
-            except SupplierService.DoesNotExist:
-                unit_price = Decimal('0.00')
-                if row.get('unit_price'):
+        # Resolve supplier_service
+        supplier_service_val = row.get('supplier_service')
+        supplier_service_str = str(supplier_service_val or '').strip()
+        if supplier_service_str:
+            ss_id = self._to_int_id(supplier_service_val)
+            if ss_id is not None:
+                ss = self._supplier_service_cache.get(str(ss_id))
+                if not ss:
                     try:
-                        unit_price = Decimal(str(float(row['unit_price'])))
-                    except (ValueError, TypeError):
-                        pass
-                ss = SupplierService.objects.create(
-                    supplier=supplier, name=supplier_service_name, cost=unit_price
-                )
-                logger.info(f"[IMPORT] Created new supplier_service: {ss.id} ({ss.name})")
-            except SupplierService.MultipleObjectsReturned:
-                ss = SupplierService.objects.filter(supplier=supplier, name=supplier_service_name).first()
-                logger.info(f"[IMPORT] Found multiple supplier_service, using first: {ss.id}")
-            row['supplier_service'] = ss.id
-        elif supplier_service_name:
-            # Try find by name alone (any supplier)
-            ss = SupplierService.objects.filter(name=supplier_service_name).first()
-            if ss:
-                row['supplier_service'] = ss.id
-                logger.info(f"[IMPORT] Found supplier_service by name alone: {ss.id}")
+                        ss = SupplierService.objects.get(id=ss_id)
+                        self._supplier_service_cache[str(ss.id)] = ss
+                    except SupplierService.DoesNotExist:
+                        raise ValueError(f"SupplierService with ID {ss_id} not found")
+                row['supplier_service'] = ss
+            elif supplier:
+                key = (supplier.id, supplier_service_str)
+                ss = self._supplier_service_cache.get(key)
+                if not ss:
+                    unit_price = self._to_decimal(row.get('unit_price'))
+                    ss, created = SupplierService.objects.get_or_create(
+                        supplier=supplier, name=supplier_service_str,
+                        defaults={'cost': unit_price}
+                    )
+                    self._supplier_service_cache[key] = ss
+                    self._supplier_service_cache[supplier_service_str] = ss
+                row['supplier_service'] = ss
+                logger.info(f"[IMPORT] Resolved supplier_service: {ss.id} ({ss.name})")
+            else:
+                ss = self._supplier_service_cache.get(supplier_service_str)
+                if not ss:
+                    ss = SupplierService.objects.filter(name=supplier_service_str).first()
+                    if ss:
+                        self._supplier_service_cache[supplier_service_str] = ss
+                if ss:
+                    row['supplier_service'] = ss
+                    logger.info(f"[IMPORT] Found supplier_service by name alone: {ss.id}")
 
         # Normalize numeric fields
         try:

@@ -337,7 +337,7 @@
       <!-- Cards -->
       <div class="p-4 space-y-3">
         <template x-for="(exp, idx) in supplierExpenses" :key="exp._key">
-          <div class="relative p-4 bg-white rounded-xl border border-slate-200 shadow-sm dark:bg-gray-800 dark:border-gray-700"
+          <div class="relative p-4 bg-white rounded-xl border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700"
                :class="exp._source_key ? 'border-l-4 border-l-orange-400' : ''">
 
             <!-- Linked indicator -->
@@ -349,7 +349,7 @@
             <!-- Supplier & Service -->
             <div class="grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2">
               <div>
-                <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Supplier</label>
+                <label class="block mb-1 text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Supplier</label>
                 <div class="relative" @click.outside="exp.supplierOpen = false">
                   <input type="text"
                          x-model="exp.supplierQuery"
@@ -358,40 +358,40 @@
                          @input="exp.supplierQuery = exp.supplierQuery"
                          placeholder="Search supplier…"
                          class="px-3 py-1.5 w-full text-sm rounded-lg border dark:bg-gray-700 dark:text-gray-200"
-                         :class="exp.supplier_name ? 'border-orange-300 dark:border-orange-600 font-medium' : 'border-slate-200 dark:border-gray-600'">
+                         :class="exp.supplier_name ? 'border-orange-300 dark:border-orange-600 font-medium' : 'border-gray-200 dark:border-gray-600'">
                   <div x-show="exp.supplierOpen"
                        @click.stop
-                       class="overflow-y-auto absolute left-0 top-full z-50 w-full max-h-48 bg-white rounded-lg border border-slate-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
+                       class="overflow-y-auto absolute left-0 top-full z-50 w-full max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
                     <template x-for="s in filteredSuppliers(exp.supplierQuery)" :key="s.id">
                       <div @mousedown.prevent="selectSupplier(exp, s)"
-                           class="px-3 py-2 border-b border-slate-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700"
+                           class="px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700"
                            :class="exp.supplierId === s.id ? 'bg-orange-50 font-semibold dark:bg-gray-700' : ''"
                            x-text="s.name"></div>
                     </template>
                     <div x-show="filteredSuppliers(exp.supplierQuery).length === 0"
-                         class="px-3 py-2 italic text-slate-400">No suppliers found</div>
+                         class="px-3 py-2 italic text-gray-400">No suppliers found</div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Service / Description</label>
+                <label class="block mb-1 text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Service / Description</label>
                 <div class="relative" @click.outside="exp.serviceOpen = false">
                   <input type="text"
                          x-model="exp.description"
-                         @focus="openServiceDrop(exp, $el); exp.serviceQuery = exp.description"
+                         @focus="openServiceDrop(exp, $el)"
                          @blur="exp.serviceOpen = false"
                          @input="exp.serviceQuery = exp.description"
                          :placeholder="exp.supplierId ? 'Service / description…' : 'Select supplier first'"
-                         class="px-3 py-1.5 w-full text-sm rounded-lg border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                         class="px-3 py-1.5 w-full text-sm rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
                   <div x-show="exp.serviceOpen && exp.supplierId && filteredServices(exp).length > 0"
                        @click.stop
-                       class="overflow-y-auto absolute left-0 top-full z-50 w-full max-h-48 bg-white rounded-lg border border-slate-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
+                       class="overflow-y-auto absolute left-0 top-full z-50 w-full max-h-48 bg-white rounded-lg border border-gray-200 shadow-2xl dark:bg-gray-800 dark:border-gray-600">
                     <template x-for="s in filteredServices(exp)" :key="s.id">
                       <div @mousedown.prevent="selectService(exp, s)"
-                           class="flex gap-2 justify-between items-center px-3 py-2 border-b border-slate-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700">
+                           class="flex gap-2 justify-between items-center px-3 py-2 border-b border-gray-50 cursor-pointer hover:bg-orange-50 dark:hover:bg-gray-700 dark:border-gray-700">
                         <span x-text="s.name"></span>
-                        <span class="text-slate-400 shrink-0" x-text="'฿' + Number(s.cost).toLocaleString('th-TH')"></span>
+                        <span class="text-gray-400 shrink-0" x-text="'฿' + Number(s.cost).toLocaleString('th-TH')"></span>
                       </div>
                     </template>
                   </div>
@@ -404,46 +404,46 @@
               <div>
                 <div class="grid grid-cols-2 gap-3 mb-3 sm:grid-cols-3 lg:grid-cols-6">
                   <div>
-                    <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Rooms</label>
+                    <label class="block mb-1 text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Rooms</label>
                     <input type="number" :value="exp.room_count" min="1" step="1"
                            @input="updateExpenseHotel(exp, 'room_count', $event.target.value)"
-                           class="px-2 py-1 w-12 text-xs text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                           class="px-2 py-1 w-12 text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                   </div>
                   <div>
-                    <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Nights</label>
+                    <label class="block mb-1 text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Nights</label>
                     <input type="number" :value="exp.nights" min="1" step="1"
                            @input="updateExpenseHotel(exp, 'nights', $event.target.value)"
-                           class="px-2 py-1 w-12 text-xs text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                           class="px-2 py-1 w-12 text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                   </div>
                   <div>
-                    <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Price</label>
+                    <label class="block mb-1 text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Price</label>
                     <input type="text"
                            x-init="$el.value = fmtNum(exp.room_price)"
                            @focus="$el.value = exp.room_price"
                            @blur="$el.value = fmtNum(exp.room_price)"
                            @input="updateExpenseHotel(exp, 'room_price', parseNum($event.target.value))"
-                           class="px-2 py-1 w-full text-xs text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                           class="px-2 py-1 w-full text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                   </div>
                   <div>
-                    <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Extra Bed</label>
+                    <label class="block mb-1 text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Extra Bed</label>
                     <input type="text"
                            x-init="$el.value = fmtNum(exp.extra_bed_price)"
                            @focus="$el.value = exp.extra_bed_price"
                            @blur="$el.value = fmtNum(exp.extra_bed_price)"
                            @input="updateExpenseHotel(exp, 'extra_bed_price', parseNum($event.target.value))"
-                           class="px-2 py-1 w-full text-xs text-right rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                           class="px-2 py-1 w-full text-xs text-right rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                   </div>
                   <div>
-                    <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Due Date</label>
+                    <label class="block mb-1 text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Due Date</label>
                     <input type="text" x-model="exp.due_date" placeholder="25-Mar-26"
-                           class="px-2 py-1 w-full text-xs rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                           class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                   </div>
                 </div>
                 <div class="mb-3">
-                  <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Promo</label>
+                  <label class="block mb-1 text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Promo</label>
                   <input type="text" :value="exp.promotion || (linkedItem(exp)?.promotion || '')"
                          @input="updateExpenseHotel(exp, 'promotion', $event.target.value)"
-                         class="px-2 py-1 w-full max-w-xs text-xs rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                         class="px-2 py-1 w-full max-w-xs text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                 </div>
               </div>
             </template>
@@ -452,9 +452,9 @@
             <template x-if="!linkedItem(exp)?.is_hotel">
               <div class="grid grid-cols-2 gap-3 mb-3 sm:grid-cols-4">
                 <div>
-                  <label class="block mb-1 text-[10px] font-semibold text-slate-500 uppercase dark:text-gray-400">Due Date</label>
+                  <label class="block mb-1 text-[10px] font-semibold text-gray-500 uppercase dark:text-gray-400">Due Date</label>
                   <input type="text" x-model="exp.due_date" placeholder="25-Mar-26"
-                         class="px-2 py-1 w-full text-xs rounded border border-slate-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                         class="px-2 py-1 w-full text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                 </div>
               </div>
             </template>
@@ -470,10 +470,10 @@
                         class="inline-flex justify-center items-center w-8 h-8 text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700">✕</button>
               </div>
               <div class="flex flex-col items-end">
-                <span class="mb-0.5 text-[10px] text-slate-400 dark:text-gray-500" x-show="linkedItem(exp)?.is_hotel"
+                <span class="mb-0.5 text-[10px] text-gray-400 dark:text-gray-500" x-show="linkedItem(exp)?.is_hotel"
                       x-text="(exp.room_count || 1) + ' x ' + (exp.nights || 1) + 'n x ฿' + Number(exp.room_price || 0).toLocaleString('th-TH')"></span>
                 <div class="flex gap-1 items-baseline">
-                  <span class="text-xs text-slate-400">฿</span>
+                  <span class="text-xs text-gray-400">฿</span>
                   <input type="text"
                          x-init="$watch('exp.amount', v => { if (!$el.matches(':focus')) $el.value = fmtNum(v) }); $el.value = fmtNum(exp.amount)"
                          @focus="$el.value = exp.amount"

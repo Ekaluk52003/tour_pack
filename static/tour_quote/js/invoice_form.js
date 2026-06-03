@@ -43,13 +43,22 @@ export default function invoiceForm() {
           sourceItem = this.groupedItems[exp.source_item_index];
           if (sourceItem) sourceKey = sourceItem._key;
         }
+        // Restore description/serviceQuery from the actual service name if known,
+        // so the display and dropdown show the supplier service instead of the
+        // auto-generated client item text that submitForm() writes
+        let serviceName = exp.description || '';
+        if (exp.supplier_service_id && matched) {
+          const svc = matched.services.find(s => s.id === exp.supplier_service_id);
+          if (svc) serviceName = svc.name;
+        }
         return {
           _key: crypto.randomUUID(),
           ...exp,
+          description: serviceName,
           _source_key: sourceKey,
           supplierId: matched ? matched.id : null,
           supplierQuery: exp.supplier_name || '',
-          serviceQuery: exp.description || '',
+          serviceQuery: serviceName,
           supplierOpen: false,
           serviceOpen: false,
           supplierDropStyle: '',

@@ -353,7 +353,7 @@
                 <div class="relative" @click.outside="exp.serviceOpen = false">
                   <input type="text"
                          x-model="exp.description"
-                         @focus="openServiceDrop(exp, $el); exp.serviceQuery = exp.description"
+                         @focus="openServiceDrop(exp, $el)"
                          @blur="exp.serviceOpen = false"
                          @input="exp.serviceQuery = exp.description"
                          :placeholder="exp.supplierId ? 'Service / description…' : 'Select supplier first'"

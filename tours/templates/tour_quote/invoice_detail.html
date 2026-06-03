@@ -169,7 +169,7 @@
           <div class="grid grid-cols-[1.2fr_2fr_0.8fr_1.4fr_0.9fr_0.9fr_0.7fr_0.8fr] gap-2 px-3 py-2 border-b border-gray-100 dark:border-gray-700 text-sm items-center {% if entry.service_expense_count > 1 %}pl-8{% endif %}">
             <div class="font-medium text-gray-800 dark:text-gray-200">{{ entry.expense.supplier_name }}</div>
             <div class="text-gray-600 dark:text-gray-300">
-              {{ entry.expense.description }}
+              {% if entry.expense.supplier_service %}{{ entry.expense.supplier_service.name }}{% else %}{{ entry.expense.description }}{% endif %}
               {% if entry.is_hotel %}
                 <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Rooms: {{ entry.room_count|floatformat:"0" }} | Nights: {{ entry.nights|floatformat:"0" }} | Price/Night: {{ entry.expense_room_price|floatformat:"0"|intcomma }} | Extra Bed: {{ entry.extra_bed_price|floatformat:"0"|intcomma }}

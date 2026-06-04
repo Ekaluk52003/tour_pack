@@ -2,7 +2,7 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
-from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedTourQuote, ReferenceID, ServicePrice, TourPackType, Agency, Invoice, InvoiceItem, SupplierExpense, InvoiceReferenceID, Supplier, SupplierService
+from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedTourQuote, ReferenceID, ServicePrice, TourPackType, Agency, Invoice, InvoiceItem, SupplierExpense, InvoiceReferenceID, Supplier, SupplierService, ServiceExpenseTemplate
 from django.db.models import Sum, Count, F, ExpressionWrapper, DecimalField, Case, When, IntegerField
 from django.db.models.functions import Coalesce
 import json
@@ -3635,6 +3635,31 @@ def edit_invoice(request, invoice_id):
         'tour_pack_type_id': (invoice.tour_pack_type_id or invoice.tour_package.tour_pack_type_id or ''),
     }
     return render(request, 'tour_quote/edit_invoice.html', context)
+
+
+@login_required
+@superuser_or_owner_required
+def export_service_expense_template(request, tour_pack_type_id):
+    from .admin import ServiceExpenseTemplateResource
+    from import_export.formats.base_formats import XLSX
+
+    tour_pack_type = get_object_or_404(TourPackType, id=tour_pack_type_id)
+    queryset = ServiceExpenseTemplate.objects.filter(
+        service_price__tour_pack_type=tour_pack_type
+    ).select_related('service_price__service', 'service_price__tour_pack_type', 'supplier', 'supplier_service')
+
+    resource = ServiceExpenseTemplateResource()
+    dataset = resource.export(queryset=queryset)
+    format = XLSX()
+    export_data = format.export_data(dataset)
+
+    response = HttpResponse(
+        export_data,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    filename = f"service_expense_template_{tour_pack_type.name}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required

@@ -36,6 +36,7 @@ urlpatterns = [
     path('invoices/<str:package_reference>/create/', views.create_invoice, name='create_invoice'),
     path('invoices/<int:invoice_id>/', views.invoice_detail, name='invoice_detail'),
     path('invoices/<int:invoice_id>/edit/', views.edit_invoice, name='edit_invoice'),
+    path('invoices/export-service-expense-template/<int:tour_pack_type_id>/', views.export_service_expense_template, name='export_service_expense_template'),
     path('invoices/<int:invoice_id>/pdf/', views.invoice_pdf, name='invoice_pdf'),
     path('invoices/<int:invoice_id>/payment-list/', views.payment_list_view, name='payment_list_view'),
     path('supplier-payments/', views.supplier_payment_overview, name='supplier_payment_overview'),

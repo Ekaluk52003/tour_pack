@@ -1,6 +1,8 @@
 # admin.py
 
 from django.contrib import admin, messages
+from django.urls import path
+from django.shortcuts import render, redirect
 from import_export import resources, fields, widgets
 from import_export.widgets import ManyToManyWidget, ForeignKeyWidget
 from import_export.admin import ImportExportModelAdmin
@@ -263,7 +265,6 @@ class CachedForeignKeyWidget(ForeignKeyWidget):
 class ServiceExpenseTemplateResource(resources.ModelResource):
     service_name = fields.Field(
         column_name='service_name',
-        attribute='service_name',
         readonly=True,
     )
     tour_pack_type = fields.Field(
@@ -279,12 +280,12 @@ class ServiceExpenseTemplateResource(resources.ModelResource):
     supplier = fields.Field(
         column_name='supplier',
         attribute='supplier',
-        widget=CachedForeignKeyWidget(Supplier, 'id')
+        widget=CachedForeignKeyWidget(Supplier, 'name')
     )
     supplier_service = fields.Field(
         column_name='supplier_service',
         attribute='supplier_service',
-        widget=CachedForeignKeyWidget(SupplierService, 'id')
+        widget=CachedForeignKeyWidget(SupplierService, 'name')
     )
 
     class Meta:
@@ -401,6 +402,11 @@ class ServiceExpenseTemplateResource(resources.ModelResource):
                     supplier_service_id=ss_id,
                 ).first()
         return None
+
+    def dehydrate_service_price(self, obj):
+        if obj.service_price:
+            return str(obj.service_price)
+        return ''
 
     def dehydrate_service_name(self, obj):
         val = getattr(obj, 'service_name', None)
@@ -527,12 +533,30 @@ class ServiceExpenseTemplateResource(resources.ModelResource):
 @admin.register(ServiceExpenseTemplate)
 class ServiceExpenseTemplateAdmin(ImportExportModelAdmin):
     resource_class = ServiceExpenseTemplateResource
+    change_list_template = 'admin/tours/serviceexpensetemplate/change_list.html'
     list_display = ('service_price', 'supplier', 'supplier_service', 'unit_price', 'order')
     list_filter = ('service_price__service__service_type', 'service_price__tour_pack_type', 'supplier')
     search_fields = ('service_price__service__name', 'supplier__name', 'supplier_service__name')
     list_select_related = ('service_price__service', 'service_price__tour_pack_type', 'supplier', 'supplier_service')
     autocomplete_fields = ['service_price', 'supplier', 'supplier_service']
     fields = ('service_price', 'supplier', 'supplier_service', 'unit_price', 'order')
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('delete_all/', self.admin_site.admin_view(self.delete_all_view),
+                 name='tours_serviceexpensetemplate_delete_all'),
+        ]
+        return custom_urls + urls
+
+    def delete_all_view(self, request):
+        if request.method == 'POST':
+            count, _ = ServiceExpenseTemplate.objects.all().delete()
+            messages.success(request, f'All {count} service expense template records have been deleted.')
+            return redirect('admin:tours_serviceexpensetemplate_changelist')
+        return render(request, 'admin/tours/serviceexpensetemplate/delete_all_confirmation.html', {
+            'opts': self.model._meta,
+        })
 
 
 @admin.register(GuideService)

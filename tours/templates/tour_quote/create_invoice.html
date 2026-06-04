@@ -13,8 +13,15 @@
 
 <div x-data="invoiceForm">
 
-<div class="mb-4">
+<div class="flex flex-wrap gap-3 justify-between items-center mb-4">
   <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Create Invoice</h1>
+  {% if tour_pack_type_id %}
+  <a href="{% url 'export_service_expense_template' tour_pack_type_id %}"
+     class="inline-flex gap-2 items-center px-4 py-2 text-sm font-semibold text-green-700 bg-white rounded-lg border border-green-200 shadow-sm transition hover:bg-green-50 hover:border-green-300 dark:bg-gray-800 dark:text-green-300 dark:border-green-700 dark:hover:bg-gray-700">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+    Export Service Expense Template
+  </a>
+  {% endif %}
 </div>
 <div class="p-4 mb-6 bg-white rounded-lg shadow dark:bg-gray-800">
   <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">

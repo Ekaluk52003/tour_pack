@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+    <form method="post">
+        {% csrf_token %}
+        <div class="submit-row" style="background: #ffefef; border: 1px solid #ba2121; padding: 15px; margin-bottom: 20px;">
+            <h2 style="color: #ba2121; margin-top: 0;">{% trans "Are you sure?" %}</h2>
+            <p>
+                {% blocktrans %}
+                You are about to delete <strong>all</strong> records from <strong>{{ opts.verbose_name_plural }}</strong>.
+                This action cannot be undone.
+                {% endblocktrans %}
+            </p>
+        </div>
+        <div class="submit-row">
+            <input type="submit" value="{% trans 'Yes, delete all' %}" style="background: #ba2121;">
+            <a href="{% url 'admin:tours_serviceexpensetemplate_changelist' %}" class="button cancel-link" style="margin-left: 10px;">{% trans "No, take me back" %}</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

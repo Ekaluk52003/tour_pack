@@ -12,13 +12,22 @@
 
 <div x-data="invoiceForm">
 
-<div class="mb-6">
-  <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Edit Invoice</h1>
-  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-    <span class="font-semibold">{{ invoice.invoice_number }}</span>
-    — Mo no.: <a href="{% url 'tour_package_detail' invoice.tour_package.package_reference %}" class="text-blue-600 hover:underline dark:text-blue-400">{{ invoice.tour_package.package_reference }}</a>
-    — {{ invoice.tour_package.customer_name }}
-  </p>
+<div class="flex flex-wrap gap-3 justify-between items-start mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Edit Invoice</h1>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <span class="font-semibold">{{ invoice.invoice_number }}</span>
+      — Mo no.: <a href="{% url 'tour_package_detail' invoice.tour_package.package_reference %}" class="text-blue-600 hover:underline dark:text-blue-400">{{ invoice.tour_package.package_reference }}</a>
+      — {{ invoice.tour_package.customer_name }}
+    </p>
+  </div>
+  {% if tour_pack_type_id %}
+  <a href="{% url 'export_service_expense_template' tour_pack_type_id %}"
+     class="inline-flex gap-2 items-center px-4 py-2 text-sm font-semibold text-green-700 bg-white rounded-lg border border-green-200 shadow-sm transition hover:bg-green-50 hover:border-green-300 dark:bg-gray-800 dark:text-green-300 dark:border-green-700 dark:hover:bg-gray-700">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+    Export Service Expense Template
+  </a>
+  {% endif %}
 </div>
 
 <form id="invoice-form" method="post">

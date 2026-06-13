@@ -1,11 +1,17 @@
 from django.urls import path, include
 from django.conf import settings
 from . import views
+from . import ai_views
 
 urlpatterns = [
     # AI email parsing endpoint - must be before other patterns
-    path('parse-email-ai/', views.parse_email_with_ai, name='parse_email_with_ai'),
-    
+    path('parse-email-ai/', ai_views.parse_email_with_ai, name='parse_email_with_ai'),
+    path('save-ai-instruction/', ai_views.save_ai_instruction, name='save_ai_instruction'),
+    path('ai-instructions/', ai_views.list_ai_instructions, name='list_ai_instructions'),
+    path('ai-instructions/update/', ai_views.update_ai_instruction, name='update_ai_instruction'),
+    path('ai-instructions/delete/', ai_views.delete_ai_instruction, name='delete_ai_instruction'),
+    path('ai-feedback/suggest/', ai_views.suggest_instruction_from_feedback, name='suggest_instruction_from_feedback'),
+
     # put save-tour-package as it may match to tour_package_detail or other route
     path('save-tour-package/', views.save_tour_package, name='save_tour_package'),
     path('save-tour-package/<int:package_reference>/', views.save_tour_package, name='update_tour_package'),

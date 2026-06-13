@@ -41,7 +41,7 @@
   th.right, td.right { text-align: right; }
   td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
   .discount { color: #dc2626; }
-  tfoot td { font-weight: 700; background: #eff6ff; font-size: 13px; }
+  .total-row td { font-weight: 700; background: #eff6ff; font-size: 13px; }
   .notes { margin-top: 16px; padding: 10px; background: #fffbeb; border-left: 3px solid #f59e0b; font-size: 11px; color: #78350f; }
   .footer { margin-top: 40px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 10px; }
   dl { margin: 0; padding: 0; }
@@ -127,13 +127,11 @@
     </tr>
     {% endwith %}
     {% endfor %}
-  </tbody>
-  <tfoot>
-    <tr>
+    <tr class="total-row">
       <td colspan="3" class="right">Total Amount</td>
       <td class="right">฿{{ invoice.total_amount|floatformat:2|intcomma }}</td>
     </tr>
-  </tfoot>
+  </tbody>
 </table>
 
 {% if invoice.notes %}

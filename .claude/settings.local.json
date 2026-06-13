@@ -13,7 +13,13 @@
       "Bash(del *)",
       "Bash(Get-Content \"C:\\\\Users\\\\Mill\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Django-tour-pack\\\\6529f4b9-e52a-41a4-9007-af86a2bfd2ad\\\\tasks\\\\bs1xxq7u1.output\" -Wait)",
       "Bash(Select-String -Pattern \"built|error|Error|failed|done|Done\" --line-buffered)",
-      "Skill(frontend-design:frontend-design)"
+      "Skill(frontend-design:frontend-design)",
+      "Bash(/d/Django/tour_pack/env/Scripts/python -m pip install \"google-genai>=0.3.0\")",
+      "Bash(env/Scripts/python manage.py makemigrations tours)",
+      "Bash(env/Scripts/python *)",
+      "Bash(break)",
+      "WebFetch(domain:ai.google.dev)",
+      "PowerShell(docker compose exec *)"
     ]
   }
 }

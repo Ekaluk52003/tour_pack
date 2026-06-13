@@ -431,3 +431,89 @@ class SupplierExpense(models.Model):
 
     def __str__(self):
         return f"{self.supplier_name} - {self.description} ({self.amount})"
+
+
+class AIParserInstruction(models.Model):
+    """A persistent learning/correction the AI email parser should remember and
+    apply on future parses. Editable in Django admin and from the parser UI.
+
+    `scope` lets an instruction target only one step of the two-step flow:
+    extraction (Step 1) or matching (Step 2), or BOTH."""
+
+    SCOPE_BOTH = 'both'
+    SCOPE_EXTRACTION = 'extraction'
+    SCOPE_MATCHING = 'matching'
+    SCOPE_CHOICES = [
+        (SCOPE_BOTH, 'Both steps'),
+        (SCOPE_EXTRACTION, 'Extraction (Step 1)'),
+        (SCOPE_MATCHING, 'Matching (Step 2)'),
+    ]
+
+    # Cap how many active instructions are injected, to bound prompt/token growth.
+    MAX_ACTIVE = 25
+
+    instruction = models.TextField(
+        help_text="A learning/correction for the AI to remember on future parses."
+    )
+    scope = models.CharField(
+        max_length=20, choices=SCOPE_CHOICES, default=SCOPE_BOTH,
+        help_text="Which AI step this instruction applies to."
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return (self.instruction[:60] + '…') if len(self.instruction) > 60 else self.instruction
+
+    @classmethod
+    def active_for(cls, step):
+        """Active instructions for a step ('extraction' or 'matching'), most
+        recent first, de-duplicated by text and capped at MAX_ACTIVE."""
+        qs = cls.objects.filter(
+            is_active=True, scope__in=[cls.SCOPE_BOTH, step]
+        ).order_by('-created_at')
+
+        seen, out = set(), []
+        for obj in qs:
+            key = obj.instruction.strip().lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(obj)
+            if len(out) >= cls.MAX_ACTIVE:
+                break
+        return out
+
+    @classmethod
+    def active_text(cls, step):
+        """Bullet list of active instructions for a step, for prompt injection."""
+        return "\n".join(f"- {o.instruction}" for o in cls.active_for(step))
+
+
+class AIParseLog(models.Model):
+    """A reviewable record of each AI email parse: the input email + guideline,
+    the model used, the extracted analysis, a summary of what was chosen, and the
+    standing instructions that were applied. Used to build better instructions
+    from real cases. Read-only in admin."""
+    email_content = models.TextField()
+    guideline = models.TextField(blank=True, default="")
+    model_used = models.CharField(max_length=100, blank=True, default="")
+    analysis = models.JSONField(default=dict, blank=True)
+    result_summary = models.JSONField(default=dict, blank=True)
+    applied_instruction_ids = models.JSONField(default=list, blank=True)
+    success = models.BooleanField(default=True)
+    error = models.TextField(blank=True, default="")
+    from_cache = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        who = self.created_by.username if self.created_by else 'unknown'
+        return f"Parse by {who} @ {self.created_at:%Y-%m-%d %H:%M}"

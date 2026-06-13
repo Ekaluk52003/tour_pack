@@ -9,7 +9,7 @@
   [x-cloak] {
     display: none !important;
   }
-  
+
   .dragging {
     opacity: 0.75;
     background-color: rgba(255, 255, 255, 0.9);
@@ -18,11 +18,11 @@
     transform: scale(1.05);
     transition: all 0.2s ease;
   }
-  
+
   .service-item {
     transition: all 0.2s ease-in-out;
   }
-  
+
   .service-item:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
@@ -41,8 +41,8 @@
 
 <!-- AI Email Parser Button (Only for Superusers) -->
 {% if can_use_ai %}
-<div class="p-4 mb-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-300 dark:from-gray-700 dark:to-gray-700 dark:border-blue-500">
-  <div class="flex justify-between items-center">
+<div class="p-4 mb-6 border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl dark:from-gray-700 dark:to-gray-700 dark:border-blue-500">
+  <div class="flex items-center justify-between">
     <div class="flex-1">
       <h3 class="mb-1 text-lg font-bold text-blue-900 dark:text-blue-300">
         ✨ Quick Start with AI
@@ -51,11 +51,11 @@
         Paste a customer email and let AI automatically extract tour details, match hotels & services
       </p>
     </div>
-    <button 
-      @click="showAIDialog = true"
-      class="px-6 py-3 ml-4 text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl hover:scale-105 dark:from-blue-700 dark:to-purple-700">
+    <button
+      @click="showAIDialog = true; loadAiInstructions()"
+      class="px-6 py-3 ml-4 text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl hover:scale-105 dark:from-blue-700 dark:to-purple-700">
       <span class="flex items-center font-semibold">
-        <svg class="mr-2 w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+        <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
           <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/>
         </svg>
         Open AI Parser
@@ -66,28 +66,28 @@
 
 
 <!-- AI Email Parser Dialog/Modal -->
-<div 
-  x-show="showAIDialog" 
+<div
+  x-show="showAIDialog"
   x-cloak
-  class="overflow-y-auto fixed inset-0 z-50"
+  class="fixed inset-0 z-50 overflow-y-auto"
   @keydown.escape.window="showAIDialog = false">
-  
+
   <!-- Backdrop -->
-  <div 
-    class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+  <div
+    class="fixed inset-0 transition-opacity bg-black bg-opacity-50"
     @click="showAIDialog = false"></div>
-  
+
   <!-- Dialog -->
-  <div class="flex justify-center items-center p-4 min-h-screen">
-    <div 
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div
       class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
       @click.stop>
-      
+
       <!-- Header -->
-      <div class="sticky top-0 px-6 py-4 text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-lg">
-        <div class="flex justify-between items-center">
+      <div class="sticky top-0 px-6 py-4 text-white rounded-t-lg bg-gradient-to-r from-blue-600 to-purple-600">
+        <div class="flex items-center justify-between">
           <h3 class="text-xl font-semibold">🤖 AI Email Parser <span class="text-sm font-normal opacity-90">(Superuser Only)</span></h3>
-          <button 
+          <button
             @click="showAIDialog = false"
             class="text-white transition-colors hover:text-gray-200">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,13 +96,13 @@
           </button>
         </div>
       </div>
-      
+
       <!-- Content -->
       <div class="p-6">
         <!-- Guidelines -->
-        <div class="p-4 mb-4 bg-blue-50 rounded-lg border border-blue-200 dark:bg-gray-700 dark:border-gray-600">
+        <div class="p-4 mb-4 border border-blue-200 rounded-lg bg-blue-50 dark:bg-gray-700 dark:border-gray-600">
           <p class="mb-2 text-sm font-semibold text-blue-800 dark:text-blue-300">📋 What AI Extracts:</p>
-          <ul class="space-y-1 text-xs list-disc list-inside text-blue-700 dark:text-gray-300">
+          <ul class="space-y-1 text-xs text-blue-700 list-disc list-inside dark:text-gray-300">
             <li><strong class="dark:text-white">Number of people</strong> - Required! ("I", "we", "2 people", "family of 4")</li>
             <li><strong class="dark:text-white">Destinations</strong> - Thailand cities only (Bangkok, Chiang Mai, Phuket, etc.)</li>
             <li><strong class="dark:text-white">Travel dates</strong> - Month or specific dates ("December", "Dec 15-28")</li>
@@ -111,45 +111,161 @@
           </ul>
           <p class="mt-2 text-xs text-blue-600 dark:text-blue-400">💡 Tip: Email should clearly state number of travelers for accurate pricing (1pax, 2pax, 4pax)</p>
         </div>
-        
+
         <!-- Email Input -->
         <div class="mb-4">
           <label for="email-content-dialog" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-            Customer Email Content 
+            Customer Email Content
             <span class="text-xs font-normal text-gray-500">
               (<span x-text="emailContent.length"></span>/2000 characters)
             </span>
           </label>
-          <textarea 
-            id="email-content-dialog" 
+          <textarea
+            id="email-content-dialog"
             x-model="emailContent"
             maxlength="2000"
             rows="8"
-            class="px-3 py-2 w-full text-gray-900 bg-white rounded-lg border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Paste customer email here (max 2000 characters)...&#10;&#10;Example:&#10;We are a couple planning 10 days in Thailand for December.&#10;Cities: Bangkok, Chiang Mai, Phuket&#10;Activities: temples, cooking class, beach&#10;Hotel: Prefer Marriott or similar&#10;&#10;Note: Must mention number of people for accurate pricing!"></textarea>
         </div>
-        
+
+        <!-- Guideline Input (per-request, not saved) -->
+        <div class="mb-4">
+          <label for="ai-guideline-dialog" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Guideline for AI <span class="text-xs font-normal text-gray-500">(optional, applies to this parse only)</span>
+          </label>
+          <textarea
+            id="ai-guideline-dialog"
+            x-model="aiGuideline"
+            maxlength="1000"
+            rows="3"
+            class="w-full px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="e.g. Luxury client — prefer 5-star hotels; add a spa activity in each city; keep Bangkok to 2 days."></textarea>
+        </div>
+
         <!-- Action Buttons -->
         <div class="flex items-center mb-4 space-x-3">
-          <button 
+          <button
             @click="parseEmailWithAI()"
             :disabled="!emailContent || isParsingEmail"
-            class="px-6 py-2 text-white bg-blue-600 rounded-lg shadow-md transition-colors hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            class="px-6 py-2 text-white transition-colors bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             :class="{'animate-pulse': isParsingEmail}">
             <span x-show="!isParsingEmail">🧠 Parse with AI</span>
             <span x-show="isParsingEmail">🔄 Analyzing...</span>
           </button>
-          
-          <button 
+
+          <button
             @click="clearEmailContent()"
-            class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg transition-colors hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500">
+            class="px-6 py-2 text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500">
             Clear
           </button>
         </div>
-        
+
+        <!-- Manage AI Parser Instructions (the AI's persistent "memory") -->
+        <div class="mb-4 border border-indigo-200 rounded-lg dark:border-indigo-700">
+          <button
+            type="button"
+            @click="showInstructionManager = !showInstructionManager; if (showInstructionManager) loadAiInstructions()"
+            class="flex items-center justify-between w-full px-4 py-2 text-sm font-semibold text-indigo-800 bg-indigo-50 rounded-t-lg dark:bg-gray-700 dark:text-indigo-300">
+            <span>⚙️ Manage AI Parser Instructions (<span x-text="aiInstructions.length"></span>)</span>
+            <span x-text="showInstructionManager ? '▲' : '▼'"></span>
+          </button>
+
+          <div x-show="showInstructionManager" x-cloak class="p-3 space-y-3">
+            <!-- How it works -->
+            <div class="p-3 text-xs border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-900 dark:border-gray-700 text-gray-700 dark:text-gray-300 space-y-2">
+              <p class="font-semibold text-gray-900 dark:text-white">How the AI parser works (2 steps)</p>
+              <p><strong>1. Extraction (Step 1)</strong> — reads the email and pulls out facts: customer name, number of people, which cities, dates/duration, and any hotel or activity mentions.</p>
+              <p><strong>2. Matching (Step 2)</strong> — takes those facts and picks the actual hotels &amp; services from your database for each city.</p>
+              <p class="pt-1 font-semibold text-gray-900 dark:text-white">What is a standing instruction?</p>
+              <p>A rule you teach the AI to apply on <em>every</em> future parse — its long-term “memory”. It is appended to the prompt for the chosen step(s). Use <strong>Scope</strong> to control where it applies:</p>
+              <ul class="ml-4 space-y-1 list-disc">
+                <li><strong>Both steps</strong> — applied to extraction and matching.</li>
+                <li><strong>Extraction (Step 1)</strong> — only changes how facts are read from the email (e.g. <em>“treat ‘honeymoon’ as 2 people”</em>).</li>
+                <li><strong>Matching (Step 2)</strong> — only changes hotel/service selection (e.g. <em>“for couples prefer 4-star or above; always add an airport transfer”</em>).</li>
+              </ul>
+            </div>
+
+            <!-- Add new instruction -->
+            <div class="p-3 border border-green-200 rounded-lg bg-green-50 dark:bg-gray-800 dark:border-green-700">
+              <label for="ai-add-instruction" class="block mb-1 text-sm font-semibold text-green-800 dark:text-green-300">➕ Add a new instruction</label>
+              <textarea
+                id="ai-add-instruction"
+                x-model="newInstruction"
+                maxlength="1000"
+                rows="2"
+                class="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-green-300 rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-green-500"
+                placeholder="e.g. Always include an arrival airport transfer on day 1."></textarea>
+              <div class="flex flex-wrap items-center gap-2 mt-2">
+                <label class="text-xs font-medium text-green-800 dark:text-green-300">Scope:</label>
+                <select
+                  x-model="newInstructionScope"
+                  class="px-2 py-1 text-sm text-gray-900 bg-white border border-green-300 rounded dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                  <option value="both">Both steps</option>
+                  <option value="extraction">Extraction (Step 1)</option>
+                  <option value="matching">Matching (Step 2)</option>
+                </select>
+                <button
+                  @click="addAiInstruction()"
+                  :disabled="!newInstruction.trim() || isAddingInstruction"
+                  class="px-4 py-1 text-sm text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                  <span x-show="!isAddingInstruction">Add instruction</span>
+                  <span x-show="isAddingInstruction">🔄 Adding…</span>
+                </button>
+                <span x-show="addInstructionError" class="text-xs font-medium text-red-700 dark:text-red-400" x-text="addInstructionError"></span>
+              </div>
+            </div>
+
+            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300">Existing instructions — edits, toggles, and deletes apply to future parses immediately:</p>
+
+            <p x-show="isLoadingInstructions" class="text-sm text-gray-500">🔄 Loading…</p>
+            <p x-show="instructionsError" class="text-sm text-red-600 dark:text-red-400" x-text="instructionsError"></p>
+            <p x-show="!isLoadingInstructions && !aiInstructions.length" class="text-sm text-gray-500 dark:text-gray-400">
+              No instructions yet. Parse an email and use “💾 Remember for next time” to add one.
+            </p>
+
+            <template x-for="ins in aiInstructions" :key="ins.id">
+              <div class="p-3 border rounded-lg" :class="ins.is_active ? 'border-indigo-200 bg-white dark:bg-gray-800 dark:border-indigo-800' : 'border-gray-200 bg-gray-50 opacity-70 dark:bg-gray-900 dark:border-gray-700'">
+                <textarea
+                  x-model="ins.instruction"
+                  maxlength="1000"
+                  rows="2"
+                  class="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-indigo-500"></textarea>
+                <div class="flex flex-wrap items-center gap-2 mt-2">
+                  <select
+                    x-model="ins.scope"
+                    class="px-2 py-1 text-sm text-gray-900 bg-white border border-gray-300 rounded dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                    <option value="both">Both steps</option>
+                    <option value="extraction">Extraction (Step 1)</option>
+                    <option value="matching">Matching (Step 2)</option>
+                  </select>
+                  <label class="flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300">
+                    <input type="checkbox" x-model="ins.is_active"> Active
+                  </label>
+                  <button
+                    @click="updateAiInstruction(ins)"
+                    class="px-3 py-1 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700">
+                    Save
+                  </button>
+                  <button
+                    @click="deleteAiInstruction(ins)"
+                    class="px-3 py-1 text-sm text-red-600 bg-red-100 rounded hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300">
+                    Delete
+                  </button>
+                  <span x-show="ins._saved" class="text-xs font-medium text-green-700 dark:text-green-400">✅ Saved</span>
+                  <span class="ml-auto text-xs text-gray-400" x-text="ins.created_at"></span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
         <!-- AI Analysis Results -->
-        <div x-show="aiAnalysisResult" class="p-4 bg-green-50 rounded-lg border border-green-200 dark:bg-gray-700 dark:border-green-600">
-          <h4 class="mb-3 text-sm font-semibold text-green-800 dark:text-green-400">✅ AI Analysis Complete</h4>
+        <div x-show="aiAnalysisResult" class="p-4 border border-green-200 rounded-lg bg-green-50 dark:bg-gray-700 dark:border-green-600">
+          <h4 class="mb-3 text-sm font-semibold text-green-800 dark:text-green-400">
+            ✅ AI Analysis Complete
+            <span x-show="aiFromCache" class="px-2 py-0.5 ml-2 text-xs font-medium text-amber-800 bg-amber-100 rounded-full dark:bg-amber-900/40 dark:text-amber-300">⚡ from cache</span>
+          </h4>
           <div class="text-sm text-green-700 dark:text-gray-300">
             <p class="mb-2 font-semibold dark:text-white">Extracted Information:</p>
             <ul class="ml-4 space-y-1 list-disc">
@@ -161,18 +277,139 @@
               <li x-show="aiAnalysisResult?.raw_activity_mentions" x-text="`Activities Mentioned: ${aiAnalysisResult?.raw_activity_mentions}`"></li>
               <li x-show="aiAnalysisResult?.travel_months && aiAnalysisResult?.travel_months.length > 0" x-text="`Travel Months: ${aiAnalysisResult?.travel_months?.join(', ')}`"></li>
             </ul>
-            <button 
+
+            <!-- AI Reasoning: why each hotel/service was chosen -->
+            <div x-show="(aiMatchedData?.reasoning?.hotels?.length || 0) + (aiMatchedData?.reasoning?.services?.length || 0) > 0"
+                 class="p-3 mt-4 border border-green-200 rounded-lg bg-white/60 dark:bg-gray-800 dark:border-green-700">
+              <p class="mb-2 font-semibold dark:text-white">🧠 AI Reasoning (why these were chosen):</p>
+              <div x-show="aiMatchedData?.reasoning?.hotels?.length">
+                <p class="mt-1 text-xs font-semibold uppercase text-green-800 dark:text-green-400">Hotels</p>
+                <ul class="ml-4 space-y-1 list-disc">
+                  <template x-for="h in (aiMatchedData?.reasoning?.hotels || [])" :key="'h-' + h.hotel_id + '-' + h.city">
+                    <li>
+                      <span class="font-medium" x-text="`${h.city} — ${h.hotel_name}`"></span>:
+                      <em x-text="h.match_reason"></em>
+                      <button type="button"
+                        @click="toggleFeedback('h-' + h.hotel_id + '-' + h.city)"
+                        class="ml-1 text-xs text-purple-700 hover:underline dark:text-purple-300">✏️ Correct</button>
+                      <div x-show="feedbackItemKey === ('h-' + h.hotel_id + '-' + h.city)" x-cloak class="mt-1 mb-2">
+                        <textarea x-model="feedbackText" rows="2" maxlength="1000"
+                          class="w-full px-2 py-1 text-sm text-gray-900 bg-white border border-purple-300 rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-purple-500"
+                          placeholder="What should it have been, and why? e.g. should be a beachfront resort — customer wanted beaches"></textarea>
+                        <div class="flex items-center mt-1 space-x-2">
+                          <button type="button" @click="suggestRuleFromFeedback(h, 'hotel')"
+                            :disabled="!feedbackText.trim() || isSuggestingRule"
+                            class="px-3 py-1 text-xs text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            <span x-show="!isSuggestingRule">✨ Suggest rule</span>
+                            <span x-show="isSuggestingRule">🔄 Drafting...</span>
+                          </button>
+                          <span x-show="feedbackError" class="text-xs text-red-700 dark:text-red-400" x-text="feedbackError"></span>
+                        </div>
+                      </div>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+              <div x-show="aiMatchedData?.reasoning?.services?.length">
+                <p class="mt-2 text-xs font-semibold uppercase text-green-800 dark:text-green-400">Services</p>
+                <ul class="ml-4 space-y-1 list-disc">
+                  <template x-for="s in (aiMatchedData?.reasoning?.services || [])" :key="'s-' + s.service_id + '-' + s.city">
+                    <li>
+                      <span class="font-medium" x-text="`${s.city} — ${s.service_name}`"></span>:
+                      <em x-text="s.match_reason"></em>
+                      <button type="button"
+                        @click="toggleFeedback('s-' + s.service_id + '-' + s.city)"
+                        class="ml-1 text-xs text-purple-700 hover:underline dark:text-purple-300">✏️ Correct</button>
+                      <div x-show="feedbackItemKey === ('s-' + s.service_id + '-' + s.city)" x-cloak class="mt-1 mb-2">
+                        <textarea x-model="feedbackText" rows="2" maxlength="1000"
+                          class="w-full px-2 py-1 text-sm text-gray-900 bg-white border border-purple-300 rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-purple-500"
+                          placeholder="What should it have been, and why? e.g. don't put a temple tour on arrival day"></textarea>
+                        <div class="flex items-center mt-1 space-x-2">
+                          <button type="button" @click="suggestRuleFromFeedback(s, 'service')"
+                            :disabled="!feedbackText.trim() || isSuggestingRule"
+                            class="px-3 py-1 text-xs text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            <span x-show="!isSuggestingRule">✨ Suggest rule</span>
+                            <span x-show="isSuggestingRule">🔄 Drafting...</span>
+                          </button>
+                          <span x-show="feedbackError" class="text-xs text-red-700 dark:text-red-400" x-text="feedbackError"></span>
+                        </div>
+                      </div>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Standing instructions that influenced this parse -->
+            <div x-show="aiAppliedInstructions.length"
+                 class="p-3 mt-4 border border-indigo-200 rounded-lg bg-indigo-50 dark:bg-gray-800 dark:border-indigo-700">
+              <p class="mb-2 font-semibold text-indigo-800 dark:text-indigo-300">
+                📌 Standing instructions applied (<span x-text="aiAppliedInstructions.length"></span>):
+              </p>
+              <ul class="ml-4 space-y-1 list-disc text-indigo-900 dark:text-gray-300">
+                <template x-for="ins in aiAppliedInstructions" :key="ins.id">
+                  <li>
+                    <span x-text="ins.instruction"></span>
+                    <span class="px-1.5 py-0.5 ml-1 text-xs rounded bg-indigo-200 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300" x-text="ins.scope"></span>
+                  </li>
+                </template>
+              </ul>
+            </div>
+
+            <button
               @click="applyAIResults(); showAIDialog = false"
               :disabled="isApplyingResults"
-              class="px-6 py-2 mt-4 text-white bg-green-600 rounded-lg shadow-md transition-colors hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-green-700 dark:hover:bg-green-600">
+              class="px-6 py-2 mt-4 text-white transition-colors bg-green-600 rounded-lg shadow-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-green-700 dark:hover:bg-green-600">
               <span x-show="!isApplyingResults">✨ Apply to Form</span>
               <span x-show="isApplyingResults">🔄 Applying...</span>
             </button>
+
+            <!-- Remember for next time: teach the AI a persistent instruction -->
+            <div class="p-3 mt-4 border border-purple-200 rounded-lg bg-purple-50 dark:bg-gray-800 dark:border-purple-700">
+              <label for="ai-remember-dialog" class="block mb-2 text-sm font-semibold text-purple-800 dark:text-purple-300">
+                💾 Remember for next time
+              </label>
+              <p class="mb-2 text-xs text-purple-700 dark:text-gray-300">
+                Reviewed the reasoning above? Teach the AI a correction it should always apply on future parses.
+              </p>
+              <p x-show="ruleDrafted" x-cloak class="mb-2 text-xs font-medium text-purple-800 dark:text-purple-300">
+                ✨ AI-drafted from your correction — review and <strong>Save</strong>.
+              </p>
+              <textarea
+                id="ai-remember-dialog"
+                x-model="rememberInstruction"
+                maxlength="1000"
+                rows="2"
+                class="w-full px-3 py-2 text-gray-900 bg-white border border-purple-300 rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="e.g. For couples, never pick hostels — always choose 4-star or above."></textarea>
+              <div class="flex items-center mt-2 space-x-2">
+                <label for="ai-remember-scope" class="text-xs font-medium text-purple-800 dark:text-purple-300">Applies to:</label>
+                <select
+                  id="ai-remember-scope"
+                  x-model="rememberScope"
+                  class="px-2 py-1 text-sm text-gray-900 bg-white border border-purple-300 rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-purple-500">
+                  <option value="both">Both steps</option>
+                  <option value="extraction">Extraction (Step 1)</option>
+                  <option value="matching">Matching (Step 2)</option>
+                </select>
+              </div>
+              <div class="flex items-center mt-2 space-x-3">
+                <button
+                  @click="saveRememberInstruction()"
+                  :disabled="!rememberInstruction.trim() || isSavingInstruction"
+                  class="px-5 py-2 text-white transition-colors bg-purple-600 rounded-lg shadow-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed dark:bg-purple-700 dark:hover:bg-purple-600">
+                  <span x-show="!isSavingInstruction">Save instruction</span>
+                  <span x-show="isSavingInstruction">🔄 Saving...</span>
+                </button>
+                <span x-show="instructionSaved" class="text-sm font-medium text-green-700 dark:text-green-400">✅ Saved — will apply to future parses</span>
+                <span x-show="instructionError" class="text-sm font-medium text-red-700 dark:text-red-400" x-text="instructionError"></span>
+              </div>
+            </div>
           </div>
         </div>
-        
+
         <!-- Error Display -->
-        <div x-show="aiParsingError" class="p-4 bg-red-50 rounded-lg border border-red-200 dark:bg-red-900/20 dark:border-red-700">
+        <div x-show="aiParsingError" class="p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20 dark:border-red-700">
           <h4 class="mb-2 text-sm font-semibold text-red-800 dark:text-red-200">❌ Parsing Error</h4>
           <p class="text-sm text-red-700 dark:text-red-300" x-text="aiParsingError"></p>
         </div>
@@ -184,26 +421,26 @@
 
     <div class="mb-4">
       <label for="package-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Package Name</label>
-      <input type="text" id="package-name" x-model="name"  class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+      <input type="text" id="package-name" x-model="name"  class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
       <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.name" x-text="errors.name"></p>
   </div>
 
   <div class="mb-4">
       <label for="customer-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Customer Name</label>
-      <input type="text" id="customer-name" x-model="customerName" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+      <input type="text" id="customer-name" x-model="customerName" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
       <p class="mt-1 text-sm text-red-500 dark:text-red-400" x-show="errors.customerName" x-text="errors.customerName"></p>
   </div>
   <div class="mb-4">
     <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark</label>
-    <textarea id="remark" x-model="remark" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
+    <textarea id="remark" x-model="remark" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
 </div>
 <div class="mb-4">
     <label for="connection-ref" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Connections Ref</label>
-    <input type="text" id="connection-ref" x-model="connectionRef" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+    <input type="text" id="connection-ref" x-model="connectionRef" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
 </div>
 <div class="mb-4">
   <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark 2</label>
-  <textarea id="remark2" x-model="remark2" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
+  <textarea id="remark2" x-model="remark2" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
 </div>
 
 <div class="mb-4">
@@ -235,7 +472,7 @@
 
 <div class="space-y-2">
   <template x-for="(day, index) in days" :key="index">
-    <div class="p-4 mb-4 bg-white rounded-lg border border-gray-200 dark:bg-gray-700 dark:border-gray-600"
+    <div class="p-4 mb-4 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600"
          draggable="true"
          @dragstart="dragStart($event, index)"
          @dragend="dragEnd"
@@ -243,15 +480,15 @@
          @dragover.prevent
          @drop="drop($event, index)"
          >
-         <div class="flex justify-between items-center mb-2">
+         <div class="flex items-center justify-between mb-2">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white" x-text="`Day ${index + 1}`"></h2>  <div class="flex items-center">
           <span class="mr-2 text-gray-500 dark:text-gray-400">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
           </span>
-          <button @click="removeDay(index)" class="px-3 py-1 text-white bg-red-500 rounded transition duration-150 ease-in-out hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700">Remove Day</button>
-          <button @click="copyDay(index)" class="flex px-3 py-1 ml-2 text-white bg-blue-600 rounded duration-150 al">
+          <button @click="removeDay(index)" class="px-3 py-1 text-white transition duration-150 ease-in-out bg-red-500 rounded hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700">Remove Day</button>
+          <button @click="copyDay(index)" class="flex px-3 py-1 ml-2 text-white duration-150 bg-blue-600 rounded al">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
             </svg>
@@ -259,7 +496,7 @@
           </button>
         </div>
          </div>
-      <div class="grid grid-cols-1 gap-2 mb-4 md:grid-cols-6 dark:text-gray-300">        
+      <div class="grid grid-cols-1 gap-2 mb-4 md:grid-cols-6 dark:text-gray-300">
          <div class="relative"
      x-data="datePicker(day, index)"
      @first-day-changed.window="handleFirstDayDateChange()">
@@ -268,15 +505,15 @@
          :value="dateValue ? formatDateForDisplay(dateValue) : ''"
          @click="showDatepicker = !showDatepicker"
          readonly
-         class="px-3 py-2 w-full font-extrabold text-gray-900 bg-white rounded border cursor-pointer dark:bg-gray-700 dark:text-white"
+         class="w-full px-3 py-2 font-extrabold text-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white"
          :class="{'border-red-500': !dateValue}"
          placeholder="Select Date">
 
             <div x-show="showDatepicker"
-                 class="absolute z-50 p-4 mt-2 w-64 bg-white rounded-lg shadow-lg dark:bg-gray-800"
+                 class="absolute z-50 w-64 p-4 mt-2 bg-white rounded-lg shadow-lg dark:bg-gray-800"
                  @click.away="showDatepicker = false"
                  x-transition>
-              <div class="flex justify-between items-center mb-2">
+              <div class="flex items-center justify-between mb-2">
                 <div>
                   <span x-text="MONTH_NAMES[month]" class="text-lg font-bold"></span>
                   <span x-text="year" class="ml-1 text-lg font-bold"></span>
@@ -323,7 +560,7 @@
         <label class="block mb-2 text-gray-900 dark:text-white">City</label>
         <select x-model="day.city"
                 @change="updateCityServices(day); day.hotel = '';"
-                class="px-3 py-2 w-full font-extrabold text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
+                class="w-full px-3 py-2 font-extrabold text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                 :class="{'border-red-500': !day.city}">
           <option value="">Select City</option>
           {% for city in cities %}
@@ -336,7 +573,7 @@
       <div class="mb-2 md:col-span-3">
         <label class="block mb-2 text-gray-900 dark:text-white">Hotel</label>
         <select x-model="day.hotel"
-                class="px-3 py-2 w-full font-extrabold text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
+                class="w-full px-3 py-2 font-extrabold text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                 :class="{'border-red-500': !day.hotel}">
           <option value="">Select Hotel</option>
           <template x-for="hotel in day.cityServices.hotels" :key="hotel.id">
@@ -346,18 +583,18 @@
         <p class="mt-1 text-sm text-red-500" x-show="!day.hotel">Please select a hotel.</p>
       </div>
       </div>
-   
+
       <div class="mb-4">
         <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Services</h3>
         <template x-for="(service, serviceIndex) in day.services" :key="serviceIndex">
-          <div class="flex relative flex-col p-2 mb-2 bg-white rounded border dark:bg-gray-600 service-item">
+          <div class="relative flex flex-col p-2 mb-2 bg-white border rounded dark:bg-gray-600 service-item">
             <div class="flex flex-col p-4 mb-4 bg-white dark:bg-gray-800 dark:border-gray-700">
               <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
               <div class="md:col-span-2">
               <select
                 x-model="service.type"
                 @change="service.name = ''"
-                class="p-2 w-full text-sm text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"
+                class="w-full p-2 text-sm text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"
                 :class="{'border-red-500': !service.type}"
               >
                 <option value="">Select Service Type</option>
@@ -370,16 +607,16 @@
               </div>
 
               <div class="md:col-span-8">
-              <div class="flex relative flex-col flex-grow" x-data="{ 
-                open: false, 
+              <div class="relative flex flex-col flex-grow" x-data="{
+                open: false,
                 search: '',
                 selectedIndex: -1,
                 filteredServices() {
                   return getServiceNames(day, service.type)?.filter(s => s.name.toLowerCase().includes(this.search.toLowerCase())) || [];
                 }
               }" :key="dayIndex + '-' + serviceIndex">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   x-model="search"
                   @click="open = true"
                   @click.away="open = false"
@@ -417,18 +654,18 @@
                     const serviceObj = getServiceNames(day, service.type)?.find(s => String(s.id) === String(service.name));
                     return serviceObj ? `${serviceObj.name} (${formatCommaNumber(serviceObj.price)} THB)` : 'Search service...';
                   })()"
-                  class="p-2 w-full placeholder-gray-900 text-gray-900 bg-white rounded border cursor-pointer dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
+                  class="w-full p-2 text-gray-900 placeholder-gray-900 bg-white border rounded cursor-pointer dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
                   :class="{'border-red-500': service.type && !service.name}"
                 >
-              
-                <div 
-                  x-show="open && service.type" 
+
+                <div
+                  x-show="open && service.type"
                   class="absolute z-[99999] w-full bg-white border rounded-md shadow-lg dark:bg-gray-700 max-h-60 overflow-y-auto mb-1"
                   style="position: absolute; bottom: calc(100% + 4px); left: 0;"
                   @click.away="open = false"
                 >
                   <template x-for="(option, index) in filteredServices()" :key="option.id">
-                    <div 
+                    <div
                       @click="service.name = String(option.id); updateService(day, service); open = false; search = ''; selectedIndex = -1;"
                       class="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                       :class="{
@@ -439,7 +676,7 @@
                       <div x-text="option.name + ' (' + formatCommaNumber(option.price) + ' THB)'"></div>
                     </div>
                   </template>
-                  <div 
+                  <div
                     x-show="!filteredServices().length"
                     class="p-2 text-gray-500 dark:text-gray-400"
                   >
@@ -449,8 +686,8 @@
               </div>
               </div>
               <div class="md:col-span-2">
-              <button @click="removeService(day, serviceIndex)" class="flex justify-center items-center p-2 w-full text-red-600 bg-red-100 rounded transition-colors duration-200 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 dark:bg-red-900/20">
-                <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button @click="removeService(day, serviceIndex)" class="flex items-center justify-center w-full p-2 text-red-600 transition-colors duration-200 bg-red-100 rounded dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 dark:bg-red-900/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
                 <span class="hidden md:inline">Delete</span>
@@ -475,7 +712,7 @@
 
                 <!-- Rest of the dropdown code remains the same -->
                 <div x-show="isOpen"
-                    class="overflow-y-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-md border shadow-lg dark:bg-gray-800">
+                    class="absolute z-50 w-full mt-1 overflow-y-auto bg-white border rounded-md shadow-lg max-h-60 dark:bg-gray-800">
                     <template x-for="option in filteredServices" :key="option.id">
                         <div @click="
                             searchQuery = option.name;
@@ -504,11 +741,11 @@
                 <input type="text"
                        :value="formatCommaNumber(service.price) + ' THB'"
                        disabled
-                       class="px-3 py-2 w-full text-right bg-gray-100 rounded-md border dark:bg-gray-700 dark:text-white">
+                       class="w-full px-3 py-2 text-right bg-gray-100 border rounded-md dark:bg-gray-700 dark:text-white">
             </div>
 
               <!-- Delete Button - 1 column -->
-              <div class="flex justify-center items-center md:col-span-1">
+              <div class="flex items-center justify-center md:col-span-1">
                   <button @click="removeService(day, serviceIndex)"
                           class="text-red-500 hover:text-red-700">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -530,7 +767,7 @@
         <h3 class="mt-4 mb-2 text-lg font-semibold text-gray-900 dark:text-white">Guide Services</h3>
         <template x-for="(guideService, guideIndex) in day.guideServices" :key="guideIndex">
           <div class="flex items-center mb-2">
-            <select x-model="guideService.name" @change="updateGuideService(guideService)" class="px-3 py-2 mr-2 w-3/4 text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+            <select x-model="guideService.name" @change="updateGuideService(guideService)" class="w-3/4 px-3 py-2 mr-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
               <option value="">Select Guide Service</option>
               <template x-for="option in guideServices" :key="option.id">
                 <option :value="String(option.id)" x-text="`${option.name} (${formatCommaNumber(option.price)} THB)`" :selected="guideService.name == option.id"></option>
@@ -546,7 +783,7 @@
      <!-- Plus button to add day between (except after the last day) -->
      <template x-if="index < days.length - 1">
       <button @click="insertDayBelow(index)"
-              class="flex justify-center items-center px-4 py-1 mb-2 w-full text-blue-800 bg-blue-100 rounded-full hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-blue-200"
+              class="flex items-center justify-center w-full px-4 py-1 mb-2 text-blue-800 bg-blue-100 rounded-full hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-blue-200"
               title="Insert day here">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -563,8 +800,8 @@
 
 
   <button @click="insertDayBelow(days.length - 1)"
-  class="flex justify-center items-center px-4 py-2 w-full font-bold text-white bg-blue-500 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
-<svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  class="flex items-center justify-center w-full px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
+<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
 </svg>
 Add Day
@@ -581,7 +818,7 @@ Add Day
   <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Hotel Costs</h2>
 
 
-  <div class="overflow-x-auto mb-8">
+  <div class="mb-8 overflow-x-auto">
     <table class="w-full border-collapse">
       <tbody>
         <template x-for="(cost, index) in hotelCosts" :key="index">
@@ -591,12 +828,12 @@ Add Day
               <div class="flex w-full" :data-hotel-index="index">
                 <table class="w-full">
                   <tr class="bg-gray-100 border-b dark:border-gray-600 dark:bg-gray-900">
-                    <td class="p-2 w-56">
+                    <td class="w-56 p-2">
                       <input
                         type="text"
                         x-model="cost.date"
                         @input="updateHotelDateDisplay(cost)"
-                        class="p-2 w-full whitespace-pre-line rounded border dark:bg-gray-700"
+                        class="w-full p-2 whitespace-pre-line border rounded dark:bg-gray-700"
                         placeholder="e.g., 13-Mar-25 to 13-Mar-25"
                       />
                     </td>
@@ -604,7 +841,7 @@ Add Day
                       <input
                         type="text"
                         x-model="cost.name"
-                        class="p-2 w-full rounded border dark:bg-gray-700"
+                        class="w-full p-2 border rounded dark:bg-gray-700"
                         placeholder="Enter hotel name"
                       />
                     </td>
@@ -612,7 +849,7 @@ Add Day
                       <input
                         type="text"
                         x-model="cost.type"
-                        class="p-2 w-full rounded border dark:bg-gray-700"
+                        class="w-full p-2 border rounded dark:bg-gray-700"
                         placeholder="Enter hotel Type"
                       />
                     </td>
@@ -620,11 +857,11 @@ Add Day
                       <input
                         type="text"
                         x-model="cost.promotion"
-                        class="p-2 w-full rounded border dark:bg-gray-700"
+                        class="w-full p-2 border rounded dark:bg-gray-700"
                         placeholder="Enter promotion"
                       />
                     </td>
-                    <td class="p-2 w-24">
+                    <td class="w-24 p-2">
                       <button class="px-4 py-2 text-white bg-red-500 rounded hover:bg-red-600" @click="removeHotelCost(index)">
                         Delete
                       </button>
@@ -640,7 +877,7 @@ Add Day
                           </label>
                           <input
                             type="number"
-                            class="p-2 w-20 text-center rounded border dark:bg-gray-700"
+                            class="w-20 p-2 text-center border rounded dark:bg-gray-700"
                             min="1"
                             x-model="cost.nights"
                             placeholder="0"
@@ -653,7 +890,7 @@ Add Day
                           <input
                             type="number"
                             x-model="cost.room"
-                            class="p-2 w-20 text-center rounded border dark:bg-gray-700"
+                            class="w-20 p-2 text-center border rounded dark:bg-gray-700"
                             min="1"
                             placeholder="0"
                           />
@@ -666,7 +903,7 @@ Add Day
                             type="text"
                             :value="cost.price === null ? '' : formatCommaNumber(cost.price)"
                             @input="cost.price = unformatCommaNumber($event.target.value) || null"
-                            class="p-2 text-center rounded border w-25 dark:bg-gray-700"
+                            class="p-2 text-center border rounded w-25 dark:bg-gray-700"
                             placeholder="0"
                           />
                         </div>
@@ -679,7 +916,7 @@ Add Day
                           type="text"
                           :value="cost.extraBedPrice === null ? '' : formatCommaNumber(cost.extraBedPrice)"
                           @input="cost.extraBedPrice = unformatCommaNumber($event.target.value) || null"
-                          class="p-2 text-center rounded border w-25 dark:bg-gray-700"
+                          class="p-2 text-center border rounded w-25 dark:bg-gray-700"
                           placeholder="0"
                         />
                         </div>
@@ -697,9 +934,9 @@ Add Day
 
               <!-- Insert button row - appears after each hotel cost except the last one -->
               <template x-if="index < hotelCosts.length - 1">
-                <div class="py-2 w-full">
+                <div class="w-full py-2">
                   <button @click="insertHotelCostBelow(index)"
-                          class="flex justify-center items-center px-4 py-2 space-x-2 w-full text-blue-600 bg-blue-100 rounded-lg border border-blue-200 transition-colors duration-200 hover:bg-blue-200 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-800">
+                          class="flex items-center justify-center w-full px-4 py-2 space-x-2 text-blue-600 transition-colors duration-200 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-800">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
@@ -732,12 +969,12 @@ Add Day
 
     <div class="mb-4">
       <label for="remark" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Remark hotels</label>
-      <textarea id="remark_of_hotels" x-model="remark_of_hotels"  class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
+      <textarea id="remark_of_hotels" x-model="remark_of_hotels"  class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
     </div>
 
     <div class="mb-4">
       <label for="special_note" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Special Note</label>
-      <textarea id="special_note" x-model="special_note" class="px-3 py-2 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white"></textarea>
+      <textarea id="special_note" x-model="special_note" class="w-full px-3 py-2 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white"></textarea>
     </div>
 
 
@@ -761,7 +998,7 @@ Add Day
         <template x-for="(extraCost, index) in extraCosts" :key="index">
           <tr>
             <td class="px-2 border">
-              <input type="text" x-model="extraCost.item" class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+              <input type="text" x-model="extraCost.item" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
 
             <td class="px-2 border" x-data="{ displayValue: formatCommaNumber(extraCost.price || 0), actualValue: extraCost.price || 0 }">
@@ -771,14 +1008,14 @@ Add Day
                              extraCost.price = actualValue;
                              extraCost.amount = (parseFloat(extraCost.price || 0) * (parseFloat(extraCost.qty) || 1)).toFixed(2);
                              displayValue = formatCommaNumber(actualValue);"
-                     class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+                     class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
 
             <td class="px-2 border">
-                <input type="number" 
-                       x-model="extraCost.qty" 
+                <input type="number"
+                       x-model="extraCost.qty"
                        @input="extraCost.amount = (parseFloat(extraCost.price || 0) * (parseFloat(extraCost.qty) || 1)).toFixed(2);"
-                       class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+                       class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
 
             <td class="px-2 border">
@@ -817,7 +1054,7 @@ Add Day
         <template x-for="(discount, index) in discounts" :key="index">
           <tr>
             <td class="px-2 border">
-              <input type="text" x-model="discount.item" class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+              <input type="text" x-model="discount.item" class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
 
 
@@ -827,7 +1064,7 @@ Add Day
                      @input="actualValue = unformatCommaNumber($event.target.value);
                              discount.amount = actualValue;
                              displayValue = formatCommaNumber(actualValue);"
-                     class="p-1 w-full text-gray-900 bg-white rounded border dark:bg-gray-700 dark:text-white">
+                     class="w-full p-1 text-gray-900 bg-white border rounded dark:bg-gray-700 dark:text-white">
             </td>
 
 

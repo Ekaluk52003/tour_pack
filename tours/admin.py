@@ -16,7 +16,8 @@ from .models import (
     PredefinedTourDayGuideService, TourPackageQuote, TourDay,
     TourDayService, TourDayGuideService, ServicePrice, ReferenceID,
     Agency, Invoice, InvoiceItem, SupplierExpense, InvoiceReferenceID,
-    Supplier, SupplierService, ServiceExpenseTemplate,
+    Supplier, SupplierService, ServiceExpenseTemplate, AIParserInstruction,
+    AIParseLog,
 )
 from import_export.formats import base_formats
 from import_export.results import Result, RowResult
@@ -934,4 +935,28 @@ class InvoiceReferenceIDAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(AIParserInstruction)
+class AIParserInstructionAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'scope', 'is_active', 'created_at', 'created_by')
+    list_filter = ('is_active', 'scope')
+    list_editable = ('scope', 'is_active')
+    search_fields = ('instruction',)
+    readonly_fields = ('created_at', 'created_by')
+
+
+@admin.register(AIParseLog)
+class AIParseLogAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'success', 'from_cache', 'model_used', 'created_by', 'created_at')
+    list_filter = ('success', 'from_cache', 'model_used', 'created_at')
+    search_fields = ('email_content', 'guideline')
+    readonly_fields = (
+        'email_content', 'guideline', 'model_used', 'analysis', 'result_summary',
+        'applied_instruction_ids', 'success', 'error', 'from_cache',
+        'created_at', 'created_by',
+    )
+
+    def has_add_permission(self, request):
         return False

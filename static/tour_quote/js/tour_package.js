@@ -59,11 +59,34 @@ window.tourPackage = function () {
     // AI Email Parsing properties
     showAIDialog: false,
     emailContent: "",
+    aiGuideline: "",  // Per-request guideline (not saved)
     isParsingEmail: false,
     isApplyingResults: false,
     aiAnalysisResult: null,
     aiMatchedData: null,  // Cache matched data to avoid re-parsing
     aiParsingError: null,
+    aiAppliedInstructions: [],  // Standing instructions that influenced this parse
+    aiFromCache: false,         // Whether the result was served from cache
+    rememberInstruction: "",  // "Remember for next time" text to persist
+    rememberScope: "both",    // both | extraction | matching
+    isSavingInstruction: false,
+    instructionSaved: false,
+    instructionError: null,
+    // Per-item feedback loop: correct a specific AI choice → AI drafts a rule
+    feedbackItemKey: null,    // which reasoning item's inline correction form is open
+    feedbackText: "",         // owner's free-text correction for that item
+    isSuggestingRule: false,
+    feedbackError: null,
+    ruleDrafted: false,       // true once a draft rule has filled the Remember box
+    // Standing-instruction manager (superuser)
+    aiInstructions: [],
+    showInstructionManager: false,
+    isLoadingInstructions: false,
+    instructionsError: null,
+    newInstruction: "",
+    newInstructionScope: "both",
+    isAddingInstruction: false,
+    addInstructionError: null,
 
     async updateServicesForPackageType() {
       if (!this.tourPackType) {
@@ -1480,6 +1503,10 @@ window.tourPackage = function () {
       this.isParsingEmail = true;
       this.aiParsingError = null;
       this.aiAnalysisResult = null;
+      this.feedbackItemKey = null;
+      this.feedbackText = "";
+      this.feedbackError = null;
+      this.ruleDrafted = false;
 
       try {
         const response = await fetch('/parse-email-ai/', {
@@ -1489,7 +1516,8 @@ window.tourPackage = function () {
             'X-CSRFToken': getCookie('csrftoken')
           },
           body: JSON.stringify({
-            email_content: this.emailContent
+            email_content: this.emailContent,
+            guideline: this.aiGuideline
           })
         });
 
@@ -1498,7 +1526,11 @@ window.tourPackage = function () {
         if (data.success) {
           this.aiAnalysisResult = data.analysis;
           this.aiMatchedData = data.matched_data;  // Cache matched data
+          this.aiAppliedInstructions = data.applied_instructions || [];
+          this.aiFromCache = data.from_cache || false;
           this.aiParsingError = null;
+          this.instructionSaved = false;  // reset "remember" state for the new result
+          this.instructionError = null;
           console.log('AI Analysis Result:', data);
           console.log('Cached matched data for fast apply');
         } else {
@@ -1514,9 +1546,230 @@ window.tourPackage = function () {
 
     clearEmailContent() {
       this.emailContent = "";
+      this.aiGuideline = "";
       this.aiAnalysisResult = null;
       this.aiMatchedData = null;  // Clear cached data
+      this.aiAppliedInstructions = [];
+      this.aiFromCache = false;
       this.aiParsingError = null;
+      this.rememberInstruction = "";
+      this.rememberScope = "both";
+      this.instructionSaved = false;
+      this.instructionError = null;
+      this.feedbackItemKey = null;
+      this.feedbackText = "";
+      this.feedbackError = null;
+      this.ruleDrafted = false;
+    },
+
+    // Per-item feedback loop: owner clicks "Correct" on a specific AI-chosen
+    // hotel/service, describes what it should have been, and Gemini rephrases
+    // that into a general standing rule. The draft fills the existing Remember
+    // box; the owner reviews and clicks the existing Save to persist it.
+    toggleFeedback(itemKey) {
+      this.feedbackError = null;
+      this.feedbackItemKey = (this.feedbackItemKey === itemKey) ? null : itemKey;
+    },
+
+    async suggestRuleFromFeedback(item, itemType) {
+      const correction = this.feedbackText.trim();
+      if (!correction) return;
+
+      this.isSuggestingRule = true;
+      this.feedbackError = null;
+
+      const analysis = this.aiAnalysisResult || {};
+      const payload = {
+        item_type: itemType,
+        city: item.city || "",
+        original_name: (itemType === 'hotel' ? item.hotel_name : item.service_name) || "",
+        original_reason: item.match_reason || "",
+        correction,
+        context: {
+          destinations: analysis.destinations || [],
+          raw_hotel_mentions: analysis.raw_hotel_mentions || "",
+          raw_activity_mentions: analysis.raw_activity_mentions || "",
+          number_of_people: analysis.number_of_people ?? null
+        }
+      };
+
+      try {
+        const response = await fetch('/ai-feedback/suggest/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Hand the AI-drafted rule to the existing Remember box for review + Save.
+          this.rememberInstruction = data.suggested_instruction;
+          this.rememberScope = data.scope || 'matching';
+          this.instructionSaved = false;
+          this.instructionError = null;
+          this.feedbackItemKey = null;
+          this.feedbackText = "";
+          this.ruleDrafted = true;
+          this.$nextTick(() => {
+            const box = document.getElementById('ai-remember-dialog');
+            if (box) {
+              box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              box.focus();
+            }
+          });
+        } else {
+          this.feedbackError = data.error || 'Failed to draft a rule';
+        }
+      } catch (error) {
+        console.error('Error drafting rule from feedback:', error);
+        this.feedbackError = 'Network error occurred while drafting the rule';
+      } finally {
+        this.isSuggestingRule = false;
+      }
+    },
+
+    async saveRememberInstruction() {
+      const instruction = this.rememberInstruction.trim();
+      if (!instruction) return;
+
+      this.isSavingInstruction = true;
+      this.instructionSaved = false;
+      this.instructionError = null;
+
+      try {
+        const response = await fetch('/save-ai-instruction/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({ instruction, scope: this.rememberScope })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          this.instructionSaved = true;
+          this.rememberInstruction = "";
+          this.ruleDrafted = false;  // clear the "AI-drafted" hint once persisted
+          this.loadAiInstructions();  // refresh the manager list
+        } else {
+          this.instructionError = data.error || 'Failed to save instruction';
+        }
+      } catch (error) {
+        console.error('Error saving instruction:', error);
+        this.instructionError = 'Network error occurred while saving instruction';
+      } finally {
+        this.isSavingInstruction = false;
+      }
+    },
+
+    async loadAiInstructions() {
+      this.isLoadingInstructions = true;
+      this.instructionsError = null;
+      try {
+        const response = await fetch('/ai-instructions/', {
+          headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        });
+        const data = await response.json();
+        if (data.success) {
+          this.aiInstructions = data.instructions || [];
+        } else {
+          this.instructionsError = data.error || 'Failed to load instructions';
+        }
+      } catch (error) {
+        console.error('Error loading instructions:', error);
+        this.instructionsError = 'Network error occurred while loading instructions';
+      } finally {
+        this.isLoadingInstructions = false;
+      }
+    },
+
+    async addAiInstruction() {
+      const instruction = this.newInstruction.trim();
+      if (!instruction) return;
+      this.isAddingInstruction = true;
+      this.addInstructionError = null;
+      try {
+        const response = await fetch('/save-ai-instruction/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({ instruction, scope: this.newInstructionScope })
+        });
+        const data = await response.json();
+        if (data.success) {
+          this.newInstruction = "";
+          this.newInstructionScope = "both";
+          this.loadAiInstructions();
+        } else {
+          this.addInstructionError = data.error || 'Failed to add instruction';
+        }
+      } catch (error) {
+        console.error('Error adding instruction:', error);
+        this.addInstructionError = 'Network error occurred while adding instruction';
+      } finally {
+        this.isAddingInstruction = false;
+      }
+    },
+
+    async updateAiInstruction(ins) {
+      this.instructionsError = null;
+      try {
+        const response = await fetch('/ai-instructions/update/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+            id: ins.id,
+            instruction: ins.instruction,
+            scope: ins.scope,
+            is_active: ins.is_active
+          })
+        });
+        const data = await response.json();
+        if (data.success) {
+          ins._saved = true;
+          setTimeout(() => { ins._saved = false; }, 2000);
+        } else {
+          this.instructionsError = data.error || 'Failed to update instruction';
+        }
+      } catch (error) {
+        console.error('Error updating instruction:', error);
+        this.instructionsError = 'Network error occurred while updating instruction';
+      }
+    },
+
+    async deleteAiInstruction(ins) {
+      if (!confirm('Delete this instruction? This cannot be undone.')) return;
+      this.instructionsError = null;
+      try {
+        const response = await fetch('/ai-instructions/delete/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({ id: ins.id })
+        });
+        const data = await response.json();
+        if (data.success) {
+          this.aiInstructions = this.aiInstructions.filter(i => i.id !== ins.id);
+        } else {
+          this.instructionsError = data.error || 'Failed to delete instruction';
+        }
+      } catch (error) {
+        console.error('Error deleting instruction:', error);
+        this.instructionsError = 'Network error occurred while deleting instruction';
+      }
     },
 
     async applyAIResults() {

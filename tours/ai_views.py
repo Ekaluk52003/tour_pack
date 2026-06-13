@@ -58,7 +58,15 @@ def _build_ai_guidance(guideline, step):
         )
     if not parts:
         return ""
-    return "\n\nADDITIONAL GUIDANCE:\n" + "\n\n".join(parts) + "\n"
+    return (
+        "\n\n=== OVERRIDING INSTRUCTIONS (HIGHEST AUTHORITY) ===\n"
+        "The rules in this section take PRECEDENCE over every numbered/default rule "
+        "above. If anything below conflicts with a rule above, FOLLOW THE RULE BELOW. "
+        "These are mandatory, not suggestions — apply them even when they require "
+        "adding, removing, or reordering items the default rules would not.\n\n"
+        + "\n\n".join(parts)
+        + "\n=== END OVERRIDING INSTRUCTIONS ===\n"
+    )
 
 
 def _extract_json(text):
@@ -581,8 +589,9 @@ IMPORTANT RULES:
    - "we" or "couple" or "my wife and I" = 2 people
    - "family" = 4 people (default)
    - ALWAYS extract a number, never leave as None
-2. For destinations: ONLY use cities from the available cities list
-3. If a city is not in the list, find the closest match
+2. For destinations: ONLY use city names from the available cities list (spell them exactly as listed)
+3. If a city the customer mentions is not in the list, find the closest match
+   - You MAY add, remove, or reorder cities in `destinations` (with matching `days_per_city`) when an OVERRIDING INSTRUCTION below requires it — including cities the customer did not mention. Still only use names from the available list.
 4. **YEAR LOGIC**:
    - Current date is {current_date_str}
    - If travel month is AFTER current month ({current_month}) → use {current_year}
@@ -593,9 +602,8 @@ IMPORTANT RULES:
    - If customer specifies days per city (e.g., "7 days in Phuket and 2 nights in Bangkok"), extract those exact numbers
    - Pay attention to phrases like "stay for X days", "spend X nights", "X days in [city]"
    - Convert weeks to days (1 week = 7 days, 2 weeks = 14 days)
-7. **CITY ORDER**:
-   - If customer specifies order (e.g., "start in Bangkok, then Chiang Mai, end in Phuket"), follow their order.
-   - Apply the "city routing" standing instruction in ADDITIONAL GUIDANCE below if one is provided;
+7. **CITY ORDER & ROUTING**:
+   - Strictly Follow routing rule from the OVERRIDING INSTRUCTIONS section below (it may add a city per rule 3 and dictate where it sits in the route). If no rule applies, keep the order the customer implied.
 """
 
     # Append per-request guideline + saved "remember" instructions (extraction scope)

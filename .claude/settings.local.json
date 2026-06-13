@@ -19,7 +19,8 @@
       "Bash(env/Scripts/python *)",
       "Bash(break)",
       "WebFetch(domain:ai.google.dev)",
-      "PowerShell(docker compose exec *)"
+      "PowerShell(docker compose exec *)",
+      "PowerShell(git *)"
     ]
   }
 }

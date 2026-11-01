@@ -220,6 +220,118 @@ window.tourPackage = function () {
       }
     },
 
+    // Group tour days into hotel stays: consecutive nights at the same hotel.
+    // A day without a (resolvable) hotel or a date gap starts a new stay.
+    computeHotelStays() {
+      const DAY_MS = 24 * 60 * 60 * 1000;
+      const toUTC = (str) => {
+        const [y, m, d] = String(str).split('-').map(Number);
+        return Date.UTC(y, m - 1, d);
+      };
+      const stays = [];
+      const unresolved = []; // { date, reason: 'no-hotel' | 'not-loaded' }
+      let current = null;
+
+      [...this.days]
+        .filter((d) => d.date)
+        .sort((a, b) => toUTC(a.date) - toUTC(b.date))
+        .forEach((day) => {
+          if (!day.hotel) {
+            unresolved.push({ date: day.date, reason: 'no-hotel' });
+            current = null;
+            return;
+          }
+          const info = (day.cityServices?.hotels || []).find(
+            (h) => h.id.toString() === day.hotel.toString()
+          );
+          if (!info) {
+            unresolved.push({ date: day.date, reason: 'not-loaded' });
+            current = null;
+            return;
+          }
+          const ts = toUTC(day.date);
+          if (current && current.hotelId === info.id && ts - current.lastTs === DAY_MS) {
+            current.lastTs = ts;
+            current.nights++;
+          } else {
+            current = {
+              hotelId: info.id,
+              name: info.name,
+              type: info.type || '',
+              startTs: ts,
+              lastTs: ts,
+              nights: 1,
+            };
+            stays.push(current);
+          }
+        });
+
+      return { stays, unresolved, DAY_MS };
+    },
+
+    // Compare tour-day hotel stays with the Hotel Cost rows.
+    // Each row: { dates, name, nights, level: 'ok'|'warn'|'error', issues: [] }
+    getHotelChecks() {
+      const { stays, unresolved, DAY_MS } = this.computeHotelStays();
+      const used = new Set();
+      const rows = [];
+
+      stays.forEach((st) => {
+        const dates = this.formatStayDates(new Date(st.startTs), new Date(st.lastTs + DAY_MS));
+        const candidates = this.hotelCosts
+          .map((c, i) => ({ c, i }))
+          .filter(({ c, i }) => c.name === st.name && !used.has(i));
+        const pick = candidates.find(({ c }) => Number(c.nights) === st.nights) || candidates[0];
+        const issues = [];
+        let level = 'ok';
+
+        if (!pick) {
+          issues.push('No hotel cost row (will show 0 in invoice/Excel)');
+          level = 'error';
+        } else {
+          used.add(pick.i);
+          const c = pick.c;
+          if (Number(c.nights) !== st.nights) {
+            issues.push(`Cost row has ${c.nights || 0} night(s), tour days have ${st.nights}`);
+          }
+          if (!(parseFloat(c.room) > 0)) issues.push('Room count is 0');
+          if (!(parseFloat(c.price) > 0)) issues.push('Price is 0');
+          if (issues.length) level = 'warn';
+        }
+        rows.push({ dates, name: st.name, nights: st.nights, level, issues });
+      });
+
+      unresolved.forEach((u) => {
+        rows.push({
+          dates: u.date,
+          name: '—',
+          nights: 1,
+          level: 'error',
+          issues: [u.reason === 'no-hotel'
+            ? 'No hotel selected for this day'
+            : 'Hotel list not loaded for this day'],
+        });
+      });
+
+      this.hotelCosts.forEach((c, i) => {
+        if (!used.has(i) && c.name) {
+          rows.push({
+            dates: c.date || '',
+            name: c.name,
+            nights: Number(c.nights) || 0,
+            level: 'warn',
+            issues: ['Hotel cost row not used by any tour day'],
+          });
+        }
+      });
+
+      return {
+        rows,
+        errorCount: rows.filter((r) => r.level === 'error').length,
+        warnCount: rows.filter((r) => r.level === 'warn').length,
+      };
+    },
+
     async fetchHotelsFromTourDays() {
       // Make sure every day with a city has its hotel list loaded
       await Promise.all(
@@ -228,58 +340,19 @@ window.tourPackage = function () {
           .map((d) => this.updateCityServices(d))
       );
 
-      const toUTC = (str) => {
-        const [y, m, d] = String(str).split('-').map(Number);
-        return Date.UTC(y, m - 1, d);
-      };
       const DAY_MS = 24 * 60 * 60 * 1000;
-
-      const unresolved = [];
-      const stays = [];
-      let current = null;
-
-      const sortedDays = [...this.days]
-        .filter((d) => d.date)
-        .sort((a, b) => toUTC(a.date) - toUTC(b.date));
-
-      sortedDays.forEach((day) => {
-        const hotelInfo = day.hotel
-          ? (day.cityServices?.hotels || []).find((h) => h.id.toString() === day.hotel.toString())
-          : null;
-        if (!hotelInfo) {
-          unresolved.push(day.date);
-          current = null; // a day without a hotel breaks the stay
-          return;
-        }
-
-        const dayTs = toUTC(day.date);
-        const continues =
-          current &&
-          current.hotelId === hotelInfo.id &&
-          dayTs - current.lastTs === DAY_MS;
-
-        if (continues) {
-          current.lastTs = dayTs;
-          current.nights++;
-        } else {
-          const existingCost = this.hotelCosts.find((c) => c.name === hotelInfo.name);
-          current = {
-            hotelId: hotelInfo.id,
-            startTs: dayTs,
-            lastTs: dayTs,
-            name: hotelInfo.name,
-            type: hotelInfo.type || (existingCost ? existingCost.type : ''),
-            nights: 1,
-            room: existingCost ? existingCost.room : "0",
-            promotion: existingCost ? existingCost.promotion : "",
-            price: existingCost ? existingCost.price : "0",
-            extraBedPrice: existingCost ? existingCost.extraBedPrice : "0",
-          };
-          stays.push(current);
-        }
-      });
+      const { stays, unresolved } = this.computeHotelStays();
 
       this.hotelCosts = stays.map((st) => {
+        const existingCost = this.hotelCosts.find((c) => c.name === st.name);
+        st = {
+          ...st,
+          type: st.type || (existingCost ? existingCost.type : ''),
+          room: existingCost ? existingCost.room : "0",
+          promotion: existingCost ? existingCost.promotion : "",
+          price: existingCost ? existingCost.price : "0",
+          extraBedPrice: existingCost ? existingCost.extraBedPrice : "0",
+        };
         // Check-out is the day after the last night
         const checkIn = new Date(st.startTs);
         const checkOut = new Date(st.lastTs + DAY_MS);
@@ -298,7 +371,7 @@ window.tourPackage = function () {
       if (unresolved.length) {
         alert(
           "These days have no hotel (or the hotel list could not be loaded) and were skipped:\n" +
-          unresolved.join(", ")
+          unresolved.map((u) => u.date).join(", ")
         );
       }
 
@@ -909,6 +982,14 @@ window.tourPackage = function () {
         return;
       }
 
+      const hotelChecks = this.getHotelChecks();
+      if (hotelChecks.errorCount > 0) {
+        const proceed = confirm(
+          `Hotel check found ${hotelChecks.errorCount} problem(s) (see "Hotel check" under Hotel Costs).\n\nSave anyway?`
+        );
+        if (!proceed) return;
+      }
+
        // Helper function to ensure numeric values are properly formatted
   const formatNumber = (value) => {
     if (typeof value === 'number') {
@@ -1088,22 +1169,6 @@ window.tourPackage = function () {
       this.extraCosts.splice(index, 1);
     },
 
-    getHotelMismatches() {
-      const tourDayNames = new Set();
-      for (const day of this.days) {
-        if (!day.hotel) continue;
-        const hotels = day.cityServices?.hotels || [];
-        const info = hotels.find(h => h.id.toString() === day.hotel);
-        if (info?.name) tourDayNames.add(info.name);
-      }
-      const costNames = new Set(
-        this.hotelCosts.map(c => c.name).filter(Boolean)
-      );
-      return {
-        missingFromCosts: [...tourDayNames].filter(n => !costNames.has(n)),
-        orphanedCosts: [...costNames].filter(n => !tourDayNames.has(n)),
-      };
-    },
 
     calculateHotelCostTotal() {
       return this.hotelCosts

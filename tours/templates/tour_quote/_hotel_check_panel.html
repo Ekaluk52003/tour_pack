@@ -1,0 +1,50 @@
+<!-- Hotel check: compares tour-day hotel stays with the Hotel Cost rows. Requires the tourPackage() Alpine scope. -->
+<div class="mb-3 rounded-lg border"
+     :class="getHotelChecks().errorCount ? 'bg-rose-50 border-rose-200 dark:bg-rose-900/30 dark:border-rose-700'
+            : getHotelChecks().warnCount ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700'
+            : 'bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-700'">
+  <div class="flex justify-between items-center px-3 py-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+    <span>
+      Hotel check
+      <template x-if="getHotelChecks().errorCount === 0 && getHotelChecks().warnCount === 0">
+        <span class="font-normal text-green-700 dark:text-green-300"> — all tour day hotels match the cost rows</span>
+      </template>
+      <template x-if="getHotelChecks().errorCount > 0">
+        <span class="font-normal text-rose-700 dark:text-rose-300" x-text="' — ' + getHotelChecks().errorCount + ' problem(s)'"></span>
+      </template>
+      <template x-if="getHotelChecks().warnCount > 0">
+        <span class="font-normal text-amber-700 dark:text-amber-300" x-text="' — ' + getHotelChecks().warnCount + ' warning(s)'"></span>
+      </template>
+    </span>
+  </div>
+
+  <div class="overflow-x-auto px-3 pb-3" x-show="getHotelChecks().rows.length">
+    <table class="w-full text-sm text-left text-gray-800 dark:text-gray-100">
+      <thead>
+        <tr class="text-xs text-gray-500 uppercase dark:text-gray-400">
+          <th class="py-1 pr-3"></th>
+          <th class="py-1 pr-3">Dates</th>
+          <th class="py-1 pr-3">Hotel</th>
+          <th class="py-1 pr-3">Nights</th>
+          <th class="py-1">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="(row, i) in getHotelChecks().rows" :key="i">
+          <tr class="border-t border-black/5 dark:border-white/10">
+            <td class="py-1 pr-3" x-text="row.level === 'ok' ? '✅' : row.level === 'warn' ? '⚠️' : '❌'"></td>
+            <td class="py-1 pr-3 whitespace-nowrap" x-text="row.dates"></td>
+            <td class="py-1 pr-3" x-text="row.name"></td>
+            <td class="py-1 pr-3" x-text="row.nights"></td>
+            <td class="py-1">
+              <span x-show="row.level === 'ok'" class="text-green-700 dark:text-green-300">OK</span>
+              <template x-for="msg in row.issues" :key="msg">
+                <div x-text="msg"></div>
+              </template>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+</div>

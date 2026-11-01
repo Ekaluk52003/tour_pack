@@ -266,9 +266,3 @@ CRONJOBS = [
 #     },
 # }
 
-# Gemini Configuration
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
-# Experimental: run the two AI steps inside one chat session (Step 2 keeps Step 1
-# context). Off by default — single-shot calls return cleaner per-step JSON.
-AI_USE_CHAT_SESSION = os.getenv("AI_USE_CHAT_SESSION", "false").lower() == "true"

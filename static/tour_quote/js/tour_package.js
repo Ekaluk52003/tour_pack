@@ -56,37 +56,6 @@ window.tourPackage = function () {
     packageReference: null,
     isSuperUser: false,
     
-    // AI Email Parsing properties
-    showAIDialog: false,
-    emailContent: "",
-    aiGuideline: "",  // Per-request guideline (not saved)
-    isParsingEmail: false,
-    isApplyingResults: false,
-    aiAnalysisResult: null,
-    aiMatchedData: null,  // Cache matched data to avoid re-parsing
-    aiParsingError: null,
-    aiAppliedInstructions: [],  // Standing instructions that influenced this parse
-    aiFromCache: false,         // Whether the result was served from cache
-    rememberInstruction: "",  // "Remember for next time" text to persist
-    rememberScope: "both",    // both | extraction | matching
-    isSavingInstruction: false,
-    instructionSaved: false,
-    instructionError: null,
-    // Per-item feedback loop: correct a specific AI choice → AI drafts a rule
-    feedbackItemKey: null,    // which reasoning item's inline correction form is open
-    feedbackText: "",         // owner's free-text correction for that item
-    isSuggestingRule: false,
-    feedbackError: null,
-    ruleDrafted: false,       // true once a draft rule has filled the Remember box
-    // Standing-instruction manager (superuser)
-    aiInstructions: [],
-    showInstructionManager: false,
-    isLoadingInstructions: false,
-    instructionsError: null,
-    newInstruction: "",
-    newInstructionScope: "both",
-    isAddingInstruction: false,
-    addInstructionError: null,
 
     async updateServicesForPackageType() {
       if (!this.tourPackType) {
@@ -251,79 +220,88 @@ window.tourPackage = function () {
       }
     },
 
-    fetchHotelsFromTourDays() {
-      // Group consecutive stays by hotel
-      const hotelStays = [];
-      let currentStay = null;
+    async fetchHotelsFromTourDays() {
+      // Make sure every day with a city has its hotel list loaded
+      await Promise.all(
+        this.days
+          .filter((d) => d.city && d.hotel && !(d.cityServices?.hotels?.length))
+          .map((d) => this.updateCityServices(d))
+      );
 
-      // Sort days by date
-      const sortedDays = [...this.days].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const toUTC = (str) => {
+        const [y, m, d] = String(str).split('-').map(Number);
+        return Date.UTC(y, m - 1, d);
+      };
+      const DAY_MS = 24 * 60 * 60 * 1000;
+
+      const unresolved = [];
+      const stays = [];
+      let current = null;
+
+      const sortedDays = [...this.days]
+        .filter((d) => d.date)
+        .sort((a, b) => toUTC(a.date) - toUTC(b.date));
 
       sortedDays.forEach((day) => {
-        if (!day.hotel || !day.date) return;
+        const hotelInfo = day.hotel
+          ? (day.cityServices?.hotels || []).find((h) => h.id.toString() === day.hotel.toString())
+          : null;
+        if (!hotelInfo) {
+          unresolved.push(day.date);
+          current = null; // a day without a hotel breaks the stay
+          return;
+        }
 
-        // Find hotel info from cityServices
-        const hotelInfo = day.cityServices.hotels.find(h => h.id.toString() === day.hotel);
-        if (!hotelInfo) return;
+        const dayTs = toUTC(day.date);
+        const continues =
+          current &&
+          current.hotelId === hotelInfo.id &&
+          dayTs - current.lastTs === DAY_MS;
 
-        // Check if this is a continuation of the current stay at the same hotel
-        if (currentStay && currentStay.name === hotelInfo.name) {
-          // Update end date and increment nights
-          currentStay.toDate = day.date;
-          currentStay.nights++;
+        if (continues) {
+          current.lastTs = dayTs;
+          current.nights++;
         } else {
-          // If there was a previous stay, add it to the array
-          if (currentStay) {
-            // Format and add the current stay
-            const formattedDate = this.formatStayDates(
-              new Date(currentStay.date),
-              new Date(day.date) // checkout date is same as next check-in
-            );
-            currentStay.date = formattedDate;
-            hotelStays.push(currentStay);
-          }
-
-          // Find existing cost data for this hotel
-          const existingCost = this.hotelCosts.find(cost => cost.name === hotelInfo.name);
-
-          // Start new stay
-          currentStay = {
-            date: day.date, // Temporary date, will be formatted later
+          const existingCost = this.hotelCosts.find((c) => c.name === hotelInfo.name);
+          current = {
+            hotelId: hotelInfo.id,
+            startTs: dayTs,
+            lastTs: dayTs,
             name: hotelInfo.name,
             type: hotelInfo.type || (existingCost ? existingCost.type : ''),
             nights: 1,
             room: existingCost ? existingCost.room : "0",
             promotion: existingCost ? existingCost.promotion : "",
             price: existingCost ? existingCost.price : "0",
-            extraBedPrice: existingCost ? existingCost.extraBedPrice : "0"
+            extraBedPrice: existingCost ? existingCost.extraBedPrice : "0",
           };
+          stays.push(current);
         }
       });
 
-      // Handle the last stay
-      if (currentStay) {
-        // Calculate checkout date for last stay (day after last night)
-        const lastDate = new Date(currentStay.toDate || currentStay.date);
-        const checkoutDate = new Date(lastDate);
-        checkoutDate.setDate(lastDate.getDate() + 1);
+      this.hotelCosts = stays.map((st) => {
+        // Check-out is the day after the last night
+        const checkIn = new Date(st.startTs);
+        const checkOut = new Date(st.lastTs + DAY_MS);
+        return {
+          date: this.formatStayDates(checkIn, checkOut),
+          name: st.name,
+          type: st.type,
+          nights: st.nights,
+          room: st.room,
+          promotion: st.promotion,
+          price: (parseFloat(st.price) || 0).toFixed(2),
+          extraBedPrice: (parseFloat(st.extraBedPrice) || 0).toFixed(2),
+        };
+      });
 
-        // Format the date for the last stay
-        const formattedDate = this.formatStayDates(
-          new Date(currentStay.date),
-          checkoutDate
+      if (unresolved.length) {
+        alert(
+          "These days have no hotel (or the hotel list could not be loaded) and were skipped:\n" +
+          unresolved.join(", ")
         );
-        currentStay.date = formattedDate;
-        hotelStays.push(currentStay);
       }
 
-      // Update hotelCosts array
-      this.hotelCosts = hotelStays.map(stay => ({
-        ...stay,
-        price: parseFloat(stay.price).toFixed(2),
-        extraBedPrice: parseFloat(stay.extraBedPrice).toFixed(2)
-      }));
-
-      // Recalculate totals
       this.$nextTick(() => {
         this.calculateHotelCostTotal();
         this.calculateGrandTotal();
@@ -334,21 +312,18 @@ window.tourPackage = function () {
     formatStayDates(checkIn, checkOut) {
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      // Dates are built from UTC timestamps, so read them back in UTC
+      const dd = (d) => d.getUTCDate().toString().padStart(2, '0');
+      const yy = checkOut.getUTCFullYear().toString().slice(-2);
 
-      if (checkIn.getMonth() === checkOut.getMonth()) {
+      if (checkIn.getUTCMonth() === checkOut.getUTCMonth() &&
+          checkIn.getUTCFullYear() === checkOut.getUTCFullYear()) {
         // Same month format: dd-dd-MMM-yy
-        return `${checkIn.getDate().toString().padStart(2, '0')}-` +
-               `${checkOut.getDate().toString().padStart(2, '0')}-` +
-               `${months[checkIn.getMonth()]}-` +
-               `${checkOut.getFullYear().toString().slice(-2)}`;
-      } else {
-        // Different months format: dd-MMM-dd-MMM-yy
-        return `${checkIn.getDate().toString().padStart(2, '0')}-` +
-               `${months[checkIn.getMonth()]}-` +
-               `${checkOut.getDate().toString().padStart(2, '0')}-` +
-               `${months[checkOut.getMonth()]}-` +
-               `${checkOut.getFullYear().toString().slice(-2)}`;
+        return `${dd(checkIn)}-${dd(checkOut)}-${months[checkIn.getUTCMonth()]}-${yy}`;
       }
+      // Different months format: dd-MMM-dd-MMM-yy
+      return `${dd(checkIn)}-${months[checkIn.getUTCMonth()]}-` +
+             `${dd(checkOut)}-${months[checkOut.getUTCMonth()]}-${yy}`;
     },
     formatDateForDisplay(dateString) {
       const date = new Date(dateString);
@@ -606,54 +581,7 @@ window.tourPackage = function () {
     });
   },
 
-    updateCityServices(day) {
-      return new Promise((resolve, reject) => {
-        if (day.city && this.tourPackType) {
-          fetch(
-            `/get-city-services/${
-              day.city
-            }/?tour_pack_type=${encodeURIComponent(this.tourPackType)}`
-          )
-            .then((response) => response.json())
-            .then((data) => {
-              day.cityServices = {
-                hotels: data.hotels || [],
-                service_types: data.service_types || [],
-              };
-              // Update hotel costs when city services are updated
-              this.updateHotelCosts(day);
-              resolve();
-            })
-            .catch((error) => {
-              console.error("Error fetching city services:", error);
-              day.cityServices = { hotels: [], service_types: [] };
-              reject(error);
-            });
-        } else {
-          day.cityServices = { hotels: [], service_types: [] };
-          resolve();
-        }
-      });
-    },
 
-    updateHotelCosts(day) {
-      const selectedHotel = day.cityServices.hotels.find(h => h.id.toString() === day.hotel);
-      if (selectedHotel) {
-        const existingCost = this.hotelCosts.find(cost => cost.name === selectedHotel.name);
-        if (existingCost) {
-          existingCost.price = parseFloat(selectedHotel.price) || 0;
-        } else {
-          this.hotelCosts.push({
-            name: selectedHotel.name,
-            type: selectedHotel.type || '',
-            room: 1,
-            nights: 1,
-            price: parseFloat(selectedHotel.price) || 0,
-            extraBedPrice: 0,
-          });
-        }
-      }
-    },
 
     selectCorrectOptions(day) {
       console.log("Selecting correct options for day:", day);
@@ -750,29 +678,6 @@ window.tourPackage = function () {
       // No need for explicit recalculation, Alpine.js will handle it
     },
 
-    updateCityServices(day) {
-        return new Promise((resolve, reject) => {
-            if (day.city && this.tourPackType) {
-                fetch(`/get-city-services/${day.city}/?tour_pack_type=${encodeURIComponent(this.tourPackType)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        day.cityServices = {
-                            hotels: data.hotels || [],
-                            service_types: data.service_types || []
-                        };
-                        resolve();
-                    })
-                    .catch(error => {
-                        console.error('Error fetching city services:', error);
-                        day.cityServices = { hotels: [], service_types: [] };
-                        reject(error);
-                    });
-            } else {
-                day.cityServices = { hotels: [], service_types: [] };
-                resolve();
-            }
-        });
-    },
 
 
     applyPredefinedQuote() {
@@ -897,64 +802,6 @@ window.tourPackage = function () {
     },
 
 
-    updateAndSelectServices(day) {
-      if (day.city && this.tourPackType) {
-        fetch(
-          `/get-city-services/${day.city}/?tour_pack_type=${this.tourPackType}`
-        )
-          .then((response) => response.json())
-          .then((data) => {
-            day.cityServices = {
-              hotels: data.hotels || [],
-              service_types: data.service_types || [],
-            };
-
-            // Select the correct hotel
-            if (day.hotel) {
-              const selectedHotel = day.cityServices.hotels.find(
-                (h) => h.id === day.hotel
-              );
-              if (selectedHotel) {
-                day.hotel = selectedHotel.id;
-              }
-            }
-
-            // Select the correct services
-            day.services.forEach((service) => {
-              const serviceType = day.cityServices.service_types.find(
-                (st) => st.type.toLowerCase() === service.type.toLowerCase()
-              );
-              if (serviceType) {
-                const selectedService = serviceType.services.find(
-                  (s) => s.id === service.name
-                );
-                if (selectedService) {
-                  service.name = selectedService.id;
-                  service.price = parseFloat(selectedService.price) || 0;
-                }
-              }
-            });
-
-            // Select the correct guide services
-            day.guideServices.forEach((guideService) => {
-              const selectedGuideService = this.guideServices.find(
-                (gs) => gs.id === guideService.name
-              );
-              if (selectedGuideService) {
-                guideService.name = selectedGuideService.id;
-                guideService.price =
-                  parseFloat(selectedGuideService.price) || 0;
-              }
-            });
-          })
-          .catch((error) => {
-            console.error("Error fetching city services:", error);
-            day.cityServices = { hotels: [], service_types: [] };
-          });
-      } else {
-        day.cityServices = { hotels: [], service_types: [] };
-      }
-    },
 
     dragStart(event, index) {
 
@@ -1421,27 +1268,40 @@ window.tourPackage = function () {
      this.updateAllDates();
     },
 
+    // Fetch hotels/services for a city. Requests are cached per city + package
+    // type (as promises, so concurrent days share one request). Hotels do not
+    // depend on the package type, so they load even before one is selected.
+    fetchCityServices(cityId, packType) {
+      this._cityServicesCache = this._cityServicesCache || {};
+      const key = `${cityId}|${packType || ''}`;
+      if (!this._cityServicesCache[key]) {
+        const qs = packType ? `?tour_pack_type=${encodeURIComponent(packType)}` : '';
+        this._cityServicesCache[key] = fetch(`/get-city-services/${cityId}/${qs}`)
+          .then((response) => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+          })
+          .catch((error) => {
+            delete this._cityServicesCache[key]; // don't cache failures
+            throw error;
+          });
+      }
+      return this._cityServicesCache[key];
+    },
+
     async updateCityServices(day) {
-      if (day.city && this.tourPackType) {
-        try {
-          const response = await fetch(
-            `/get-city-services/${day.city}/?tour_pack_type=${encodeURIComponent(this.tourPackType)}`
-          );
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
-          day.cityServices = {
-            hotels: data.hotels || [],
-            service_types: data.service_types || [],
-          };
-          console.log('Updated city services:', day.cityServices);
-        } catch (error) {
-          console.error("Error fetching city services:", error);
-          day.cityServices = { hotels: [], service_types: [] };
-        }
-      } else {
-        console.log('No city or tour pack type set, skipping city services update');
+      if (!day.city) {
+        day.cityServices = { hotels: [], service_types: [] };
+        return;
+      }
+      try {
+        const data = await this.fetchCityServices(day.city, this.tourPackType);
+        day.cityServices = {
+          hotels: data.hotels || [],
+          service_types: data.service_types || [],
+        };
+      } catch (error) {
+        console.error("Error fetching city services:", error);
         day.cityServices = { hotels: [], service_types: [] };
       }
     },
@@ -1490,429 +1350,6 @@ window.tourPackage = function () {
         const nextDate = new Date(startDate);
         nextDate.setDate(startDate.getDate() + i);
         this.days[i].date = nextDate.toISOString().split('T')[0];
-      }
-    },
-
-    // AI Email Parsing Methods
-    async parseEmailWithAI() {
-      if (!this.emailContent.trim()) {
-        this.aiParsingError = "Please enter email content to parse.";
-        return;
-      }
-
-      this.isParsingEmail = true;
-      this.aiParsingError = null;
-      this.aiAnalysisResult = null;
-      this.feedbackItemKey = null;
-      this.feedbackText = "";
-      this.feedbackError = null;
-      this.ruleDrafted = false;
-
-      try {
-        const response = await fetch('/parse-email-ai/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: JSON.stringify({
-            email_content: this.emailContent,
-            guideline: this.aiGuideline
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          this.aiAnalysisResult = data.analysis;
-          this.aiMatchedData = data.matched_data;  // Cache matched data
-          this.aiAppliedInstructions = data.applied_instructions || [];
-          this.aiFromCache = data.from_cache || false;
-          this.aiParsingError = null;
-          this.instructionSaved = false;  // reset "remember" state for the new result
-          this.instructionError = null;
-          console.log('AI Analysis Result:', data);
-          console.log('Cached matched data for fast apply');
-        } else {
-          this.aiParsingError = data.error || 'Failed to parse email';
-        }
-      } catch (error) {
-        console.error('Error parsing email:', error);
-        this.aiParsingError = 'Network error occurred while parsing email';
-      } finally {
-        this.isParsingEmail = false;
-      }
-    },
-
-    clearEmailContent() {
-      this.emailContent = "";
-      this.aiGuideline = "";
-      this.aiAnalysisResult = null;
-      this.aiMatchedData = null;  // Clear cached data
-      this.aiAppliedInstructions = [];
-      this.aiFromCache = false;
-      this.aiParsingError = null;
-      this.rememberInstruction = "";
-      this.rememberScope = "both";
-      this.instructionSaved = false;
-      this.instructionError = null;
-      this.feedbackItemKey = null;
-      this.feedbackText = "";
-      this.feedbackError = null;
-      this.ruleDrafted = false;
-    },
-
-    // Per-item feedback loop: owner clicks "Correct" on a specific AI-chosen
-    // hotel/service, describes what it should have been, and Gemini rephrases
-    // that into a general standing rule. The draft fills the existing Remember
-    // box; the owner reviews and clicks the existing Save to persist it.
-    toggleFeedback(itemKey) {
-      this.feedbackError = null;
-      this.feedbackItemKey = (this.feedbackItemKey === itemKey) ? null : itemKey;
-    },
-
-    async suggestRuleFromFeedback(item, itemType) {
-      const correction = this.feedbackText.trim();
-      if (!correction) return;
-
-      this.isSuggestingRule = true;
-      this.feedbackError = null;
-
-      const analysis = this.aiAnalysisResult || {};
-      const payload = {
-        item_type: itemType,
-        city: item.city || "",
-        original_name: (itemType === 'hotel' ? item.hotel_name : item.service_name) || "",
-        original_reason: item.match_reason || "",
-        correction,
-        context: {
-          destinations: analysis.destinations || [],
-          raw_hotel_mentions: analysis.raw_hotel_mentions || "",
-          raw_activity_mentions: analysis.raw_activity_mentions || "",
-          number_of_people: analysis.number_of_people ?? null
-        }
-      };
-
-      try {
-        const response = await fetch('/ai-feedback/suggest/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Hand the AI-drafted rule to the existing Remember box for review + Save.
-          this.rememberInstruction = data.suggested_instruction;
-          this.rememberScope = data.scope || 'matching';
-          this.instructionSaved = false;
-          this.instructionError = null;
-          this.feedbackItemKey = null;
-          this.feedbackText = "";
-          this.ruleDrafted = true;
-          this.$nextTick(() => {
-            const box = document.getElementById('ai-remember-dialog');
-            if (box) {
-              box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              box.focus();
-            }
-          });
-        } else {
-          this.feedbackError = data.error || 'Failed to draft a rule';
-        }
-      } catch (error) {
-        console.error('Error drafting rule from feedback:', error);
-        this.feedbackError = 'Network error occurred while drafting the rule';
-      } finally {
-        this.isSuggestingRule = false;
-      }
-    },
-
-    async saveRememberInstruction() {
-      const instruction = this.rememberInstruction.trim();
-      if (!instruction) return;
-
-      this.isSavingInstruction = true;
-      this.instructionSaved = false;
-      this.instructionError = null;
-
-      try {
-        const response = await fetch('/save-ai-instruction/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: JSON.stringify({ instruction, scope: this.rememberScope })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          this.instructionSaved = true;
-          this.rememberInstruction = "";
-          this.ruleDrafted = false;  // clear the "AI-drafted" hint once persisted
-          this.loadAiInstructions();  // refresh the manager list
-        } else {
-          this.instructionError = data.error || 'Failed to save instruction';
-        }
-      } catch (error) {
-        console.error('Error saving instruction:', error);
-        this.instructionError = 'Network error occurred while saving instruction';
-      } finally {
-        this.isSavingInstruction = false;
-      }
-    },
-
-    async loadAiInstructions() {
-      this.isLoadingInstructions = true;
-      this.instructionsError = null;
-      try {
-        const response = await fetch('/ai-instructions/', {
-          headers: { 'X-CSRFToken': getCookie('csrftoken') }
-        });
-        const data = await response.json();
-        if (data.success) {
-          this.aiInstructions = data.instructions || [];
-        } else {
-          this.instructionsError = data.error || 'Failed to load instructions';
-        }
-      } catch (error) {
-        console.error('Error loading instructions:', error);
-        this.instructionsError = 'Network error occurred while loading instructions';
-      } finally {
-        this.isLoadingInstructions = false;
-      }
-    },
-
-    async addAiInstruction() {
-      const instruction = this.newInstruction.trim();
-      if (!instruction) return;
-      this.isAddingInstruction = true;
-      this.addInstructionError = null;
-      try {
-        const response = await fetch('/save-ai-instruction/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: JSON.stringify({ instruction, scope: this.newInstructionScope })
-        });
-        const data = await response.json();
-        if (data.success) {
-          this.newInstruction = "";
-          this.newInstructionScope = "both";
-          this.loadAiInstructions();
-        } else {
-          this.addInstructionError = data.error || 'Failed to add instruction';
-        }
-      } catch (error) {
-        console.error('Error adding instruction:', error);
-        this.addInstructionError = 'Network error occurred while adding instruction';
-      } finally {
-        this.isAddingInstruction = false;
-      }
-    },
-
-    async updateAiInstruction(ins) {
-      this.instructionsError = null;
-      try {
-        const response = await fetch('/ai-instructions/update/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: JSON.stringify({
-            id: ins.id,
-            instruction: ins.instruction,
-            scope: ins.scope,
-            is_active: ins.is_active
-          })
-        });
-        const data = await response.json();
-        if (data.success) {
-          ins._saved = true;
-          setTimeout(() => { ins._saved = false; }, 2000);
-        } else {
-          this.instructionsError = data.error || 'Failed to update instruction';
-        }
-      } catch (error) {
-        console.error('Error updating instruction:', error);
-        this.instructionsError = 'Network error occurred while updating instruction';
-      }
-    },
-
-    async deleteAiInstruction(ins) {
-      if (!confirm('Delete this instruction? This cannot be undone.')) return;
-      this.instructionsError = null;
-      try {
-        const response = await fetch('/ai-instructions/delete/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: JSON.stringify({ id: ins.id })
-        });
-        const data = await response.json();
-        if (data.success) {
-          this.aiInstructions = this.aiInstructions.filter(i => i.id !== ins.id);
-        } else {
-          this.instructionsError = data.error || 'Failed to delete instruction';
-        }
-      } catch (error) {
-        console.error('Error deleting instruction:', error);
-        this.instructionsError = 'Network error occurred while deleting instruction';
-      }
-    },
-
-    async applyAIResults() {
-      if (!this.aiAnalysisResult) return;
-
-      this.isApplyingResults = true;
-      
-      try {
-        const analysis = this.aiAnalysisResult;
-        
-        // Use cached matched data instead of re-parsing
-        const matchedData = this.aiMatchedData || {};
-        // 1. Apply package name
-        if (matchedData.package_name_suggestion) {
-          this.name = matchedData.package_name_suggestion;
-        }
-
-        // 2. Apply customer name
-        if (matchedData.customer_name_suggestion) {
-          this.customerName = matchedData.customer_name_suggestion;
-        }
-
-        // 3. Apply tour package type (based on number of people)
-        if (matchedData.tour_pack_type) {
-          this.tourPackType = matchedData.tour_pack_type.id.toString();
-          console.log('Set tour pack type to:', this.tourPackType);
-          
-          // Wait a bit for Alpine to update
-          await new Promise(resolve => setTimeout(resolve, 100));
-          await this.updateServicesForPackageType();
-        }
-
-        // 4. Clear existing days and apply AI-generated tour days
-        this.days = [];
-        
-        if (matchedData.tour_days && matchedData.tour_days.length > 0) {
-          console.log('Creating', matchedData.tour_days.length, 'tour days');
-          
-          // Pre-load all unique city services in parallel (OPTIMIZATION)
-          const uniqueCityIds = [...new Set(matchedData.tour_days.map(d => d.city_id).filter(id => id))];
-          const cityServicesCache = {};
-          
-          console.log('Pre-loading services for', uniqueCityIds.length, 'unique cities...');
-          await Promise.all(uniqueCityIds.map(async (cityId) => {
-            try {
-              const response = await fetch(`/get-city-services/${cityId}/?tour_pack_type=${this.tourPackType}`);
-              cityServicesCache[cityId] = await response.json();
-            } catch (error) {
-              console.error(`Error loading services for city ${cityId}:`, error);
-              cityServicesCache[cityId] = { hotels: [], service_types: [] };
-            }
-          }));
-          console.log('City services pre-loaded!');
-          
-          for (const tourDay of matchedData.tour_days) {
-            console.log('Processing day:', tourDay.date, 'City:', tourDay.city_name);
-            
-            const newDay = {
-              date: tourDay.date,
-              city: tourDay.city_id ? tourDay.city_id.toString() : "",
-              hotel: tourDay.hotel_id ? tourDay.hotel_id.toString() : "",
-              services: [],
-              guideServices: [],
-              cityServices: cityServicesCache[tourDay.city_id] || {
-                hotels: [],
-                service_types: [],
-              }
-            };
-            
-            // Add suggested services
-            if (tourDay.services && tourDay.services.length > 0) {
-              for (const service of tourDay.services) {
-                // Find the service type from service_type name
-                const serviceTypeObj = newDay.cityServices.service_types.find(
-                  st => st.type.toLowerCase() === service.service_type.toLowerCase()
-                );
-                
-                if (serviceTypeObj) {
-                  const newService = {
-                    type: service.service_type.toLowerCase(),
-                    name: service.id.toString(),
-                    price: parseFloat(service.price) || 0,
-                    price_at_booking: parseFloat(service.price) || 0
-                  };
-                  
-                  newDay.services.push(newService);
-                  console.log('Added service:', service.name);
-                }
-              }
-            }
-            
-            this.days.push(newDay);
-          }
-          
-          console.log('Total days created:', this.days.length);
-        }
-
-        // 5. Apply remarks with extracted information
-        let remarkText = "AI Extracted Information:\n";
-        if (analysis.number_of_people) {
-          remarkText += `Number of People: ${analysis.number_of_people}\n`;
-        }
-        if (analysis.travel_months && analysis.travel_months.length > 0) {
-          remarkText += `Travel Months: ${analysis.travel_months.join(', ')}\n`;
-        }
-        if (analysis.activities && analysis.activities.length > 0) {
-          remarkText += `Activities: ${analysis.activities.join(', ')}\n`;
-        }
-        if (analysis.special_notes) {
-          remarkText += `Notes: ${analysis.special_notes}\n`;
-        }
-        
-        this.remark = remarkText;
-
-        alert('AI analysis has been applied to the form! Please review and adjust as needed.');
-        
-      } catch (error) {
-        console.error('Error applying AI results:', error);
-        alert('Error applying AI results. Please try again.');
-      } finally {
-        this.isApplyingResults = false;
-      }
-    },
-
-    async getMatchedData() {
-      // Get the matched data from the last AI analysis
-      try {
-        const response = await fetch('/parse-email-ai/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: JSON.stringify({
-            email_content: this.emailContent
-          })
-        });
-
-        const data = await response.json();
-        return data.matched_data || {};
-      } catch (error) {
-        console.error('Error getting matched data:', error);
-        return {};
       }
     },
 

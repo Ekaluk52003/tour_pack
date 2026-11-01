@@ -784,12 +784,6 @@ def tour_package_quote(request):
 
     print("Guide Services:", guide_services)
 
-    # Check if user can use AI email parser
-    # can_use_ai = request.user.is_superuser or request.user.groups.filter(name='assistance').exists()
-
-    # only superuser can use AI email parser
-    can_use_ai = request.user.is_superuser
-
     context = {
         'cities': cities,
         'service_types': service_types,
@@ -797,7 +791,6 @@ def tour_package_quote(request):
         'predefined_quotes': predefined_quotes,
         'tour_pack_types': tour_pack_types,
         'is_superuser': request.user.is_superuser,
-        'can_use_ai': can_use_ai,
     }
 
     return render(request, 'tour_quote/tour_package_quote.html', context)
@@ -809,7 +802,12 @@ def get_city_services(request, city_id):
     try:
         tour_pack_type_id = request.GET.get('tour_pack_type')
         city = get_object_or_404(City, id=city_id)
-        tour_pack_type = get_object_or_404(TourPackType, id=tour_pack_type_id)
+        # Hotels do not depend on the package type, so it is optional here:
+        # without it we still return hotels (and no priced services).
+        tour_pack_type = (
+            TourPackType.objects.filter(id=tour_pack_type_id).first()
+            if tour_pack_type_id else None
+        )
 
         hotels = list(Hotel.objects.filter(city=city).values('id', 'name'))
 
@@ -823,7 +821,10 @@ def get_city_services(request, city_id):
             if service_type not in service_types:
                 service_types[service_type] = []
 
-            price = service.prices.filter(tour_pack_type=tour_pack_type).first()
+            price = (
+                service.prices.filter(tour_pack_type=tour_pack_type).first()
+                if tour_pack_type else None
+            )
             if price:
                 service_types[service_type].append({
                     'id': service.id,

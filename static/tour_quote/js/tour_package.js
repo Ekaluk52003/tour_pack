@@ -1,3 +1,16 @@
+// Date helpers for YYYY-MM-DD strings. All arithmetic is done in UTC so the
+// browser's timezone / daylight-saving changes can never duplicate or skip a
+// day (mixing new Date('YYYY-MM-DD'), setDate() and toISOString() does).
+function addDaysISO(isoDate, n) {
+  const [y, m, d] = String(isoDate).split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().split('T')[0];
+}
+function todayISO() {
+  const now = new Date(); // the user's local calendar date
+  const pad = (v) => String(v).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 window.tourPackage = function () {
   function getCookie(name) {
     let cookieValue = null;
@@ -401,6 +414,7 @@ window.tourPackage = function () {
     formatDateForDisplay(dateString) {
       const date = new Date(dateString);
       return date.toLocaleDateString('en-GB', {
+        timeZone: 'UTC', // date-only strings are parsed as UTC
         day: '2-digit',
         month: 'short',
         year: '2-digit'
@@ -585,16 +599,14 @@ window.tourPackage = function () {
 
       if (previousDay && previousDay.date) {
         // Create a new Date object from the previous day's date and increment it by one day
-        newDate = new Date(previousDay.date);
-        newDate.setDate(newDate.getDate() + 1);
+        newDate = addDaysISO(previousDay.date, 1);
       } else {
         // If there's no previous day or it has no date, use tomorrow's date
-        newDate = new Date();
-        newDate.setDate(newDate.getDate() + 1);
+        newDate = addDaysISO(todayISO(), 1);
       }
 
       // Format the new date as YYYY-MM-DD
-      const formattedDate = newDate.toISOString().split('T')[0];
+      const formattedDate = newDate;
 
       const newDay = {
         date: formattedDate,
@@ -791,16 +803,16 @@ window.tourPackage = function () {
           let currentDate;
           if (this.days.length > 0) {
             const lastDay = this.days[this.days.length - 1];
-            currentDate = new Date(lastDay.date);
+            currentDate = lastDay.date;
           } else {
-            currentDate = new Date();
+            currentDate = todayISO();
           }
 
           // Process each day sequentially using async/await
           for (const dayData of data.days) {
             // Increment the date by 1 day
-            currentDate.setDate(currentDate.getDate() + 1);
-            const formattedDate = currentDate.toISOString().split('T')[0];
+            currentDate = addDaysISO(currentDate, 1);
+            const formattedDate = currentDate;
 
             const newDay = {
               date: formattedDate,
@@ -980,14 +992,6 @@ window.tourPackage = function () {
         console.log("Form validation failed", this.errors);
         alert("Please correct the errors before submitting.");
         return;
-      }
-
-      const hotelChecks = this.getHotelChecks();
-      if (hotelChecks.errorCount > 0) {
-        const proceed = confirm(
-          `Hotel check found ${hotelChecks.errorCount} problem(s) (see "Hotel check" under Hotel Costs).\n\nSave anyway?`
-        );
-        if (!proceed) return;
       }
 
        // Helper function to ensure numeric values are properly formatted
@@ -1299,14 +1303,10 @@ window.tourPackage = function () {
 
       // Increment the date
       if (originalDay.date) {
-        const nextDate = new Date(originalDay.date);
-        nextDate.setDate(nextDate.getDate() + 1);
-        newDay.date = nextDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        newDay.date = addDaysISO(originalDay.date, 1); // YYYY-MM-DD
       } else {
         // If no valid date, use tomorrow's date
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        newDay.date = tomorrow.toISOString().split('T')[0];
+        newDay.date = addDaysISO(todayISO(), 1);
       }
 
       // Update city services for the new day
@@ -1408,13 +1408,9 @@ window.tourPackage = function () {
       if (!firstDay.date) return;
 
       // Start from the first date and update all subsequent dates
-      const startDate = new Date(firstDay.date);
-
       // Update all days after the first one
       for (let i = 1; i < this.days.length; i++) {
-        const nextDate = new Date(startDate);
-        nextDate.setDate(startDate.getDate() + i);
-        this.days[i].date = nextDate.toISOString().split('T')[0];
+        this.days[i].date = addDaysISO(firstDay.date, i);
       }
     },
 

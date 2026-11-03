@@ -99,6 +99,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'tours.context_processors.user_group_flags',
+                'tours.context_processors.asset_version',
             ],
         },
     },

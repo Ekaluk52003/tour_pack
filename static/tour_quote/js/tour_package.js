@@ -282,6 +282,24 @@ window.tourPackage = function () {
       return { stays, unresolved, DAY_MS };
     },
 
+    // Find the Hotel Cost rows that belong to one stay. A stay can have
+    // several rows (e.g. two room types at the same hotel on the same dates):
+    // the best-matching row plus every other unused row with the same hotel
+    // name and the same dates.
+    matchCostRowsForStay(st, dates, used) {
+      const candidates = this.hotelCosts
+        .map((c, i) => ({ c, i }))
+        .filter(({ c, i }) => c.name === st.name && !used.has(i));
+      const first =
+        candidates.find(({ c }) => c.date === dates) ||
+        candidates.find(({ c }) => Number(c.nights) === st.nights) ||
+        candidates[0];
+      if (!first) return [];
+      return candidates.filter(
+        (x) => x === first || (first.c.date && x.c.date === first.c.date)
+      );
+    },
+
     // Compare tour-day hotel stays with the Hotel Cost rows.
     // Each row: { dates, name, nights, level: 'ok'|'warn'|'error', issues: [] }
     getHotelChecks() {
@@ -291,25 +309,27 @@ window.tourPackage = function () {
 
       stays.forEach((st) => {
         const dates = this.formatStayDates(new Date(st.startTs), new Date(st.lastTs + DAY_MS));
-        const candidates = this.hotelCosts
-          .map((c, i) => ({ c, i }))
-          .filter(({ c, i }) => c.name === st.name && !used.has(i));
-        const pick = candidates.find(({ c }) => Number(c.nights) === st.nights) || candidates[0];
+        const group = this.matchCostRowsForStay(st, dates, used);
         const issues = [];
         let level = 'ok';
 
-        if (!pick) {
+        if (!group.length) {
           issues.push('No hotel cost row (will show 0 in invoice/Excel)');
           level = 'error';
         } else {
-          used.add(pick.i);
-          const c = pick.c;
-          if (Number(c.nights) !== st.nights) {
-            issues.push(`Cost row has ${c.nights || 0} night(s), tour days have ${st.nights}`);
-          }
-          if (!(parseFloat(c.room) > 0)) issues.push('Room count is 0');
-          if (!(parseFloat(c.price) > 0)) issues.push('Price is 0');
-          if (issues.length) level = 'warn';
+          const multi = group.length > 1;
+          if (multi) issues.push(`${group.length} cost lines (room types) for this stay`);
+          group.forEach(({ c, i }) => {
+            used.add(i);
+            const label = multi ? `${c.type || 'Line ' + (i + 1)}: ` : '';
+            if (Number(c.nights) !== st.nights) {
+              issues.push(`${label}cost row has ${c.nights || 0} night(s), tour days have ${st.nights}`);
+            }
+            if (!(parseFloat(c.room) > 0)) issues.push(`${label}room count is 0`);
+            if (!(parseFloat(c.price) > 0)) issues.push(`${label}price is 0`);
+          });
+          // The "N cost lines" note alone is informational, not a warning
+          if (issues.length > (multi ? 1 : 0)) level = 'warn';
         }
         rows.push({ dates, name: st.name, nights: st.nights, level, issues });
       });
@@ -356,29 +376,28 @@ window.tourPackage = function () {
       const DAY_MS = 24 * 60 * 60 * 1000;
       const { stays, unresolved } = this.computeHotelStays();
 
-      this.hotelCosts = stays.map((st) => {
-        const existingCost = this.hotelCosts.find((c) => c.name === st.name);
-        st = {
-          ...st,
-          type: st.type || (existingCost ? existingCost.type : ''),
-          room: existingCost ? existingCost.room : "0",
-          promotion: existingCost ? existingCost.promotion : "",
-          price: existingCost ? existingCost.price : "0",
-          extraBedPrice: existingCost ? existingCost.extraBedPrice : "0",
-        };
+      // Keep every existing cost line of a stay (e.g. several room types),
+      // updating its dates/nights; a new stay gets one line.
+      const used = new Set();
+      this.hotelCosts = stays.flatMap((st) => {
         // Check-out is the day after the last night
-        const checkIn = new Date(st.startTs);
-        const checkOut = new Date(st.lastTs + DAY_MS);
-        return {
-          date: this.formatStayDates(checkIn, checkOut),
+        const date = this.formatStayDates(new Date(st.startTs), new Date(st.lastTs + DAY_MS));
+        const group = this.matchCostRowsForStay(st, date, used);
+        group.forEach(({ i }) => used.add(i));
+        // Same hotel stayed at again later: copy prices from any of its rows
+        const sources = group.length
+          ? group.map(({ c }) => c)
+          : [this.hotelCosts.find((c) => c.name === st.name) || null];
+        return sources.map((c) => ({
+          date,
           name: st.name,
-          type: st.type,
+          type: st.type || (c ? c.type : ''),
           nights: st.nights,
-          room: st.room,
-          promotion: st.promotion,
-          price: (parseFloat(st.price) || 0).toFixed(2),
-          extraBedPrice: (parseFloat(st.extraBedPrice) || 0).toFixed(2),
-        };
+          room: c ? c.room : "0",
+          promotion: c ? c.promotion : "",
+          price: (parseFloat(c ? c.price : 0) || 0).toFixed(2),
+          extraBedPrice: (parseFloat(c ? c.extraBedPrice : 0) || 0).toFixed(2),
+        }));
       });
 
       if (unresolved.length) {

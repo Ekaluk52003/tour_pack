@@ -295,9 +295,29 @@ window.tourPackage = function () {
         candidates.find(({ c }) => Number(c.nights) === st.nights) ||
         candidates[0];
       if (!first) return [];
+      // A row dated inside the stay is part of it too (price split by nights)
+      const inStay = (x) => {
+        const r = this.parseStayDates(x.c.date);
+        return r && r[0] >= st.startTs && r[1] <= st.lastTs + 24 * 60 * 60 * 1000 && r[0] < r[1];
+      };
       return candidates.filter(
-        (x) => x === first || (first.c.date && x.c.date === first.c.date)
+        (x) => x === first || (first.c.date && x.c.date === first.c.date) || inStay(x)
       );
+    },
+
+    // Inverse of formatStayDates: "12-15-Nov-26" or "30-Nov-02-Dec-26" -> [inTs, outTs] (UTC), else null
+    parseStayDates(str) {
+      const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      let m = /^(\d{2})-(\d{2})-([A-Za-z]{3})-(\d{2})$/.exec(String(str || '').trim());
+      if (m) {
+        const mo = M.indexOf(m[3]), y = 2000 + +m[4];
+        return mo < 0 ? null : [Date.UTC(y, mo, +m[1]), Date.UTC(y, mo, +m[2])];
+      }
+      m = /^(\d{2})-([A-Za-z]{3})-(\d{2})-([A-Za-z]{3})-(\d{2})$/.exec(String(str || '').trim());
+      if (!m) return null;
+      const mi = M.indexOf(m[2]), mo = M.indexOf(m[4]), y = 2000 + +m[5];
+      if (mi < 0 || mo < 0) return null;
+      return [Date.UTC(mi > mo ? y - 1 : y, mi, +m[1]), Date.UTC(y, mo, +m[3])];
     },
 
     // Compare tour-day hotel stays with the Hotel Cost rows.
@@ -318,15 +338,22 @@ window.tourPackage = function () {
           level = 'error';
         } else {
           const multi = group.length > 1;
-          if (multi) issues.push(`${group.length} cost lines (room types) for this stay`);
+          if (multi) issues.push(`${group.length} cost lines for this stay`);
+          // Nights per room type are summed: one type may be split into several price periods
+          const nightsByType = {};
           group.forEach(({ c, i }) => {
             used.add(i);
             const label = multi ? `${c.type || 'Line ' + (i + 1)}: ` : '';
-            if (Number(c.nights) !== st.nights) {
-              issues.push(`${label}cost row has ${c.nights || 0} night(s), tour days have ${st.nights}`);
-            }
+            const key = c.type || `#${i}`;
+            nightsByType[key] = (nightsByType[key] || 0) + (Number(c.nights) || 0);
             if (!(parseFloat(c.room) > 0)) issues.push(`${label}room count is 0`);
             if (!(parseFloat(c.price) > 0)) issues.push(`${label}price is 0`);
+          });
+          Object.entries(nightsByType).forEach(([key, n]) => {
+            if (n !== st.nights) {
+              const label = multi && !key.startsWith('#') ? `${key}: ` : '';
+              issues.push(`${label}cost rows have ${n} night(s), tour days have ${st.nights}`);
+            }
           });
           // The "N cost lines" note alone is informational, not a warning
           if (issues.length > (multi ? 1 : 0)) level = 'warn';
@@ -388,11 +415,13 @@ window.tourPackage = function () {
         const sources = group.length
           ? group.map(({ c }) => c)
           : [this.hotelCosts.find((c) => c.name === st.name) || null];
+        // Rows with different dates = a stay split into price periods: keep their own dates/nights
+        const split = new Set(group.map(({ c }) => c.date)).size > 1;
         return sources.map((c) => ({
-          date,
+          date: split ? c.date : date,
           name: st.name,
           type: st.type || (c ? c.type : ''),
-          nights: st.nights,
+          nights: split ? c.nights : st.nights,
           room: c ? c.room : "0",
           promotion: c ? c.promotion : "",
           price: (parseFloat(c ? c.price : 0) || 0).toFixed(2),
@@ -1143,8 +1172,8 @@ window.tourPackage = function () {
         promotion: cost.promotion || '',
         room: cost.room || 0,
         nights: cost.nights || 0,
-        price: null,
-        extraBedPrice: null,
+        price: cost.price ?? null,
+        extraBedPrice: cost.extraBedPrice ?? null,
         _prefillIndex: String(index),
         _swapTargetIndex: '',
       });
@@ -1164,6 +1193,8 @@ window.tourPackage = function () {
       alt.promotion = cost.promotion || '';
       alt.room = cost.room || 0;
       alt.nights = cost.nights || 0;
+      alt.price = cost.price ?? null;
+      alt.extraBedPrice = cost.extraBedPrice ?? null;
     },
 
     swapAlternativeWithCost(altIndex, costIndex) {

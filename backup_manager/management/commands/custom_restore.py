@@ -56,9 +56,9 @@ class Command(BaseCommand):
                 '-p', str(db_port),
                 '-U', str(db_user),
                 '-d', 'postgres',
-                '-c', f"DROP DATABASE IF EXISTS {db_name}"
+                '-c', f'DROP DATABASE IF EXISTS "{db_name}"'
             ]
-            subprocess.run(drop_cmd, env=env, check=False)
+            subprocess.run(drop_cmd, env=env, check=True)
 
             # Create database
             create_cmd = [
@@ -67,9 +67,9 @@ class Command(BaseCommand):
                 '-p', str(db_port),
                 '-U', str(db_user),
                 '-d', 'postgres',
-                '-c', f"CREATE DATABASE {db_name} WITH OWNER = {db_user}"
+                '-c', f'CREATE DATABASE "{db_name}" WITH OWNER = "{db_user}"'
             ]
-            subprocess.run(create_cmd, env=env, check=False)
+            subprocess.run(create_cmd, env=env, check=True)
 
             # Process the backup file to remove role-specific commands
             temp_file = os.path.join(backup_dir, f"temp_{filename}")

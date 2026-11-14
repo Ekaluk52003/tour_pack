@@ -939,9 +939,14 @@ def suggest_tour_quote(request):
                         flex[k].append(entry)
 
         def vote(days_list):
-            """Services used by at least half of the given days (empty list = no data)."""
-            cnt = Counter(ts.service_id for day in days_list for ts in day.services.all())
-            return {sid for sid, c in cnt.items() if c * 2 >= len(days_list)}
+            """Service ids used by at least half of the given days, in their usual order within a day."""
+            cnt, pos = Counter(), Counter()
+            for day in days_list:
+                for i, ts in enumerate(sorted(day.services.all(), key=lambda t: t.id)):
+                    cnt[ts.service_id] += 1
+                    pos[ts.service_id] += i
+            keep = [sid for sid, c in cnt.items() if c * 2 >= len(days_list)]
+            return sorted(keep, key=lambda sid: (pos[sid] / cnt[sid], sid))
 
         days = []
         for k, ((city_id, nights), ex, fx) in enumerate(zip(route, exact, flex)):
@@ -971,7 +976,10 @@ def suggest_tour_quote(request):
                         if mode == 'flex':
                             reasons.append("nights differ from past quotes")
                 manual = mode == 'none' or any(not src for src in sources)
-                ids = set() if manual else set().union(*(vote(src) for src in sources))
+                ids = []
+                if not manual:  # arrival-side services first, then departure-side, no duplicates
+                    for src in sources:
+                        ids += [sid for sid in vote(src) if sid not in ids]
                 services = []
                 for sid in ids:
                     service = Service.objects.select_related('service_type').filter(id=sid, cities__id=city_id).first()

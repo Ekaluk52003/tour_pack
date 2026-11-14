@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}Route Suggest Guide{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: one narrow reading column, three figures, each with a one-line claim as its caption. */
+.guide {
+  --bg: #f4f6f6;
+  --fg: #16201f;
+  --muted: #5b6968;
+  --surface: #ffffff;
+  --line: #c3cdcc;
+  --accent: #0f766e;
+  --accent-soft: #d3ece8;
+  --warn: #9a3b2e;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-head: "Space Grotesk", "Inter", system-ui, sans-serif;
+}
+html.dark .guide { 
+  --bg: #101716; --fg: #e4eceb; --muted: #94a5a3; --surface: #182321; --line: #3a4846;
+  --accent: #3fd0c0; --accent-soft: #1d4a45; --warn: #f09a8c; 
+ }
+.guide { background: var(--bg); color: var(--fg); font-family: var(--font-body); line-height: 1.55; padding: 32px 16px 56px; }
+.guide main { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+.guide h1, .guide h2 { font-family: var(--font-head); text-wrap: balance; margin: 0; line-height: 1.2; }
+.guide h1 { font-size: 1.9rem; }
+.guide h2 { font-size: 1.2rem; }
+.guide p { margin: 0; max-width: 65ch; }
+.guide .lede { color: var(--muted); margin-top: 8px; }
+.guide section { display: flex; flex-direction: column; gap: 12px; }
+.guide figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.guide .scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.guide svg { display: block; width: 100%; min-width: 560px; height: auto; color: var(--fg); font-family: var(--font-body); }
+.guide figcaption { color: var(--muted); font-size: 0.9rem; max-width: 65ch; }
+.guide .chip { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.guide .chip.hit { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+.guide .chip.miss { stroke-dasharray: 4 3; }
+.guide .pair { fill: none; stroke: var(--accent); stroke-width: 2; }
+.guide .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.guide .box.key { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+.guide .t { fill: currentColor; font-size: 13px; }
+.guide .t.b { font-weight: 600; }
+.guide .t.s { font-size: 11.5px; fill: var(--muted); }
+.guide .t.a { fill: var(--accent); font-weight: 600; }
+.guide .t.w { fill: var(--warn); font-weight: 600; }
+.guide .ln { stroke: currentColor; stroke-width: 1.5; fill: none; }
+.guide .ln.a { stroke: var(--accent); stroke-width: 2; }
+.guide .ar { fill: currentColor; }
+.guide .ar.a { fill: var(--accent); }
+.guide h3 { font-family: var(--font-head); font-size: 1rem; margin: 8px 0 0; }
+.guide ul { margin: 0; padding-left: 1.2em; max-width: 65ch; display: flex; flex-direction: column; gap: 6px; }
+.guide table.tiers { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.9rem; }
+.guide .tiers th, .guide .tiers td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.guide .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+.guide .b1 { background: #d1fae5; color: #065f46; }
+.guide .b2 { background: #fef3c7; color: #92400e; }
+.guide .b0 { background: #fee2e2; color: #991b1b; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="guide">
+<main>
+  <header>
+    <h1>Route Suggest, in pictures</h1>
+    <p class="lede">You enter a route. The system looks through past quotes for the same two-city legs and suggests the hotels and services they used most.</p>
+  </header>
+
+  <section>
+    <h2>1. What counts as a match</h2>
+    <p>A past stay is used only when its city and nights are exactly the same as your stop, and the stop beside it matches too.</p>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 700 316" role="img" aria-label="A request of four stops compared with three past quotes. Two past quotes match a two-city leg; one is ignored because the nights differ.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar"/></marker>
+        </defs>
+        <!-- request row -->
+        <text x="20" y="18" class="t b">Your request</text>
+        <g>
+          <rect x="20" y="26" width="130" height="34" rx="6" class="chip"/><text x="85" y="48" text-anchor="middle" class="t">Bangkok 3</text>
+          <rect x="190" y="26" width="130" height="34" rx="6" class="chip"/><text x="255" y="48" text-anchor="middle" class="t">River Kwai 2</text>
+          <rect x="360" y="26" width="130" height="34" rx="6" class="chip"/><text x="425" y="48" text-anchor="middle" class="t">Ayuthaya 2</text>
+          <rect x="530" y="26" width="130" height="34" rx="6" class="chip"/><text x="595" y="48" text-anchor="middle" class="t">Chiang Mai 4</text>
+          <line x1="150" y1="43" x2="188" y2="43" class="ln" marker-end="url(#ar)"/>
+          <line x1="320" y1="43" x2="358" y2="43" class="ln" marker-end="url(#ar)"/>
+          <line x1="490" y1="43" x2="528" y2="43" class="ln" marker-end="url(#ar)"/>
+        </g>
+
+        <!-- past quote A -->
+        <text x="20" y="100" class="t b">Past quote A</text>
+        <text x="110" y="100" class="t a">Match: Bangkok 3 → River Kwai 2</text>
+        <rect x="14" y="106" width="312" height="46" rx="8" class="pair"/>
+        <rect x="20" y="112" width="130" height="34" rx="6" class="chip hit"/><text x="85" y="134" text-anchor="middle" class="t">Bangkok 3</text>
+        <rect x="190" y="112" width="130" height="34" rx="6" class="chip hit"/><text x="255" y="134" text-anchor="middle" class="t">River Kwai 2</text>
+        <rect x="360" y="112" width="130" height="34" rx="6" class="chip"/><text x="425" y="134" text-anchor="middle" class="t s">Phuket 3</text>
+        <line x1="150" y1="129" x2="188" y2="129" class="ln a" marker-end="url(#ar)"/>
+        <line x1="320" y1="129" x2="358" y2="129" class="ln" marker-end="url(#ar)"/>
+
+        <!-- past quote B -->
+        <text x="20" y="184" class="t b">Past quote B</text>
+        <text x="110" y="184" class="t w">Ignored: Bangkok 4 nights, you asked for 3</text>
+        <rect x="20" y="192" width="130" height="34" rx="6" class="chip miss"/><text x="85" y="214" text-anchor="middle" class="t s">Bangkok 4</text>
+        <rect x="190" y="192" width="130" height="34" rx="6" class="chip miss"/><text x="255" y="214" text-anchor="middle" class="t s">River Kwai 2</text>
+        <line x1="150" y1="209" x2="188" y2="209" class="ln" marker-end="url(#ar)"/>
+
+        <!-- past quote C -->
+        <text x="20" y="262" class="t b">Past quote C</text>
+        <text x="110" y="262" class="t a">Match: Ayuthaya 2 → Chiang Mai 4</text>
+        <rect x="354" y="262" width="312" height="46" rx="8" class="pair"/>
+        <rect x="360" y="268" width="130" height="34" rx="6" class="chip hit"/><text x="425" y="290" text-anchor="middle" class="t">Ayuthaya 2</text>
+        <rect x="530" y="268" width="130" height="34" rx="6" class="chip hit"/><text x="595" y="290" text-anchor="middle" class="t">Chiang Mai 4</text>
+        <line x1="490" y1="285" x2="528" y2="285" class="ln a" marker-end="url(#ar)"/>
+      </svg>
+      </div>
+      <figcaption>Quote A and quote C each contain one matching two-city leg, so both feed the suggestion. Quote B has the right cities but the wrong nights, so it is ignored. A middle stop such as River Kwai can be matched through the leg on either side of it.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>2. How one stop gets its hotel and services</h2>
+    <p>Every matching stay votes. The number you see, such as "25 matching past stays", is how many stays voted.</p>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 700 250" role="img" aria-label="Three of the matching stays feed a vote. The most-used hotel is chosen, and a service is kept if at least half of the stays used it.">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar a"/></marker>
+        </defs>
+        <text x="20" y="20" class="t b">Matching stays for Bangkok 3 nights</text>
+        <rect x="20" y="32" width="250" height="52" rx="6" class="box"/>
+        <text x="32" y="54" class="t b">Stay 1</text><text x="32" y="73" class="t s">Hotel X · Airport transfer, City tour</text>
+        <rect x="20" y="94" width="250" height="52" rx="6" class="box"/>
+        <text x="32" y="116" class="t b">Stay 2</text><text x="32" y="135" class="t s">Hotel X · Airport transfer</text>
+        <rect x="20" y="156" width="250" height="52" rx="6" class="box"/>
+        <text x="32" y="178" class="t b">Stay 3 … Stay 25</text><text x="32" y="197" class="t s">Hotel Y · Airport transfer, City tour</text>
+
+        <line x1="270" y1="58" x2="330" y2="120" class="ln a" marker-end="url(#ar2)"/>
+        <line x1="270" y1="120" x2="330" y2="122" class="ln a" marker-end="url(#ar2)"/>
+        <line x1="270" y1="182" x2="330" y2="126" class="ln a" marker-end="url(#ar2)"/>
+        <text x="300" y="228" text-anchor="middle" class="t s">each stay votes, night by night</text>
+
+        <rect x="334" y="92" width="110" height="60" rx="8" class="box key"/>
+        <text x="389" y="119" text-anchor="middle" class="t b">Vote</text>
+        <text x="389" y="137" text-anchor="middle" class="t s">count the picks</text>
+
+        <line x1="444" y1="110" x2="494" y2="70" class="ln a" marker-end="url(#ar2)"/>
+        <line x1="444" y1="136" x2="494" y2="176" class="ln a" marker-end="url(#ar2)"/>
+
+        <rect x="496" y="34" width="184" height="66" rx="8" class="box"/>
+        <text x="508" y="56" class="t b">Hotel</text>
+        <text x="508" y="75" class="t s">the one used most often</text>
+        <text x="508" y="91" class="t s">Hotel X wins over Hotel Y</text>
+
+        <rect x="496" y="146" width="184" height="80" rx="8" class="box"/>
+        <text x="508" y="168" class="t b">Services and transfers</text>
+        <text x="508" y="187" class="t s">kept if at least half the</text>
+        <text x="508" y="203" class="t s">stays used it that night</text>
+        <text x="508" y="219" class="t s">rare extras are dropped</text>
+      </svg>
+      </div>
+      <figcaption>The hotel is a plain majority vote. A service must be common to appear, so one unusual past quote cannot add a stray tour to your suggestion.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>3. What the user does</h2>
+    <p>Nothing is added to the quote until the user confirms.</p>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 700 150" role="img" aria-label="Four steps: enter legs, submit, review the result, confirm to fill the form. Back returns from review to the legs.">
+        <defs>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar"/></marker>
+        </defs>
+        <rect x="10" y="30" width="140" height="64" rx="8" class="box"/>
+        <text x="80" y="56" text-anchor="middle" class="t b">Enter legs</text>
+        <text x="80" y="75" text-anchor="middle" class="t s">city + nights</text>
+
+        <rect x="190" y="30" width="140" height="64" rx="8" class="box"/>
+        <text x="260" y="56" text-anchor="middle" class="t b">Submit</text>
+        <text x="260" y="75" text-anchor="middle" class="t s">search past quotes</text>
+
+        <rect x="370" y="30" width="140" height="64" rx="8" class="box key"/>
+        <text x="440" y="56" text-anchor="middle" class="t b">Review result</text>
+        <text x="440" y="75" text-anchor="middle" class="t s">hotel, services, matches</text>
+
+        <rect x="550" y="30" width="140" height="64" rx="8" class="box"/>
+        <text x="620" y="56" text-anchor="middle" class="t b">Confirm</text>
+        <text x="620" y="75" text-anchor="middle" class="t s">fills the quote form</text>
+
+        <line x1="150" y1="62" x2="188" y2="62" class="ln" marker-end="url(#ar3)"/>
+        <line x1="330" y1="62" x2="368" y2="62" class="ln" marker-end="url(#ar3)"/>
+        <line x1="510" y1="62" x2="548" y2="62" class="ln a" marker-end="url(#ar3)"/>
+        <path d="M440 94 V126 H80 V96" class="ln" stroke-dasharray="4 3" marker-end="url(#ar3)"/>
+        <text x="260" y="120" text-anchor="middle" class="t s">Back: change the legs and try again</text>
+      </svg>
+      </div>
+      <figcaption>Review is the safety step. The user can see which hotel and services were chosen, and how many past stays back them, before anything reaches the quote.</figcaption>
+    </figure>
+  </section>
+  <section>
+    <h2>4. When the nights are different, or there is no match</h2>
+    <p>The route is what keeps transfers correct, so the system never copies from a different route. It looks for a match in this order and shows a badge for the one it used.</p>
+    <div class="scroll"><table class="tiers">
+      <thead><tr><th>Badge</th><th>Meaning</th><th>What you get</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge b1">Route match · 25 past stays</span></td>
+            <td>Same city, same nights, and the same neighbouring stop.</td>
+            <td>Hotel and services for every night.</td></tr>
+        <tr><td><span class="badge b2">Route match, different nights · 4 past stays</span></td>
+            <td>Same city and same neighbouring city, but the past stays had a different number of nights.</td>
+            <td>The most-used hotel, the arrival services on the first night (if the city you arrive from matches) and the departure services on the last night (if the city you leave for matches). Middle nights say "fill in by hand".</td></tr>
+        <tr><td><span class="badge b0">No route match - fill in by hand</span></td>
+            <td>No past quote has this stop next to the stop you asked for.</td>
+            <td>Nothing. Choose the hotel and services yourself.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>The amber badge: same route, different nights</h3>
+    <p>Example: you ask for Bangkok 3 → River Kwai 2. Past quotes have Bangkok 4 → River Kwai 2, so the nights differ but the route is the same.</p>
+    <ul>
+      <li><b>Hotel:</b> the hotel most of those Bangkok stays used.</li>
+      <li><b>First Bangkok night:</b> the arrival transfer and services from those stays, as long as they also started the same way (arrived from the same city, or began the trip there).</li>
+      <li><b>Last Bangkok night:</b> the Bangkok to River Kwai transfer and services, because those stays also went on to River Kwai.</li>
+      <li><b>Middle night:</b> left empty and marked "fill in by hand". Night 2 of a 4-night stay is not the same as night 2 of a 3-night stay.</li>
+    </ul>
+
+    <h3>The red badge: different route</h3>
+    <p>Example: you ask for Chiang Mai 9 → Bangkok 9, and every past Chiang Mai stay was followed by Phuket. The route is different, so its transfers could be wrong for your trip. Nothing is copied and you choose everything yourself.</p>
+
+    <p>Amber and red stops are highlighted in the review step. Check amber stops, especially the hotel and transfers, and fill in the empty nights before you finish the quote.</p>
+  </section>
+</main>
+</div>
+{% endblock %}

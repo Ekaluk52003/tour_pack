@@ -1,5 +1,7 @@
 from django.urls import path, include
 from django.conf import settings
+from django.views.generic import TemplateView
+from django.contrib.auth.decorators import login_required
 from . import views
 
 urlpatterns = [
@@ -14,6 +16,8 @@ urlpatterns = [
     path('tour-package/<int:pk>/pdf-no-cost/', views.tour_package_pdf_no_cost, name='tour_package_pdf_no_cost'),
     path('', views.tour_packages, name='tour_packages'),
     path('get-predefined-tour-quote/<int:quote_id>/', views.get_predefined_tour_quote, name='get_predefined_tour_quote'),
+    path('route-suggest-guide/', login_required(TemplateView.as_view(template_name='tour_quote/route_suggest_guide.html')), name='route_suggest_guide'),
+    path('suggest-tour-quote/', views.suggest_tour_quote, name='suggest_tour_quote'),
     path('tour-package/<int:pk>/send-email/', views.send_tour_package_email, name='send_tour_package_email'),
     path('tour-package/<str:package_reference>/duplicate/', views.duplicate_tour_package, name='duplicate_tour_package'),
     path('services/price-form/', views.service_price_form, name='service_price_form'),

@@ -43,6 +43,9 @@ window.tourPackage = function () {
     special_note: "",
     tourPackType: "",
     selectedPredefinedQuote: "",
+    suggestOpen: false,
+    suggestPreview: null,
+    suggestLegs: [{ city: "", nights: 2 }],
     commission_rate_hotel: 20,
     commission_rate_services: 5,
     days: [
@@ -813,8 +816,34 @@ window.tourPackage = function () {
 
 
 
-    applyPredefinedQuote() {
-      if (!this.selectedPredefinedQuote) {
+    applySuggestedRoute() {
+      if (!this.suggestLegs.every((l) => l.city.trim() && l.nights >= 1)) {
+        alert("Choose a city and nights for every leg.");
+        return;
+      }
+      if (!this.tourPackType) {
+        alert("Please select a Tour Package Type first.");
+        return;
+      }
+      const route = this.suggestLegs.map((l) => `${l.city.trim()}:${l.nights}`).join(",");
+      fetch(`/suggest-tour-quote/?route=${encodeURIComponent(route)}&tour_pack_type=${encodeURIComponent(this.tourPackType)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.error) alert(data.error);
+          else this.suggestPreview = data;
+        })
+        .catch(() => alert("Could not get suggestions. Please try again."));
+    },
+
+    confirmSuggestion() {
+      const data = this.suggestPreview;
+      this.suggestOpen = false;
+      this.suggestPreview = null;
+      this.applyPredefinedQuote(null, data);
+    },
+
+    applyPredefinedQuote(urlOverride, preloaded) {
+      if (!urlOverride && !preloaded && !this.selectedPredefinedQuote) {
         alert("Please select a predefined quote first.");
         return;
       }
@@ -842,11 +871,14 @@ window.tourPackage = function () {
   }
 
       // Add the tour pack type to the request
-      const url = `/get-predefined-tour-quote/${this.selectedPredefinedQuote}/?tour_pack_type=${encodeURIComponent(this.tourPackType)}`;
+      const url = urlOverride || `/get-predefined-tour-quote/${this.selectedPredefinedQuote}/?tour_pack_type=${encodeURIComponent(this.tourPackType)}`;
 
-      fetch(url)
-        .then((response) => response.json())
+      (preloaded ? Promise.resolve(preloaded) : fetch(url).then((response) => response.json()))
         .then(async (data) => {
+          if (data.error) {
+            alert(data.error);
+            return;
+          }
           // Find the date of the last existing day, or use today's date if no days exist
           let currentDate;
           if (this.days.length > 0) {
@@ -865,7 +897,7 @@ window.tourPackage = function () {
             const newDay = {
               date: formattedDate,
               city: dayData.city.toString(),
-              hotel: dayData.hotel.toString(),
+              hotel: dayData.hotel ? dayData.hotel.toString() : "",
               services: [],
               guideServices: [],
               cityServices: { hotels: [], service_types: [] }

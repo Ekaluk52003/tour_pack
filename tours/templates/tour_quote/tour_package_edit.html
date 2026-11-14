@@ -192,6 +192,46 @@
   </select>
   <button @click="applyPredefinedQuote()" class="px-4 py-2 mt-4 ml-2 text-white bg-indigo-500 rounded md:mt-0">Apply Predefined Quote</button>
 
+
+  <button @click="suggestOpen = true" class="px-4 py-2 mt-4 ml-2 text-white bg-emerald-500 rounded md:mt-0 hover:bg-emerald-600">Suggest from past quotes</button>
+  <a href="{% url 'route_suggest_guide' %}" target="_blank" class="px-4 py-2 mt-4 ml-2 text-emerald-600 rounded border border-emerald-500 md:mt-0 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-gray-700">How it works</a>
+  <div x-show="suggestOpen" x-cloak class="flex fixed inset-0 z-50 justify-center items-center bg-black/50" @keydown.escape.window="suggestOpen = false">
+    <div class="p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl dark:bg-gray-800" @click.outside="suggestOpen = false; suggestPreview = null">
+      <h3 class="mb-1 text-lg font-semibold dark:text-white">Suggest from past quotes</h3>
+      <p class="mb-4 text-sm text-gray-500">Enter the cities in order with nights. Hotels and services are taken from past quotes with the same legs.</p>
+      <datalist id="suggest-cities">{% for city in cities %}<option value="{{ city.name }}">{% endfor %}</datalist>
+      <div x-show="!suggestPreview">
+      <template x-for="(leg, i) in suggestLegs" :key="i">
+        <div class="flex gap-2 mb-2">
+          <input list="suggest-cities" x-model="leg.city" placeholder="Type to search city" class="flex-1 px-3 py-2 bg-white rounded border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">
+          <input type="number" min="1" x-model.number="leg.nights" class="px-3 py-2 w-20 rounded border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" title="Nights">
+          <button type="button" @click="suggestLegs.splice(i, 1)" x-show="suggestLegs.length > 1" class="px-2 text-red-500">&times;</button>
+        </div>
+      </template>
+      <button type="button" @click="suggestLegs.push({ city: '', nights: 1 })" class="mb-4 text-sm text-indigo-500">+ Add city</button>
+      <div class="flex gap-2 justify-end">
+        <button type="button" @click="suggestOpen = false" class="px-4 py-2 rounded border dark:text-gray-300">Cancel</button>
+        <button type="button" @click="applySuggestedRoute()" class="px-4 py-2 text-white bg-emerald-500 rounded hover:bg-emerald-600">Submit</button>
+      </div>
+      </div>
+      <div x-show="suggestPreview">
+        <p class="mb-2 text-sm font-medium dark:text-white">Suggested result (review before filling the form):</p>
+        <template x-for="(d, i) in (suggestPreview ? suggestPreview.days : [])" :key="i">
+          <div class="p-2 mb-1 text-sm rounded border dark:border-gray-600 dark:text-gray-300">
+            <div><b x-text="'Night ' + (i + 1) + ' - ' + d.city_name"></b>
+              <span class="px-2 py-0.5 ml-1 text-xs font-semibold rounded-full" :class="d.mode === 'exact' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : d.mode === 'flex' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'" x-text="(d.mode === 'exact' ? 'Route match' : d.mode === 'flex' ? 'Route match, different nights' : 'No route match - fill in by hand') + (d.matches ? ' · ' + d.matches + ' past stay' + (d.matches === 1 ? '' : 's') : '')"></span></div>
+            <div x-text="'Hotel: ' + (d.hotel_name || 'fill in by hand')" :class="d.hotel_name ? '' : 'text-red-500'"></div>
+            <div x-text="'Services: ' + (d.manual ? 'fill in by hand' : (d.services.length ? d.services.map(s => s.name).join(', ') : 'none used'))"></div>
+          </div>
+        </template>
+        <p x-show="suggestPreview && suggestPreview.days.some(d => d.manual)" class="mt-2 text-sm text-red-600">Nights marked "fill in by hand" were not guessed. Please choose their services yourself after confirming. Amber stops have a different number of nights, so check their hotel and transfers.</p>
+        <div class="flex gap-2 justify-end mt-4">
+          <button type="button" @click="suggestPreview = null" class="px-4 py-2 rounded border dark:text-gray-300">Back</button>
+          <button type="button" @click="confirmSuggestion()" class="px-4 py-2 text-white bg-emerald-500 rounded hover:bg-emerald-600">Confirm &amp; fill form</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 

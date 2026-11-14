@@ -902,12 +902,14 @@ def suggest_tour_quote(request):
         if not route:
             return JsonResponse({'error': 'Route is required'}, status=400)
 
-        # exact[k]: past stays with the same city+nights whose neighbouring stop also matches.
-        # flex[k]: past stays with the same city (any nights) next to the same neighbouring city;
-        #   used only when there is no exact match, and only for the arrival/departure night whose
-        #   side of the route matches. No route match means no suggestion: the user fills that stop in.
+        # exact[k] / flex[k] hold (days, arrive_ok, depart_ok) per past stay of the same city:
+        #   exact: same nights and the neighbouring stop also matches
+        #   flex:  any nights, next to the same neighbouring city (used only if there is no exact match)
+        # Transfers live on a stay's first night (arrival) and last night (departure), so those nights
+        # take services only from stays whose arrival/departure side matches the requested route.
+        # No matching route for a night means no suggestion: the user fills it in.
         exact = [[] for _ in route]
-        flex = [[] for _ in route]  # (days, arrive_ok, depart_ok)
+        flex = [[] for _ in route]
         city_ids = {c for c, _ in route}
         packages = TourPackageQuote.objects.filter(tour_days__city_id__in=city_ids).distinct().prefetch_related(
             Prefetch('tour_days', queryset=TourDay.objects.order_by('date', 'id').prefetch_related('services')))
@@ -927,36 +929,49 @@ def suggest_tour_quote(request):
                         continue
                     prev_c = key[i - 1][0] if i > 0 else None
                     next_c = key[i + 1][0] if i + 1 < len(key) else None
+                    entry = (stops[i][1], prev_c == req_prev, next_c == req_next)
                     if have == want:
                         prev_ok = k > 0 and i > 0 and key[i - 1] == route[k - 1]
                         next_ok = k < len(route) - 1 and i + 1 < len(key) and key[i + 1] == route[k + 1]
                         if prev_ok or next_ok or len(route) == 1:
-                            exact[k].append(stops[i][1])
-                    arrive_ok, depart_ok = prev_c == req_prev, next_c == req_next
-                    if (arrive_ok and req_prev is not None) or (depart_ok and req_next is not None):
-                        flex[k].append((stops[i][1], arrive_ok, depart_ok))
+                            exact[k].append(entry)
+                    if (entry[1] and req_prev is not None) or (entry[2] and req_next is not None):
+                        flex[k].append(entry)
 
         def vote(days_list):
-            """Services used by at least half of the given days."""
+            """Services used by at least half of the given days (empty list = no data)."""
             cnt = Counter(ts.service_id for day in days_list for ts in day.services.all())
             return {sid for sid, c in cnt.items() if c * 2 >= len(days_list)}
 
         days = []
-        for (city_id, nights), ex, fx in zip(route, exact, flex):
+        for k, ((city_id, nights), ex, fx) in enumerate(zip(route, exact, flex)):
             mode = 'exact' if ex else 'flex' if fx else 'none'
-            all_runs = ex or [r for r, _, _ in fx]
-            hotel_id = Counter(d.hotel_id for r in all_runs for d in r).most_common(1)
+            runs = ex or fx
+            hotel_id = Counter(d.hotel_id for r, _, _ in runs for d in r).most_common(1)
             hotel_id = hotel_id[0][0] if hotel_id else None
             hotel = Hotel.objects.filter(id=hotel_id).first()
-            arrive = vote([r[0] for r, a, _ in fx if a]) if mode == 'flex' else set()
-            depart = vote([r[-1] for r, _, d in fx if d]) if mode == 'flex' else set()
+            me = city_names[city_id]
+            leg_in = f"{city_names[route[k - 1][0]]} → {me}" if k > 0 else f"start of trip at {me}"
+            leg_out = f"{me} → {city_names[route[k + 1][0]]}" if k < len(route) - 1 else f"{me} → end of trip"
             for n in range(nights):
-                if mode == 'exact':
-                    ids = vote([r[n] for r in ex])
-                elif mode == 'flex':
-                    ids = (arrive if n == 0 else set()) | (depart if n == nights - 1 else set())
-                else:
-                    ids = set()
+                sources, reasons = [], []  # each source = the days to vote on
+                if mode != 'none':
+                    if n == 0:
+                        src = [r[0] for r, a, _ in runs if a]
+                        sources.append(src)
+                        if not src:
+                            reasons.append(f"no past quote has {leg_in}")
+                    if n == nights - 1:
+                        src = [r[-1] for r, _, d in runs if d]
+                        sources.append(src)
+                        if not src:
+                            reasons.append(f"no past quote has {leg_out}")
+                    if 0 < n < nights - 1:
+                        sources.append([r[n] for r, _, _ in runs] if mode == 'exact' else [])
+                        if mode == 'flex':
+                            reasons.append("nights differ from past quotes")
+                manual = mode == 'none' or any(not src for src in sources)
+                ids = set() if manual else set().union(*(vote(src) for src in sources))
                 services = []
                 for sid in ids:
                     service = Service.objects.select_related('service_type').filter(id=sid, cities__id=city_id).first()
@@ -964,10 +979,9 @@ def suggest_tour_quote(request):
                     if service and price:
                         services.append({'id': sid, 'name': service.name, 'type': service.service_type.name,
                                          'price': float(price.price), 'quantity': 1, 'order': len(services)})
-                days.append({'city': city_id, 'city_name': city_names[city_id], 'hotel': hotel_id,
+                days.append({'city': city_id, 'city_name': me, 'hotel': hotel_id,
                              'hotel_name': hotel.name if hotel else None, 'services': services, 'guideServices': [],
-                             'matches': len(all_runs), 'mode': mode,
-                             'manual': mode == 'none' or (mode == 'flex' and 0 < n < nights - 1)})
+                             'matches': len(runs), 'mode': mode, 'manual': manual, 'reason': '; '.join(reasons)})
         return JsonResponse({'days': days})
     except Exception as e:
         logger.error(f"Error in suggest_tour_quote: {str(e)}")

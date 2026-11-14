@@ -67,7 +67,7 @@ html.dark .guide {
 
   <section>
     <h2>1. What counts as a match</h2>
-    <p>A past stay is used only when its city and nights are exactly the same as your stop, and the stop beside it matches too.</p>
+    <p>A past stay is used only when its city and nights are exactly the same as your stop, and the stop beside it matches too. Transfers follow the same rule: the arrival transfer comes only from stays that arrived from the same city, and the departure transfer only from stays that went on to the same next city.</p>
     <figure>
       <div class="scroll">
       <svg viewBox="0 0 700 316" role="img" aria-label="A request of four stops compared with three past quotes. Two past quotes match a two-city leg; one is ignored because the nights differ.">
@@ -82,7 +82,8 @@ html.dark .guide {
           <rect x="360" y="26" width="130" height="34" rx="6" class="chip"/><text x="425" y="48" text-anchor="middle" class="t">Ayuthaya 2</text>
           <rect x="530" y="26" width="130" height="34" rx="6" class="chip"/><text x="595" y="48" text-anchor="middle" class="t">Chiang Mai 4</text>
           <line x1="150" y1="43" x2="188" y2="43" class="ln" marker-end="url(#ar)"/>
-          <line x1="320" y1="43" x2="358" y2="43" class="ln" marker-end="url(#ar)"/>
+          <line x1="320" y1="43" x2="358" y2="43" class="ln" stroke-dasharray="3 3" style="stroke: var(--warn)" marker-end="url(#ar)"/>
+          <text x="340" y="80" text-anchor="middle" class="t s" style="fill: var(--warn)">no past quote has this leg</text>
           <line x1="490" y1="43" x2="528" y2="43" class="ln" marker-end="url(#ar)"/>
         </g>
 
@@ -112,7 +113,7 @@ html.dark .guide {
         <line x1="490" y1="285" x2="528" y2="285" class="ln a" marker-end="url(#ar)"/>
       </svg>
       </div>
-      <figcaption>Quote A and quote C each contain one matching two-city leg, so both feed the suggestion. Quote B has the right cities but the wrong nights, so it is ignored. A middle stop such as River Kwai can be matched through the leg on either side of it.</figcaption>
+      <figcaption>Quote A and quote C each contain one matching two-city leg, so both feed the suggestion. Quote B has the right cities but the wrong nights, so it is ignored. Here nobody has travelled River Kwai → Ayuthaya, so River Kwai's last night (its departure transfer) is left blank for you to fill in. It is not copied from quote A, because quote A went on to Phuket. The stops are still matched through the legs that do exist.</figcaption>
     </figure>
   </section>
 

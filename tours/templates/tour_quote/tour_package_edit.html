@@ -221,7 +221,7 @@
             <div><b x-text="'Night ' + (i + 1) + ' - ' + d.city_name"></b>
               <span class="px-2 py-0.5 ml-1 text-xs font-semibold rounded-full" :class="d.mode === 'exact' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : d.mode === 'flex' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'" x-text="(d.mode === 'exact' ? 'Route match' : d.mode === 'flex' ? 'Route match, different nights' : 'No route match - fill in by hand') + (d.matches ? ' · ' + d.matches + ' past stay' + (d.matches === 1 ? '' : 's') : '')"></span></div>
             <div x-text="'Hotel: ' + (d.hotel_name || 'fill in by hand')" :class="d.hotel_name ? '' : 'text-red-500'"></div>
-            <div x-text="'Services: ' + (d.manual ? 'fill in by hand' + (d.reason ? ' (' + d.reason + ')' : '') : (d.services.length ? d.services.map(s => s.name).join(', ') : 'none used'))"></div>
+            <div x-text="'Services: ' + (d.manual ? 'fill in by hand' + (d.reason ? ' (' + d.reason + ')' : '') : (d.services.length ? d.services.map(s => s.name + ' (' + s.share + '% of stays)').join(', ') : 'none used'))"></div>
           </div>
         </template>
         <p x-show="suggestPreview && suggestPreview.days.some(d => d.manual)" class="mt-2 text-sm text-red-600">Nights marked "fill in by hand" were not guessed. Please choose their services yourself after confirming. Amber stops have a different number of nights, so check their hotel and transfers.</p>

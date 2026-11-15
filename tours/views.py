@@ -938,15 +938,31 @@ def suggest_tour_quote(request):
                     if (entry[1] and req_prev is not None) or (entry[2] and req_next is not None):
                         flex[k].append(entry)
 
+        svc_map = {sv.id: sv for sv in Service.objects.select_related('service_type')}
+
+        def is_transfer(sid):
+            sv = svc_map.get(sid)
+            return bool(sv) and ('transfer' in sv.service_type.name.lower() or 'transfer' in sv.name.lower() or '**' in sv.name)
+
         def vote(days_list):
-            """Service ids used by at least half of the given days, in their usual order within a day."""
+            """[(service_id, share%)] in their usual order within a day.
+
+            Any service used by at least half of the days is kept. Tours are often a choice between
+            alternatives, so if no tour reaches half, the single most-used tour is added whatever its
+            share; the share is returned so the user can judge it. Transfers are never guessed below half.
+            """
             cnt, pos = Counter(), Counter()
             for day in days_list:
                 for i, ts in enumerate(sorted(day.services.all(), key=lambda t: t.id)):
                     cnt[ts.service_id] += 1
                     pos[ts.service_id] += i
             keep = [sid for sid, c in cnt.items() if c * 2 >= len(days_list)]
-            return sorted(keep, key=lambda sid: (pos[sid] / cnt[sid], sid))
+            if not any(not is_transfer(sid) for sid in keep):
+                tours = [(c, sid) for sid, c in cnt.items() if not is_transfer(sid)]
+                if tours:
+                    keep.append(max(tours)[1])
+            keep.sort(key=lambda sid: (pos[sid] / cnt[sid], sid))
+            return [(sid, round(100 * cnt[sid] / len(days_list))) for sid in keep]
 
         days = []
         for k, ((city_id, nights), ex, fx) in enumerate(zip(route, exact, flex)):
@@ -976,17 +992,18 @@ def suggest_tour_quote(request):
                         if mode == 'flex':
                             reasons.append("nights differ from past quotes")
                 manual = mode == 'none' or any(not src for src in sources)
-                ids = []
+                ids = {}
                 if not manual:  # arrival-side services first, then departure-side, no duplicates
                     for src in sources:
-                        ids += [sid for sid in vote(src) if sid not in ids]
+                        for sid, share in vote(src):
+                            ids.setdefault(sid, share)
                 services = []
-                for sid in ids:
+                for sid, share in ids.items():
                     service = Service.objects.select_related('service_type').filter(id=sid, cities__id=city_id).first()
                     price = ServicePrice.objects.filter(service_id=sid, tour_pack_type=tour_pack_type).first()
                     if service and price:
                         services.append({'id': sid, 'name': service.name, 'type': service.service_type.name,
-                                         'price': float(price.price), 'quantity': 1, 'order': len(services)})
+                                         'price': float(price.price), 'quantity': 1, 'order': len(services), 'share': share})
                 days.append({'city': city_id, 'city_name': me, 'hotel': hotel_id,
                              'hotel_name': hotel.name if hotel else None, 'services': services, 'guideServices': [],
                              'matches': len(runs), 'mode': mode, 'manual': manual, 'reason': '; '.join(reasons)})

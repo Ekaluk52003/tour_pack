@@ -219,12 +219,14 @@
         <template x-for="(d, i) in (suggestPreview ? suggestPreview.days : [])" :key="i">
           <div class="p-2 mb-1 text-sm rounded border dark:border-gray-600 dark:text-gray-300">
             <div><b x-text="'Night ' + (i + 1) + ' - ' + d.city_name"></b>
-              <span class="px-2 py-0.5 ml-1 text-xs font-semibold rounded-full" :class="d.mode === 'exact' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : d.mode === 'flex' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'" x-text="(d.mode === 'exact' ? 'Route match' : d.mode === 'flex' ? 'Route match, different nights' : 'No route match - fill in by hand') + (d.matches ? ' · ' + d.matches + ' past stay' + (d.matches === 1 ? '' : 's') : '')"></span></div>
+              <span class="px-2 py-0.5 ml-1 text-xs font-semibold rounded-full" :class="d.mode === 'exact' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'" x-text="d.mode === 'exact' ? 'Copied from quote ' + d.source_ref + ' · same pattern in ' + d.same + ' of ' + d.matches + ' quotes' : 'No route match - fill in by hand'"></span>
+              <a x-show="d.source_ref" :href="'/' + d.source_ref + '/'" target="_blank" rel="noopener" class="ml-1 text-sm text-indigo-500 underline" x-text="'Open quote ' + d.source_ref"></a></div>
             <div x-text="'Hotel: ' + (d.hotel_name || 'fill in by hand')" :class="d.hotel_name ? '' : 'text-red-500'"></div>
-            <div x-text="'Services: ' + (d.manual ? 'fill in by hand' + (d.reason ? ' (' + d.reason + ')' : '') : (d.services.length ? d.services.map(s => s.name + ' (' + s.share + '% of stays)').join(', ') : 'none used'))"></div>
+            <div x-text="'Services: ' + (d.mode === 'none' ? 'fill in by hand' : (d.services.length ? d.services.map(s => s.name).join(', ') : 'none'))"></div>
+            <div x-show="d.reason && d.mode !== 'none'" class="text-amber-600" x-text="d.reason"></div></div>
           </div>
         </template>
-        <p x-show="suggestPreview && suggestPreview.days.some(d => d.manual)" class="mt-2 text-sm text-red-600">Nights marked "fill in by hand" were not guessed. Please choose their services yourself after confirming. Amber stops have a different number of nights, so check their hotel and transfers.</p>
+        <p x-show="suggestPreview && suggestPreview.days.some(d => d.mode === 'none' || d.reason)" class="mt-2 text-sm text-red-600">Red stops have no matching past quote, so please fill them in yourself after confirming. Amber notes mean a transfer was not copied because its route was not found.</p>
         <div class="flex gap-2 justify-end mt-4">
           <button type="button" @click="suggestPreview = null" class="px-4 py-2 rounded border dark:text-gray-300">Back</button>
           <button type="button" @click="confirmSuggestion()" class="px-4 py-2 text-white bg-emerald-500 rounded hover:bg-emerald-600">Confirm &amp; fill form</button>

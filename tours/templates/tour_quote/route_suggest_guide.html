@@ -51,6 +51,7 @@ html.dark .guide {
 .guide ul { margin: 0; padding-left: 1.2em; max-width: 65ch; display: flex; flex-direction: column; gap: 6px; }
 .guide table.tiers { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.9rem; }
 .guide .tiers th, .guide .tiers td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.guide .s { color: var(--muted); font-size: 0.85rem; }
 .guide .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
 .guide .b1 { background: #d1fae5; color: #065f46; }
 .guide .b2 { background: #fef3c7; color: #92400e; }
@@ -62,12 +63,12 @@ html.dark .guide {
 <main>
   <header>
     <h1>Route Suggest, in pictures</h1>
-    <p class="lede">You enter a route. The system looks through past quotes for the same two-city legs and suggests the hotels and services they used most.</p>
+    <p class="lede">You enter a route. The system finds past quotes with the same cities and nights in the same order, and copies their days whole: hotels, tours and transfers exactly as they were.</p>
   </header>
 
   <section>
     <h2>1. What counts as a match</h2>
-    <p>A past stay is used only when its city and nights are exactly the same as your stop, and the stop beside it matches too. Transfers follow the same rule: the arrival transfer comes only from stays that arrived from the same city, and the departure transfer only from stays that went on to the same next city.</p>
+    <p>A past quote matches when it has the same cities, with the same nights, next to each other in the same order. The system looks for the longest run of your stops that appears in one past quote, so a regular offer such as River Kwai 2 → Ayuthaya 2 → Chiang Mai 3 is found as one piece.</p>
     <figure>
       <div class="scroll">
       <svg viewBox="0 0 700 316" role="img" aria-label="A request of four stops compared with three past quotes. Two past quotes match a two-city leg; one is ignored because the nights differ.">
@@ -113,52 +114,41 @@ html.dark .guide {
         <line x1="490" y1="285" x2="528" y2="285" class="ln a" marker-end="url(#ar)"/>
       </svg>
       </div>
-      <figcaption>Quote A and quote C each contain one matching two-city leg, so both feed the suggestion. Quote B has the right cities but the wrong nights, so it is ignored. Here nobody has travelled River Kwai → Ayuthaya, so River Kwai's last night (its departure transfer) is left blank for you to fill in. It is not copied from quote A, because quote A went on to Phuket. The stops are still matched through the legs that do exist.</figcaption>
+      <figcaption>Quote A and quote C each contain a matching leg, so both can be copied. Quote B has the right cities but the wrong nights, so it is ignored. Here nobody has travelled River Kwai → Ayuthaya, so River Kwai's departure transfer is not copied from quote A (quote A went on to Phuket). The stops are still filled from the legs that do exist.</figcaption>
     </figure>
   </section>
 
   <section>
-    <h2>2. How one stop gets its hotel and services</h2>
-    <p>Every matching stay votes. The number you see, such as "25 matching past stays", is how many stays voted.</p>
+    <h2>2. How the days are copied</h2>
+    <p>Once a match is found, the days are copied as they are. The system does not pick a tour for each night. If several past quotes match, the pattern that was used most often wins, and the newest one wins a tie.</p>
     <figure>
       <div class="scroll">
-      <svg viewBox="0 0 700 250" role="img" aria-label="Three of the matching stays feed a vote. The most-used hotel is chosen, and a service is kept if at least half of the stays used it.">
+      <svg viewBox="0 0 700 270" role="img" aria-label="A request of Bangkok 3, Chiang Mai 4 and Phuket 4. The first match copies Bangkok and Chiang Mai from one quote. The second match copies only Phuket from another quote.">
         <defs>
-          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar a"/></marker>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar"/></marker>
         </defs>
-        <text x="20" y="20" class="t b">Matching stays for Bangkok 3 nights</text>
-        <rect x="20" y="32" width="250" height="52" rx="6" class="box"/>
-        <text x="32" y="54" class="t b">Stay 1</text><text x="32" y="73" class="t s">Hotel X · Airport transfer, City tour</text>
-        <rect x="20" y="94" width="250" height="52" rx="6" class="box"/>
-        <text x="32" y="116" class="t b">Stay 2</text><text x="32" y="135" class="t s">Hotel X · Airport transfer</text>
-        <rect x="20" y="156" width="250" height="52" rx="6" class="box"/>
-        <text x="32" y="178" class="t b">Stay 3 … Stay 25</text><text x="32" y="197" class="t s">Hotel Y · Airport transfer, City tour</text>
+        <text x="20" y="18" class="t b">Your request</text>
+        <rect x="20" y="26" width="130" height="34" rx="6" class="chip"/><text x="85" y="48" text-anchor="middle" class="t">Bangkok 3</text>
+        <rect x="190" y="26" width="130" height="34" rx="6" class="chip"/><text x="255" y="48" text-anchor="middle" class="t">Chiang Mai 4</text>
+        <rect x="360" y="26" width="130" height="34" rx="6" class="chip"/><text x="425" y="48" text-anchor="middle" class="t">Phuket 4</text>
+        <line x1="150" y1="43" x2="188" y2="43" class="ln" marker-end="url(#ar2)"/>
+        <line x1="320" y1="43" x2="358" y2="43" class="ln" marker-end="url(#ar2)"/>
 
-        <line x1="270" y1="58" x2="330" y2="120" class="ln a" marker-end="url(#ar2)"/>
-        <line x1="270" y1="120" x2="330" y2="122" class="ln a" marker-end="url(#ar2)"/>
-        <line x1="270" y1="182" x2="330" y2="126" class="ln a" marker-end="url(#ar2)"/>
-        <text x="300" y="228" text-anchor="middle" class="t s">each stay votes, night by night</text>
+        <text x="20" y="100" class="t b">Step 1</text><text x="75" y="100" class="t a">Quote X has Bangkok 3 → Chiang Mai 4: copy both stops whole</text>
+        <rect x="14" y="106" width="312" height="46" rx="8" class="pair"/>
+        <rect x="20" y="112" width="130" height="34" rx="6" class="chip hit"/><text x="85" y="134" text-anchor="middle" class="t">Bangkok 3</text>
+        <rect x="190" y="112" width="130" height="34" rx="6" class="chip hit"/><text x="255" y="134" text-anchor="middle" class="t">Chiang Mai 4</text>
+        <line x1="150" y1="129" x2="188" y2="129" class="ln a" marker-end="url(#ar2)"/>
 
-        <rect x="334" y="92" width="110" height="60" rx="8" class="box key"/>
-        <text x="389" y="119" text-anchor="middle" class="t b">Vote</text>
-        <text x="389" y="137" text-anchor="middle" class="t s">count the picks</text>
-
-        <line x1="444" y1="110" x2="494" y2="70" class="ln a" marker-end="url(#ar2)"/>
-        <line x1="444" y1="136" x2="494" y2="176" class="ln a" marker-end="url(#ar2)"/>
-
-        <rect x="496" y="34" width="184" height="66" rx="8" class="box"/>
-        <text x="508" y="56" class="t b">Hotel</text>
-        <text x="508" y="75" class="t s">the one used most often</text>
-        <text x="508" y="91" class="t s">Hotel X wins over Hotel Y</text>
-
-        <rect x="496" y="146" width="184" height="80" rx="8" class="box"/>
-        <text x="508" y="168" class="t b">Services and transfers</text>
-        <text x="508" y="187" class="t s">kept if half the stays used it;</text>
-        <text x="508" y="203" class="t s">else the top tour, with its %</text>
-        <text x="508" y="219" class="t s">transfers need half</text>
+        <text x="20" y="190" class="t b">Step 2</text><text x="75" y="190" class="t a">Quote Y has Chiang Mai 4 → Phuket 4: copy only Phuket</text>
+        <rect x="184" y="196" width="312" height="46" rx="8" class="pair"/>
+        <rect x="190" y="202" width="130" height="34" rx="6" class="chip miss"/><text x="255" y="224" text-anchor="middle" class="t s">Chiang Mai 4 (already copied)</text>
+        <rect x="360" y="202" width="130" height="34" rx="6" class="chip hit"/><text x="425" y="224" text-anchor="middle" class="t">Phuket 4</text>
+        <line x1="320" y1="219" x2="358" y2="219" class="ln a" marker-end="url(#ar2)"/>
+        <text x="20" y="262" class="t s">Several quotes match a step? The pattern used most often is copied; the newest wins a tie.</text>
       </svg>
       </div>
-      <figcaption>The hotel is the most-used one. A transfer is suggested only if at least half of the matching stays used it. Tours are often a choice between alternatives, so if no tour reaches half, the most-used tour is suggested anyway. Every service shows the percent of stays that used it, for example "Full Day Doi Inthanon (38% of stays)", so you can tell a sure thing from the most popular of several options.</figcaption>
+      <figcaption>Each step copies a whole block from one past quote. The Phuket step never goes back and changes Chiang Mai. If one quote contains your whole route, everything is copied from that one quote.</figcaption>
     </figure>
   </section>
 
@@ -198,36 +188,54 @@ html.dark .guide {
     </figure>
   </section>
   <section>
-    <h2>4. When the nights are different, or there is no match</h2>
-    <p>The route is what keeps transfers correct, so the system never copies from a different route. It looks for a match in this order and shows a badge for the one it used.</p>
+    <h2>4. What the badges mean</h2>
     <div class="scroll"><table class="tiers">
-      <thead><tr><th>Badge</th><th>Meaning</th><th>What you get</th></tr></thead>
+      <thead><tr><th>Badge</th><th>Meaning</th><th>What you do</th></tr></thead>
       <tbody>
-        <tr><td><span class="badge b1">Route match · 25 past stays</span></td>
-            <td>Same city, same nights, and the same neighbouring stop.</td>
-            <td>Hotel and services for every night.</td></tr>
-        <tr><td><span class="badge b2">Route match, different nights · 4 past stays</span></td>
-            <td>Same city and same neighbouring city, but the past stays had a different number of nights.</td>
-            <td>The most-used hotel, the arrival services on the first night (if the city you arrive from matches) and the departure services on the last night (if the city you leave for matches). Middle nights say "fill in by hand".</td></tr>
+        <tr><td><span class="badge b1">Copied from quote 26414 · same pattern in 14 of 120 quotes</span></td>
+            <td>The route was found. The days come from that quote. "14 of 120" says how many of the matching quotes used exactly the same hotels, tours and transfers.</td>
+            <td>Review, then confirm.</td></tr>
         <tr><td><span class="badge b0">No route match - fill in by hand</span></td>
             <td>No past quote has this stop next to the stop you asked for.</td>
-            <td>Nothing. Choose the hotel and services yourself.</td></tr>
+            <td>Choose the hotel and services yourself.</td></tr>
       </tbody>
     </table></div>
-
-    <h3>The amber badge: same route, different nights</h3>
-    <p>Example: you ask for Bangkok 3 → River Kwai 2. Past quotes have Bangkok 4 → River Kwai 2, so the nights differ but the route is the same.</p>
+    <h3>Transfers are never copied from a different route</h3>
+    <p>A transfer is copied only when the quote it comes from really had the same route on that side. If a stop was copied from a quote that arrived from, or went on to, a different city, that transfer is left out and an amber note says so. Add it yourself.</p>
+    <h3>No match</h3>
+    <p>Example: you ask for Chiang Mai 9 → Bangkok 9 and no past quote has that. Nothing is guessed, and you choose everything yourself.</p>
+  </section>
+  <section>
+    <h2>5. Try it yourself</h2>
+    <p>Open <b>Create</b>, choose a Tour Package Type, click <b>Suggest from past quotes</b>, enter the route and click <b>Submit</b>. The result shows where every night was copied from. Click <b>Open quote …</b> to see that quote. Quote numbers below come from the current data and can change as new quotes are added.</p>
+    <div class="scroll"><table class="tiers">
+      <thead><tr><th>Route to enter</th><th>What you should see</th></tr></thead>
+      <tbody>
+        <tr><td>River Kwai 2, Ayuthaya 2, Chiang Mai 3<br><span class="s">(the regular offer)</span></td>
+            <td>All 7 days from one quote (26414). Chiang Mai: temples, then Doi Inthanon, then elephant.</td></tr>
+        <tr><td>Bangkok 2, River Kwai 2, Ayuthaya 2, Chiang Mai 3</td>
+            <td>All 9 days from one quote (25542).</td></tr>
+        <tr><td>Bangkok 2, River Kwai 2, Ayuthaya 2, Chiang Mai 3, Phuket 5</td>
+            <td>All 14 days from one quote (26246).</td></tr>
+        <tr><td>Bangkok 3, Chiang Mai 4, Phuket 4</td>
+            <td>All 11 days from one quote (26569), the only quote with this whole route.</td></tr>
+        <tr><td>Bangkok 3, River Kwai 2, Chiang Mai 5, Koh Samui 5</td>
+            <td>All 15 days from one quote (26785).</td></tr>
+        <tr><td>Bangkok 3, Phuket 7</td>
+            <td>All 10 days from one quote (26667).</td></tr>
+        <tr><td>Chiang Mai 3, Bangkok 2, River Kwai 2, Ayuthaya 2, Phuket 5<br><span class="s">(several quotes in one result)</span></td>
+            <td>Chiang Mai, Bangkok and River Kwai from quote 25613, and Ayuthaya from quote 26686, each with its own link. Phuket is red: fill it in by hand. Ayuthaya shows an amber note that its departure transfer to Phuket was not copied.</td></tr>
+        <tr><td>Chiang Mai 9, Bangkok 9<br><span class="s">(no match)</span></td>
+            <td>Everything is red and nothing is copied. Choose everything yourself.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>What to check</h3>
     <ul>
-      <li><b>Hotel:</b> the hotel most of those Bangkok stays used.</li>
-      <li><b>First Bangkok night:</b> the arrival transfer and services from those stays, as long as they also started the same way (arrived from the same city, or began the trip there).</li>
-      <li><b>Last Bangkok night:</b> the Bangkok to River Kwai transfer and services, because those stays also went on to River Kwai.</li>
-      <li><b>Middle night:</b> left empty and marked "fill in by hand". Night 2 of a 4-night stay is not the same as night 2 of a 3-night stay.</li>
+      <li>The green badge names the quote and says how many matching quotes used the same pattern, for example "same pattern in 14 of 120 quotes".</li>
+      <li>One result can use several quotes. Each night links to the quote it came from.</li>
+      <li>Click <b>Back</b> to change the route, or <b>Confirm &amp; fill form</b> to add the days to the quote.</li>
+      <li>If a day has fewer services than expected, a service may have no price for the package type you chose. Try another type.</li>
     </ul>
-
-    <h3>The red badge: different route</h3>
-    <p>Example: you ask for Chiang Mai 9 → Bangkok 9, and every past Chiang Mai stay was followed by Phuket. The route is different, so its transfers could be wrong for your trip. Nothing is copied and you choose everything yourself.</p>
-
-    <p>Amber and red stops are highlighted in the review step. Check amber stops, especially the hotel and transfers, and fill in the empty nights before you finish the quote.</p>
   </section>
 </main>
 </div>

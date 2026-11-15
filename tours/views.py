@@ -882,11 +882,11 @@ def tour_packages(request):
 @login_required
 @require_http_methods(["GET"])
 def suggest_tour_quote(request):
-    """Suggest days/hotels/services for route "Bangkok:2,Chiang Mai:3" from past quotes.
-
-    A stop is a candidate source when its city+nights match a stop of a saved quote whose
-    neighbour (previous or next) also matches the neighbouring stop of the request.
-    Per item (hotel, each service) the most used across candidates wins.
+    """Suggest days/hotels/services for route "Bangkok:3,Chiang Mai:4,Phuket:4" by copying whole
+    blocks from past quotes. Each leg (two adjacent stops) is looked up in past quotes with the same
+    cities and nights; the most common identical pattern wins (newest on a tie) and is copied as is.
+    Stops already filled by an earlier leg are not touched again. No matching leg means the stop is
+    left for the user to fill in.
     """
     from collections import Counter
     try:
@@ -902,111 +902,94 @@ def suggest_tour_quote(request):
         if not route:
             return JsonResponse({'error': 'Route is required'}, status=400)
 
-        # exact[k] / flex[k] hold (days, arrive_ok, depart_ok) per past stay of the same city:
-        #   exact: same nights and the neighbouring stop also matches
-        #   flex:  any nights, next to the same neighbouring city (used only if there is no exact match)
-        # Transfers live on a stay's first night (arrival) and last night (departure), so those nights
-        # take services only from stays whose arrival/departure side matches the requested route.
-        # No matching route for a night means no suggestion: the user fills it in.
-        exact = [[] for _ in route]
-        flex = [[] for _ in route]
-        city_ids = {c for c, _ in route}
-        packages = TourPackageQuote.objects.filter(tour_days__city_id__in=city_ids).distinct().prefetch_related(
-            Prefetch('tour_days', queryset=TourDay.objects.order_by('date', 'id').prefetch_related('services')))
-        for pkg in packages:
-            stops = []  # [(city_id, [days])] consecutive days in same city
-            for d in pkg.tour_days.all():
-                if stops and stops[-1][0] == d.city_id:
-                    stops[-1][1].append(d)
-                else:
-                    stops.append((d.city_id, [d]))
-            key = [(c, len(ds)) for c, ds in stops]
-            for k, want in enumerate(route):
-                req_prev = route[k - 1][0] if k > 0 else None
-                req_next = route[k + 1][0] if k < len(route) - 1 else None
-                for i, have in enumerate(key):
-                    if have[0] != want[0]:
-                        continue
-                    prev_c = key[i - 1][0] if i > 0 else None
-                    next_c = key[i + 1][0] if i + 1 < len(key) else None
-                    entry = (stops[i][1], prev_c == req_prev, next_c == req_next)
-                    if have == want:
-                        prev_ok = k > 0 and i > 0 and key[i - 1] == route[k - 1]
-                        next_ok = k < len(route) - 1 and i + 1 < len(key) and key[i + 1] == route[k + 1]
-                        if prev_ok or next_ok or len(route) == 1:
-                            exact[k].append(entry)
-                    if (entry[1] and req_prev is not None) or (entry[2] and req_next is not None):
-                        flex[k].append(entry)
-
         svc_map = {sv.id: sv for sv in Service.objects.select_related('service_type')}
 
         def is_transfer(sid):
             sv = svc_map.get(sid)
             return bool(sv) and ('transfer' in sv.service_type.name.lower() or 'transfer' in sv.name.lower() or '**' in sv.name)
 
-        def vote(days_list):
-            """[(service_id, share%)] in their usual order within a day.
+        def sig(day_list):
+            return tuple((d.hotel_id, tuple(sorted(ts.service_id for ts in d.services.all()))) for d in day_list)
 
-            Any service used by at least half of the days is kept. Tours are often a choice between
-            alternatives, so if no tour reaches half, the single most-used tour is added whatever its
-            share; the share is returned so the user can judge it. Transfers are never guessed below half.
-            """
-            cnt, pos = Counter(), Counter()
-            for day in days_list:
-                for i, ts in enumerate(sorted(day.services.all(), key=lambda t: t.id)):
-                    cnt[ts.service_id] += 1
-                    pos[ts.service_id] += i
-            keep = [sid for sid, c in cnt.items() if c * 2 >= len(days_list)]
-            if not any(not is_transfer(sid) for sid in keep):
-                tours = [(c, sid) for sid, c in cnt.items() if not is_transfer(sid)]
-                if tours:
-                    keep.append(max(tours)[1])
-            keep.sort(key=lambda sid: (pos[sid] / cnt[sid], sid))
-            return [(sid, round(100 * cnt[sid] / len(days_list))) for sid in keep]
+        # Walk the route in windows: the longest run of stops (at least two) found in past quotes with the
+        # same cities and nights. The most common identical pattern in that window is copied whole (newest
+        # on a tie). The next window starts at the last stop of this one, and stops already copied are not
+        # touched again. A stop no window covers is left for the user.
+        packages = TourPackageQuote.objects.filter(tour_days__city_id__in={c for c, _ in route}).distinct().prefetch_related(
+            Prefetch('tour_days', queryset=TourDay.objects.order_by('date', 'id').prefetch_related('services')))
+        past = []  # per package: (package, [(city_id, [days])], [(city_id, nights)])
+        for pkg in packages:
+            stops = []
+            for d in pkg.tour_days.all():
+                if stops and stops[-1][0] == d.city_id:
+                    stops[-1][1].append(d)
+                else:
+                    stops.append((d.city_id, [d]))
+            past.append((pkg, stops, [(c, len(ds)) for c, ds in stops]))
+
+        def find(pos, w):
+            want = route[pos:pos + w]
+            return [(pkg, [stops[i + j][1] for j in range(w)])
+                    for pkg, stops, key in past for i in range(len(key) - w + 1) if key[i:i + w] == want]
+
+        # fill[idx] = (days, package, first_in_window, last_in_window, quotes with the window, same pattern)
+        fill = [None] * len(route)
+        pos = 0
+        while pos < len(route):
+            found, w = [], 0
+            for w in range(len(route) - pos, 0, -1):
+                if w == 1 and len(route) > 1:
+                    break
+                found = find(pos, w)
+                if found:
+                    break
+            if not found:
+                pos += 1
+                continue
+            patterns = Counter(tuple(sig(b) for b in blocks) for _, blocks in found)
+            newest = {}
+            for pkg, blocks in found:
+                pat = tuple(sig(b) for b in blocks)
+                if pat not in newest or pkg.id > newest[pat][0].id:
+                    newest[pat] = (pkg, blocks)
+            best = max(patterns, key=lambda pt: (patterns[pt], newest[pt][0].id))
+            pkg, blocks = newest[best]
+            for j in range(w):
+                if fill[pos + j] is None:
+                    fill[pos + j] = (blocks[j], pkg, j == 0, j == w - 1, len(found), patterns[best])
+            pos += max(w - 1, 1)
 
         days = []
-        for k, ((city_id, nights), ex, fx) in enumerate(zip(route, exact, flex)):
-            mode = 'exact' if ex else 'flex' if fx else 'none'
-            runs = ex or fx
-            hotel_id = Counter(d.hotel_id for r, _, _ in runs for d in r).most_common(1)
-            hotel_id = hotel_id[0][0] if hotel_id else None
-            hotel = Hotel.objects.filter(id=hotel_id).first()
+        for idx, (city_id, nights) in enumerate(route):
             me = city_names[city_id]
-            leg_in = f"{city_names[route[k - 1][0]]} → {me}" if k > 0 else f"start of trip at {me}"
-            leg_out = f"{me} → {city_names[route[k + 1][0]]}" if k < len(route) - 1 else f"{me} → end of trip"
-            for n in range(nights):
-                sources, reasons = [], []  # each source = the days to vote on
-                if mode != 'none':
-                    if n == 0:
-                        src = [r[0] for r, a, _ in runs if a]
-                        sources.append(src)
-                        if not src:
-                            reasons.append(f"no past quote has {leg_in}")
-                    if n == nights - 1:
-                        src = [r[-1] for r, _, d in runs if d]
-                        sources.append(src)
-                        if not src:
-                            reasons.append(f"no past quote has {leg_out}")
-                    if 0 < n < nights - 1:
-                        sources.append([r[n] for r, _, _ in runs] if mode == 'exact' else [])
-                        if mode == 'flex':
-                            reasons.append("nights differ from past quotes")
-                manual = mode == 'none' or any(not src for src in sources)
-                ids = {}
-                if not manual:  # arrival-side services first, then departure-side, no duplicates
-                    for src in sources:
-                        for sid, share in vote(src):
-                            ids.setdefault(sid, share)
-                services = []
-                for sid, share in ids.items():
-                    service = Service.objects.select_related('service_type').filter(id=sid, cities__id=city_id).first()
-                    price = ServicePrice.objects.filter(service_id=sid, tour_pack_type=tour_pack_type).first()
-                    if service and price:
-                        services.append({'id': sid, 'name': service.name, 'type': service.service_type.name,
-                                         'price': float(price.price), 'quantity': 1, 'order': len(services), 'share': share})
-                days.append({'city': city_id, 'city_name': me, 'hotel': hotel_id,
-                             'hotel_name': hotel.name if hotel else None, 'services': services, 'guideServices': [],
-                             'matches': len(runs), 'mode': mode, 'manual': manual, 'reason': '; '.join(reasons)})
+            if fill[idx] is None:
+                for _ in range(nights):
+                    days.append({'city': city_id, 'city_name': me, 'hotel': None, 'hotel_name': None, 'services': [],
+                                 'guideServices': [], 'matches': 0, 'same': 0, 'source_ref': None, 'mode': 'none',
+                                 'manual': True, 'reason': 'no past quote has this route'})
+                continue
+            day_list, pkg, first, last, total, same = fill[idx]
+            # a transfer is only trustworthy on a side whose neighbour the copied window really contained
+            arrive_ok = idx == 0 or not first
+            depart_ok = idx == len(route) - 1 or not last
+            for n, day in enumerate(day_list):
+                services, reasons = [], []
+                for ts in sorted(day.services.all(), key=lambda t: t.id):
+                    if is_transfer(ts.service_id) and ((n == 0 and not arrive_ok) or (n == nights - 1 and not depart_ok)):
+                        continue
+                    service = svc_map.get(ts.service_id)
+                    price = ServicePrice.objects.filter(service_id=ts.service_id, tour_pack_type=tour_pack_type).first()
+                    if service and price and service.cities.filter(id=city_id).exists():
+                        services.append({'id': service.id, 'name': service.name, 'type': service.service_type.name,
+                                         'price': float(price.price), 'quantity': 1, 'order': len(services)})
+                if n == 0 and not arrive_ok:
+                    reasons.append(f"arrival transfer not copied: no past quote has {city_names[route[idx - 1][0]]} → {me}")
+                if n == nights - 1 and not depart_ok and fill[idx + 1] is None:
+                    reasons.append(f"departure transfer not copied: no past quote has {me} → {city_names[route[idx + 1][0]]}")
+                days.append({'city': city_id, 'city_name': me, 'hotel': day.hotel_id, 'hotel_name': day.hotel.name,
+                             'services': services, 'guideServices': [], 'matches': total, 'same': same,
+                             'source_ref': pkg.package_reference, 'mode': 'exact', 'manual': False,
+                             'reason': '; '.join(reasons)})
         return JsonResponse({'days': days})
     except Exception as e:
         logger.error(f"Error in suggest_tour_quote: {str(e)}")

@@ -107,7 +107,7 @@
       <button type="button" @click="suggestLegs.push({ city: '', nights: 1 })" class="mb-4 text-sm text-indigo-500">+ Add city</button>
       <div class="flex gap-2 justify-end">
         <button type="button" @click="suggestOpen = false" class="px-4 py-2 rounded border dark:text-gray-300">Cancel</button>
-        <button type="button" @click="applySuggestedRoute()" class="px-4 py-2 text-white bg-emerald-500 rounded hover:bg-emerald-600">Submit</button>
+        <button type="button" @click="applySuggestedRoute()" :disabled="suggestLoading" class="inline-flex gap-2 items-center px-4 py-2 text-white bg-emerald-500 rounded hover:bg-emerald-600 disabled:opacity-70 disabled:cursor-wait"><svg x-show="suggestLoading" x-cloak class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg><span x-text="suggestLoading ? 'Searching…' : 'Submit'"></span></button>
       </div>
       </div>
       <div x-show="suggestPreview">

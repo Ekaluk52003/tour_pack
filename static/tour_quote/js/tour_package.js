@@ -45,6 +45,7 @@ window.tourPackage = function () {
     selectedPredefinedQuote: "",
     suggestOpen: false,
     suggestPreview: null,
+    suggestLoading: false,
     suggestLegs: [{ city: "", nights: 2 }],
     commission_rate_hotel: 20,
     commission_rate_services: 5,
@@ -826,13 +827,16 @@ window.tourPackage = function () {
         return;
       }
       const route = this.suggestLegs.map((l) => `${l.city.trim()}:${l.nights}`).join(",");
+      if (this.suggestLoading) return;
+      this.suggestLoading = true;
       fetch(`/suggest-tour-quote/?route=${encodeURIComponent(route)}&tour_pack_type=${encodeURIComponent(this.tourPackType)}`)
         .then((r) => r.json())
         .then((data) => {
           if (data.error) alert(data.error);
           else this.suggestPreview = data;
         })
-        .catch(() => alert("Could not get suggestions. Please try again."));
+        .catch(() => alert("Could not get suggestions. Please try again."))
+        .finally(() => { this.suggestLoading = false; });
     },
 
     confirmSuggestion() {

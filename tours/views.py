@@ -5,6 +5,7 @@ from django.http import JsonResponse, HttpResponse
 from .models import TourPackageQuote, City, Hotel, Service, GuideService, ServiceType, TourDay, TourDayService, TourDayGuideService, PredefinedTourQuote, ReferenceID, ServicePrice, TourPackType, Agency, Invoice, InvoiceItem, SupplierExpense, InvoiceReferenceID, Supplier, SupplierService, ServiceExpenseTemplate
 from django.db.models import Sum, Count, F, ExpressionWrapper, DecimalField, Case, When, IntegerField
 from django.db.models.functions import Coalesce
+from urllib.parse import urlencode
 import json
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
@@ -3150,6 +3151,17 @@ def invoice_list(request):
     if status_filter:
         invoices = invoices.filter(status=status_filter)
 
+    q = request.GET.get('q', '').strip()
+    if q:
+        invoices = invoices.filter(
+            Q(invoice_number__icontains=q)
+            | Q(tour_package__package_reference__icontains=q)
+            | Q(tour_package__customer_name__icontains=q)
+            | Q(tour_package__connection_ref__icontains=q)
+            | Q(tour_package__name__icontains=q)
+            | Q(agency__name__icontains=q)
+        )
+
     paginator = Paginator(invoices, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -3158,6 +3170,8 @@ def invoice_list(request):
         'page_obj': page_obj,
         'status_choices': Invoice.STATUS_CHOICES,
         'current_status': status_filter,
+        'q': q,
+        'extra_params': '&' + urlencode({'status': status_filter, 'q': q}),
     }
     return render(request, 'tour_quote/invoice_list.html', context)
 
